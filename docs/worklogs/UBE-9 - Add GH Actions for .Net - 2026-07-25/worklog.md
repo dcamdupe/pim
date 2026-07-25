@@ -22,7 +22,7 @@ Add a GitHub Actions workflow for the .NET project with two stages:
 - [x] Add `.github/workflows/dotnet.yml`
 - [x] Build stage (`dotnet restore` + `dotnet build`)
 - [x] Unit test stage (`dotnet test`)
-- [ ] Verify workflow runs successfully in GitHub Actions
+- [x] Verify workflow runs successfully in GitHub Actions
 
 ## Notes
 
@@ -30,8 +30,10 @@ Add a GitHub Actions workflow for the .NET project with two stages:
 - Two jobs: `build` (`dotnet restore` + `dotnet build` against `Pim.sln`, Release config) and `test` (`dotnet test` against `Pim.sln`, depends on `build` via `needs`).
 - Pinned `dotnet-version: "10.0.x"` via `actions/setup-dotnet@v4` to match the local SDK (`10.0.101`) and the project's `net10.0` target framework.
 - Verified locally: `dotnet restore`/`build --configuration Release`/`test --configuration Release` against `Pim.sln` all succeed (0 warnings/errors, `TreatWarningsAsErrors` still enforced).
-- Last checklist item (actual GitHub Actions run) needs the branch pushed / PR opened to trigger `pull_request` — pending.
+- PR #4 opened; the `pull_request`-triggered Actions run (build + test) passed.
 
 ## Prompt Log
 
 1. "start worklog for UBE-9"
+2. "create the PR"
+3. "the tests passed update the checklist"

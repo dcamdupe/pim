@@ -1,5 +1,6 @@
 using Pim.Api.Auth;
 using Pim.Api.Data;
+using Pim.Api.UnitTests.Helpers;
 
 namespace Pim.Api.UnitTests.Auth;
 

@@ -18,7 +18,7 @@ Linear: https://linear.app/uberconcept/issue/UBE-21/add-verification-steps-into-
 
 - [x] Add `npm audit` step to FrontEnd build job
 - [x] Add critical-NuGet-vulnerability check step to Api build job
-- [ ] Verify both workflows run green
+- [x] Verify both workflows run green
 
 ## Notes
 
@@ -28,3 +28,5 @@ Linear: https://linear.app/uberconcept/issue/UBE-21/add-verification-steps-into-
 2. "start the checkoist"
 3. "there is a better one line command to check for vulnerable npm packages" (re: the NuGet check — clarified via follow-up)
 4. "why has the checklist not been updated?"
+5. "raise the PR"
+6. "testes are green"

@@ -13,6 +13,20 @@
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    {
+      "name": "FrontEnd",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/FrontEnd"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Api + FrontEnd",
+      "configurations": ["Api", "FrontEnd"],
+      "stopAll": true
     }
   ]
 }

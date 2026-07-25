@@ -6,17 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PIM — a personal finance manager for a single user (David Cameron). Early-stage: `Api/` and `FrontEnd/` are currently scaffolds, not yet wired to real domain logic.
 
-- `Api/` — .NET Core Web API (`Pim.Api`, targets `net10.0`). No `.sln` file — build/run against the `.csproj` directly.
+- `Api/` — .NET Core Web API (`Pim.Api`, targets `net10.0`), backed by MongoDB via a generic `IRepository<T>`/`MongoRepository<T>`.
+- `Api.Tests/` — xUnit test project (`Pim.Api.Tests`) referencing `Api`.
+- `Pim.sln` ties `Api` and `Api.Tests` together — build/test from the repo root.
 - `FrontEnd/` — Vue 3 + TypeScript + Vite SPA, with `vue-router` and `pinia`.
 - `docs/worklogs/` and `docs/design/` — see global worklog conventions in `~/.claude/CLAUDE.md`.
-- MongoDB is the intended datastore (not yet wired into the Api).
 
 ## Commands
 
 **Api** (from repo root):
-- Build: `dotnet build Api/Pim.Api.csproj`
+- Build: `dotnet build`
 - Run: `dotnet run --project Api`
-- No test project exists yet.
+- Test: `dotnet test`
+- `TreatWarningsAsErrors` is enabled on `Pim.Api` — analyzer warnings fail the build.
+- Requires a local MongoDB instance (`mongodb://localhost:27017` by default, see `Api/appsettings.json`) — `GET /` pings Mongo and returns `503` if it's unreachable.
 
 **FrontEnd** (from `FrontEnd/`):
 - Dev server: `npm run dev`

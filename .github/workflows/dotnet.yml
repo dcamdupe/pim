@@ -5,13 +5,13 @@ on:
     branches: [main]
     paths:
       - "Api/**"
-      - "Api.Tests/**"
+      - "Api.UnitTests/**"
       - "Pim.sln"
       - ".github/workflows/dotnet.yml"
   pull_request:
     paths:
       - "Api/**"
-      - "Api.Tests/**"
+      - "Api.UnitTests/**"
       - "Pim.sln"
       - ".github/workflows/dotnet.yml"
 

@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 PIM — a personal finance manager for a single user (David Cameron). Early-stage: `Api/` and `FrontEnd/` are currently scaffolds, not yet wired to real domain logic.
 
 - `Api/` — .NET Core Web API (`Pim.Api`, targets `net10.0`), backed by MongoDB via a generic `IRepository<T>`/`MongoRepository<T>`.
-- `Api.Tests/` — xUnit test project (`Pim.Api.Tests`) referencing `Api`.
-- `Pim.sln` ties `Api` and `Api.Tests` together — build/test from the repo root.
+- `Api.UnitTests/` — xUnit test project (`Pim.Api.UnitTests`) referencing `Api`.
+- `Pim.sln` ties `Api` and `Api.UnitTests` together — build/test from the repo root.
 - `FrontEnd/` — Vue 3 + TypeScript + Vite SPA, with `vue-router` and `pinia`.
 - `docs/worklogs/` and `docs/design/` — see global worklog conventions in `~/.claude/CLAUDE.md`.
 

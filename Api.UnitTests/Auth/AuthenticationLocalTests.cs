@@ -1,7 +1,7 @@
 using Pim.Api.Auth;
 using Pim.Api.Data;
 
-namespace Pim.Api.Tests.Auth;
+namespace Pim.Api.UnitTests.Auth;
 
 public class AuthenticationLocalTests
 {

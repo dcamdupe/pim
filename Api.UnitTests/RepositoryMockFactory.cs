@@ -3,7 +3,7 @@ using Moq;
 using MongoDB.Bson.Serialization.Attributes;
 using Pim.Api.Data;
 
-namespace Pim.Api.Tests;
+namespace Pim.Api.UnitTests;
 
 internal static class RepositoryMockFactory
 {

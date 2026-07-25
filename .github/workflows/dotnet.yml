@@ -1,0 +1,40 @@
+name: .NET
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Api/**"
+      - "Api.Tests/**"
+      - "Pim.sln"
+      - ".github/workflows/dotnet.yml"
+  pull_request:
+    paths:
+      - "Api/**"
+      - "Api.Tests/**"
+      - "Pim.sln"
+      - ".github/workflows/dotnet.yml"
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet restore Pim.sln
+      - run: dotnet build Pim.sln --no-restore --configuration Release
+
+  test:
+    name: Unit test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet restore Pim.sln
+      - run: dotnet test Pim.sln --configuration Release

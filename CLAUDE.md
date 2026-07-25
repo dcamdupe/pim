@@ -7,8 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 PIM — a personal finance manager for a single user (David Cameron). Early-stage: `Api/` and `FrontEnd/` are currently scaffolds, not yet wired to real domain logic.
 
 - `Api/` — .NET Core Web API (`Pim.Api`, targets `net10.0`), backed by MongoDB via a generic `IRepository<T>`/`MongoRepository<T>`.
-- `Api.UnitTests/` — xUnit test project (`Pim.Api.UnitTests`) referencing `Api`.
-- `Pim.sln` ties `Api` and `Api.UnitTests` together — build/test from the repo root.
+- `Api.UnitTests/` — xUnit unit test project (`Pim.Api.UnitTests`) referencing `Api`.
+- `Api.IntegrationTests/` — xUnit functional test project (`Pim.Api.IntegrationTests`), hosting `Api` in-process via `WebApplicationFactory<Program>` and hitting real endpoints (against a real local MongoDB). Every API endpoint must be covered by a functional test here.
+- `Pim.sln` ties `Api`, `Api.UnitTests`, and `Api.IntegrationTests` together — build/test from the repo root.
 - `FrontEnd/` — Vue 3 + TypeScript + Vite SPA, with `vue-router` and `pinia`.
 - `docs/worklogs/` and `docs/design/` — see global worklog conventions in `~/.claude/CLAUDE.md`.
 
@@ -19,7 +20,8 @@ PIM — a personal finance manager for a single user (David Cameron). Early-stag
 - Run: `dotnet run --project Api`
 - Test: `dotnet test`
 - `TreatWarningsAsErrors` is enabled on `Pim.Api` — analyzer warnings fail the build.
-- Requires a local MongoDB instance (`mongodb://localhost:27017` by default, see `Api/appsettings.json`) — `GET /` pings Mongo and returns `503` if it's unreachable.
+- Requires a local MongoDB instance (`mongodb://localhost:27017` by default, see `Api/appsettings.json`) — `GET /` pings Mongo and returns `503` if it's unreachable. `Api.IntegrationTests` also needs Mongo running since it exercises the real endpoints/DB, not mocks.
+- New endpoints must have a corresponding functional test added to `Api.IntegrationTests`.
 
 **FrontEnd** (from `FrontEnd/`):
 - Dev server: `npm run dev`

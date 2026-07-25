@@ -23,18 +23,31 @@ Add the login page in the front end project, connecting to the API to perform au
 
 ## Checklist
 
-- [ ] Remove initial Vue.js boilerplate
-- [ ] Create `LoginView.vue` with centered layout
-- [ ] Add client-side validation for required fields
-- [ ] Create `authService` to call `POST /login`
-- [ ] Wire login form submit to `authService`, handle success/failure
-- [ ] Add `/login` route
-- [ ] Add `DashboardView.vue` placeholder page + `/dashboard` route
-- [ ] Verify end-to-end against local Api + Mongo
+- [x] Remove initial Vue.js boilerplate
+- [x] Create `LoginView.vue` with centered layout
+- [x] Add client-side validation for required fields
+- [x] Create `authService` to call `POST /login`
+- [x] Wire login form submit to `authService`, handle success/failure
+- [x] Add `/login` route
+- [x] Add `DashboardView.vue` placeholder page + `/dashboard` route
+- [x] Verify end-to-end against local Api + Mongo
 
 ## Notes
+
+- Removed scaffold files: `HelloWorld.vue`, `HomeView.vue`, `stores/counter.ts`, `assets/{hero.png,vite.svg,vue.svg}`, `public/icons.svg`; reset `style.css` to a minimal baseline (kept the light/dark theme CSS variables); updated `index.html` title from `frontend` to `PIM`.
+- `FrontEnd/src/services/authService.ts`: `login(login, password)` calls `POST {VITE_API_BASE_URL ?? http://localhost:5037}/login`, returns the JWT on `200`, throws `LoginFailedError` otherwise.
+- `FrontEnd/src/stores/auth.ts`: Pinia store holding the JWT (`token`, `setToken`).
+- `FrontEnd/src/views/LoginView.vue`: form centered via flexbox on a full-viewport-height wrapper; required-field validation on submit (no native browser validation — `novalidate` + manual checks so error styling is consistent); calls `authService.login`, stores the token, routes to `/dashboard` on success, shows an inline error on failure.
+- `FrontEnd/src/views/DashboardView.vue`: placeholder page ("Dashboard" / "Coming soon.").
+- `FrontEnd/src/router/index.ts`: `/` redirects to `/login`; added `/login` and `/dashboard` routes.
+- **Deviation from ticket:** the ticket didn't mention CORS or transport, but the Api's `UseHttpsRedirection()` (redirecting to a self-signed dev cert) plus no CORS policy would block the browser from calling it from the Vite dev server entirely. In `Api/Program.cs`, added a `FrontEndDev` CORS policy (`http://localhost:5173`) and skip `UseHttpsRedirection()` in Development — both gated behind `IsDevelopment()`, so production behaviour (HTTPS redirect, no CORS) is unchanged.
+- `FrontEnd/vite.config.ts`: pinned the dev server to port `5173` (`server.port`) since another process on the machine was intermittently occupying it and the CORS policy is pinned to that origin.
+- Verified end-to-end: `dotnet build` and `npm run build`/`npm run lint` clean; `POST /login` returns `200`+JWT for `testuser`/`TestPassword123!` and `400` for a wrong password (curl); CORS preflight from `http://localhost:5173` succeeds; manually checked in-browser (user) — empty submit shows validation errors, wrong password shows the invalid-login error, correct credentials redirect to the dashboard placeholder.
 
 ## Prompt Log
 
 1. "create worklog for UBE-11"
 2. "add an additional step to remove all the initial vue.js boilerplate. And an additional step to add a dashboard placholder page"
+3. "start implementing the checklist"
+4. "set Vite to explicitly use 5173"
+5. "checked" / "all three cases passed" (manual browser verification)

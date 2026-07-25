@@ -1,0 +1,60 @@
+name: FrontEnd
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "FrontEnd/**"
+      - "FrontEnd.UnitTests/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "FrontEnd/**"
+      - "FrontEnd.UnitTests/**"
+      - ".github/workflows/frontend.yml"
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: FrontEnd/package-lock.json
+      - run: npm ci
+        working-directory: FrontEnd
+      - run: npm run build
+        working-directory: FrontEnd
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: FrontEnd/package-lock.json
+      - run: npm ci
+        working-directory: FrontEnd
+      - run: npm run lint
+        working-directory: FrontEnd
+
+  test:
+    name: Unit test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: FrontEnd.UnitTests/package-lock.json
+      - run: npm ci
+        working-directory: FrontEnd.UnitTests
+      - run: npm run test
+        working-directory: FrontEnd.UnitTests

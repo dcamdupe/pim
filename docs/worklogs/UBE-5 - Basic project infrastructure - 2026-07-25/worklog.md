@@ -22,13 +22,22 @@ Set up the base repository structure for the PIM project:
 
 ## Checklist
 
-- [ ] Create `docs/design` directory
-- [ ] Scaffold `Api` (.NET Core web API)
-- [ ] Scaffold `FrontEnd` (Vue.js static web app)
-- [ ] Verify `Api` builds/runs
-- [ ] Verify `FrontEnd` builds/runs
-- [ ] Update root `.gitignore` for new project types
+- [x] Create `docs/design` directory
+- [x] Scaffold `Api` (.NET Core web API)
+- [x] Scaffold `FrontEnd` (Vue.js static web app)
+- [x] Verify `Api` builds/runs
+- [x] Verify `FrontEnd` builds/runs
+- [x] Update root `.gitignore` for new project types (root `.gitignore` already covers .NET build output; `FrontEnd` has its own `.gitignore` from the Vite scaffold covering `node_modules`/`dist`)
+
+## Notes
+
+- `Api` scaffolded with `dotnet new webapi -o Api -n Pim.Api` (targets net10.0). Builds cleanly (`dotnet build`); one pre-existing NU1903 advisory warning from the template's default `Microsoft.OpenApi` package version, not introduced by this work.
+- `FrontEnd` scaffolded with `npm create vite@latest FrontEnd -- --template vue-ts`, then `vue-router` and `pinia` were added and wired up in `main.ts`/`App.vue`, plus `eslint` + `eslint-plugin-vue` + `@vue/eslint-config-typescript` with a flat `eslint.config.js`, mirroring what `create-vue --typescript --router --pinia --eslint` would produce.
+  - `create-vue`'s interactive prompt (built on `@clack/prompts`) could not be driven non-interactively even via piped stdin or a pseudo-tty (`script`), so `create-vite` was used instead as a reliable non-interactive path.
+  - Local Node was v11.7.0 (too old for modern Vue tooling); installed Node 20 then Node 22 via `nvm` to satisfy `create-vue`/`create-vite` engine requirements (only used for this scaffold session, not set as the nvm default).
+- Verified: `npm run lint` (clean), `npm run build` (succeeds), and `npm run dev` serves on `http://localhost:5173/` (200 OK).
 
 ## Prompt Log
 
 1. "create a worklog for UBE-5"
+2. "Scaffold the Api and FrontEnd folders"

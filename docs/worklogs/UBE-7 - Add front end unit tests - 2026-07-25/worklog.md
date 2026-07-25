@@ -8,24 +8,30 @@ Add a unit test project/setup for the `FrontEnd` (Vue 3 + TypeScript + Vite) app
 
 ## Plan
 
-1. Add `vitest`, `@vue/test-utils`, and `jsdom` as FrontEnd devDependencies.
-2. Configure Vitest (test block in `vite.config.ts` or a dedicated `vitest.config.ts`) with the `jsdom` environment.
-3. Add a `test` script to `FrontEnd/package.json`.
-4. Add an initial unit test to prove the setup works (covering `authService.ts`).
-5. Update `CLAUDE.md`'s FrontEnd commands section to document the new test command (replacing "No test framework is configured yet").
-6. Verify: run the new test script and confirm it passes.
+1. Create a separate `FrontEnd.UnitTests/` project (own `package.json`/`node_modules`, not a `FrontEnd/` workspace) mirroring how `Api.UnitTests` sits alongside `Api`, with `vitest`, `@vue/test-utils`, `jsdom`, and `@vitejs/plugin-vue` as devDependencies.
+2. Configure Vitest (`vitest.config.ts`) in `FrontEnd.UnitTests/` with the `jsdom` environment.
+3. Add a `test` script to `FrontEnd.UnitTests/package.json`.
+4. Add an initial unit test to prove the setup works, covering `authService.ts` (imported from `FrontEnd/src` via a relative path), in a directory layout mirroring `FrontEnd/src` (e.g. `FrontEnd.UnitTests/services/`).
+5. Update `CLAUDE.md`'s Project/Commands sections to document `FrontEnd.UnitTests/` and its test command (replacing "No test framework is configured yet").
+6. Verify: run the new test script and confirm it passes; confirm `FrontEnd/` still builds/lints cleanly (no test tooling leaked into the app package).
 
 ## Checklist
 
-- [ ] Add `vitest` / `@vue/test-utils` / `jsdom` devDependencies
-- [ ] Configure Vitest (jsdom environment)
-- [ ] Add `test` script to `package.json`
-- [ ] Add an initial unit test
-- [ ] Update `CLAUDE.md` FrontEnd commands section
-- [ ] Verify tests run and pass
+- [x] Create `FrontEnd.UnitTests/` project with `vitest` / `@vue/test-utils` / `jsdom` devDependencies
+- [x] Configure Vitest (jsdom environment)
+- [x] Add `test` script to `FrontEnd.UnitTests/package.json`
+- [x] Add an initial unit test (`authService.ts`)
+- [x] Update `CLAUDE.md` Project/Commands sections
+- [x] Verify tests run and pass; `FrontEnd/` still builds/lints cleanly
 
 ## Notes
+
+- Initially set Vitest up directly inside `FrontEnd/` (test deps in `FrontEnd/package.json`, `test` block in `FrontEnd/vite.config.ts`, colocated `src/services/authService.test.ts`) — per feedback, moved to a standalone `FrontEnd.UnitTests/` project instead, matching the `Api`/`Api.UnitTests` split. `FrontEnd/package.json` and `vite.config.ts` were reverted to their pre-test state.
+- `FrontEnd.UnitTests/services/authService.test.ts` imports `login`/`LoginFailedError` from `../../FrontEnd/src/services/authService` (relative path — no path alias or project reference mechanism in npm/TS for this, unlike a C# project reference) and mocks `global.fetch` via `vi.stubGlobal` to cover the success (200 + token) and failure (non-2xx → `LoginFailedError`) cases.
+- `npm install` for `FrontEnd.UnitTests/` is separate from `FrontEnd/`'s.
 
 ## Prompt Log
 
 1. "create a worklog for UBE-7"
+2. "start"
+3. "move the tests into a separate project, FrontEnd.UnitTests"

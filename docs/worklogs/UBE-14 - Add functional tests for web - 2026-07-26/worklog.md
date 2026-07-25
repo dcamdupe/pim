@@ -28,12 +28,22 @@ Linear: https://linear.app/uberconcept/issue/UBE-14/add-functional-tests-project
 
 ## Checklist
 
-- [ ] Scaffold `FunctionalTests` (TypeScript + Playwright)
-- [ ] Add `login.spec.ts`: valid login/password
-- [ ] Add `login.spec.ts`: invalid login/password
-- [ ] Update `CLAUDE.md`
-- [ ] Verify tests pass against the real stack
+- [x] Scaffold `FunctionalTests` (TypeScript + Playwright)
+- [x] Add `login.spec.ts`: valid login/password
+- [x] Add `login.spec.ts`: invalid login/password
+- [x] Update `CLAUDE.md`
+- [x] Verify tests pass against the real stack
+
+## Notes
+
+- Scaffolded via `create-playwright` (`--lang=TypeScript --browser=chromium --no-examples --no-browsers`), then `npx playwright install chromium`. Chromium only for now (not firefox/webkit) to keep it lean.
+- `playwright.config.ts`: `baseURL: http://localhost:5173`; `webServer` auto-starts the FrontEnd dev server (`npm run dev`, `cwd: ../FrontEnd`) with `reuseExistingServer` locally. Api + MongoDB are **not** auto-started — documented as prerequisites in `FunctionalTests/README.md`, matching how `Api.IntegrationTests` already requires Mongo running separately rather than orchestrating it.
+- `tests/login.spec.ts`: two scenarios using the `testuser`/`TestPassword123!` login seeded by `scripts/setup_local.sh` — valid credentials redirect to `/dashboard`; invalid credentials stay on `/login` and show the `.form-error` text.
+- Hit a real bug while verifying: the FrontEnd dev server (left running from earlier manual testing) was serving stale Vite-optimized deps (`504 Outdated Optimize Dep`), which silently prevented the Vue app from mounting (`#login` never appeared, tests timed out on `locator.fill`). Fixed by killing the stray process and clearing `FrontEnd/node_modules/.vite`. Not a code bug — just a reminder that a stale local dev server can make tests flake; not addressed in code since it's an environment/caching issue, not a project defect.
+- Verified against the real stack: Mongo running, `scripts/setup_local.sh` run, `Api` running on `:5037`, then `npm test` in `FunctionalTests` — both tests pass, twice in a row (2.1–3.3s).
+- `CLAUDE.md` updated: `FunctionalTests` listed under Project, plus a Commands entry (`npm test`, prerequisites, "new user-facing flows should have a corresponding scenario here").
 
 ## Prompt Log
 
 1. "create worklog for UBE-14"
+2. "start"

@@ -12,6 +12,7 @@ PIM — a personal finance manager for a single user (David Cameron). Early-stag
 - `Pim.sln` ties `Api`, `Api.UnitTests`, and `Api.IntegrationTests` together — build/test from the repo root.
 - `FrontEnd/` — Vue 3 + TypeScript + Vite SPA, with `vue-router` and `pinia`.
 - `FrontEnd.UnitTests/` — Vitest unit test project (own `package.json`/`node_modules`, not a workspace of `FrontEnd/`), importing source from `FrontEnd/src` via relative paths, with a directory layout mirroring it (e.g. `FrontEnd.UnitTests/services/authService.test.ts` covers `FrontEnd/src/services/authService.ts`).
+- `FunctionalTests/` — TypeScript + Playwright end-to-end tests (own `package.json`/`node_modules`), driving the real FrontEnd + Api + MongoDB stack in a browser. See `FunctionalTests/README.md` for prerequisites.
 - `docs/worklogs/` and `docs/design/` — see global worklog conventions in `~/.claude/CLAUDE.md`.
 
 ## Commands
@@ -32,7 +33,11 @@ PIM — a personal finance manager for a single user (David Cameron). Early-stag
 **FrontEnd.UnitTests** (from `FrontEnd.UnitTests/`, separate `npm install` from `FrontEnd/`):
 - Test: `npm run test` (Vitest, `jsdom` environment, single run — not watch mode).
 
-Node's `nvm` default on this machine is a very old version (v11) — too old for Vite/Vue tooling. Run `nvm use 22` (or `nvm install 22`) before running any FrontEnd/FrontEnd.UnitTests npm command if you hit engine errors.
+**FunctionalTests** (from `FunctionalTests/`, separate `npm install` from `FrontEnd/`):
+- Test: `npm test` (Playwright). Auto-starts the FrontEnd dev server; requires MongoDB + `Api` already running separately (see `FunctionalTests/README.md`).
+- New user-facing flows should have a corresponding scenario added here.
+
+Node's `nvm` default on this machine is a very old version (v11) — too old for Vite/Vue tooling. Run `nvm use 22` (or `nvm install 22`) before running any FrontEnd/FrontEnd.UnitTests/FunctionalTests npm command if you hit engine errors.
 
 ## Conventions
 

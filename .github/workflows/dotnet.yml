@@ -26,6 +26,8 @@ jobs:
           dotnet-version: "10.0.x"
       - run: dotnet restore Pim.sln
       - run: dotnet build Pim.sln --no-restore --configuration Release
+      - name: Fail on critical vulnerable NuGet packages
+        run: "! dotnet list Pim.sln package --vulnerable --include-transitive | grep -qi critical"
 
   test:
     name: Unit test

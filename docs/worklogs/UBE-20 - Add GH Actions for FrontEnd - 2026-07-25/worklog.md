@@ -20,13 +20,16 @@ Linear: https://linear.app/uberconcept/issue/UBE-20/create-github-action-for-fro
 
 ## Checklist
 
-- [ ] Add `.github/workflows/frontend.yml`
-- [ ] Build job (compile via `npm run build`)
-- [ ] Lint job (`npm run lint`)
-- [ ] Unit test job (`npm run test` in `FrontEnd.UnitTests/`)
+- [x] Add `.github/workflows/frontend.yml`
+- [x] Build job (compile via `npm run build`)
+- [x] Lint job (`npm run lint`)
+- [x] Unit test job (`npm run test` in `FrontEnd.UnitTests/`)
 - [ ] Verify workflow runs green
 
 ## Notes
+
+- `build`, `lint`, and `test` are independent jobs (no `needs:` chaining) — unlike `dotnet.yml`'s `test needs: build`, none of these three depend on another's output (each does its own `npm ci`), so running them in parallel is safe and faster.
+- No `actionlint`/`yamllint` available locally to validate the workflow syntax directly; instead ran the exact commands the workflow invokes (`npm ci` then `npm run build` / `npm run lint` in `FrontEnd/`, `npm ci` then `npm run test` in `FrontEnd.UnitTests/`) locally — all pass.
 
 ## Prompt Log
 

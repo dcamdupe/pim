@@ -13,6 +13,7 @@ PIM — a personal finance manager for a single user (David Cameron). Early-stag
 - `FrontEnd/` — Vue 3 + TypeScript + Vite SPA, with `vue-router` and `pinia`.
 - `FrontEnd.UnitTests/` — Vitest unit test project (own `package.json`/`node_modules`, not a workspace of `FrontEnd/`), importing source from `FrontEnd/src` via relative paths, with a directory layout mirroring it (e.g. `FrontEnd.UnitTests/services/authService.test.ts` covers `FrontEnd/src/services/authService.ts`).
 - `FunctionalTests/` — TypeScript + Playwright end-to-end tests (own `package.json`/`node_modules`), driving the real FrontEnd + Api + MongoDB stack in a browser. See `FunctionalTests/README.md` for prerequisites.
+- `Terraform/` — AWS infrastructure (VPC, CloudFront+S3 frontend, DynamoDB, API Gateway + Lambda). One shared root config; `environment` is a variable (`environments/<name>.tfvars` + a matching Terraform workspace), not a per-environment folder. See `Terraform/README.md`.
 - `docs/worklogs/` and `docs/design/` — see global worklog conventions in `~/.claude/CLAUDE.md`.
 
 ## Commands
@@ -38,6 +39,11 @@ PIM — a personal finance manager for a single user (David Cameron). Early-stag
 - New user-facing flows should have a corresponding scenario added here.
 
 Node's `nvm` default on this machine is a very old version (v11) — too old for Vite/Vue tooling. Run `nvm use 22` (or `nvm install 22`) before running any FrontEnd/FrontEnd.UnitTests/FunctionalTests npm command if you hit engine errors.
+
+**Terraform** (from `Terraform/`):
+- `terraform fmt -recursive` / `terraform validate` — safe to run anytime, no AWS credentials needed.
+- `terraform plan`/`apply` need real AWS credentials — **never use root account credentials** for this (a dedicated least-privilege IAM identity should be created first). Not run from this environment so far; see `Terraform/README.md`.
+- `Terraform/bootstrap/` (S3 state bucket) must exist before the root config's `backend.tf` will work. No state locking (no DynamoDB lock table) - applies are done by one person, serially.
 
 ## Conventions
 

@@ -5,15 +5,17 @@ locals {
   }
 }
 
-# The stub handler must be published before this module can plan/apply:
+# lambda-stub/lambda.zip is a committed, pre-built placeholder deployment
+# package (see lambda-stub/Function.cs) - just enough for `terraform apply`
+# to have a real artifact to create the Lambda with. It's read directly
+# rather than built via a Terraform `archive_file` data source so that
+# plan/apply don't need a .NET toolchain (e.g. in the GitHub Actions
+# workflow). The lifecycle.ignore_changes below means Terraform never
+# touches it again after initial creation - the real Api-based handler will
+# be deployed by a future CI/CD pipeline, not Terraform. If lambda-stub's
+# source ever changes, rebuild and re-commit the zip by hand:
 #   dotnet publish -c Release -r linux-x64 --self-contained false -o publish
-# (run from modules/api/lambda-stub/). This will be replaced by the real
-# Api-based handler in a future ticket.
-data "archive_file" "lambda" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda-stub/publish"
-  output_path = "${path.module}/lambda-stub/lambda.zip"
-}
+#   (cd publish && zip -r -X ../lambda.zip .)
 
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
@@ -73,8 +75,8 @@ resource "aws_lambda_function" "api" {
   timeout       = 30
   memory_size   = 128
 
-  filename         = data.archive_file.lambda.output_path
-  source_code_hash = data.archive_file.lambda.output_base64sha256
+  filename         = "${path.module}/lambda-stub/lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/lambda-stub/lambda.zip")
 
   vpc_config {
     subnet_ids         = var.private_subnet_ids

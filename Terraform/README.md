@@ -59,12 +59,15 @@ terraform apply -var-file=environments/production.tfvars
 
 The Lambda's real code (adapting the `Api` ASP.NET Core project to run as a Lambda handler,
 e.g. via `Amazon.Lambda.AspNetCoreServer`) is separate/future work. Until then,
-`modules/api/lambda-stub/` is a minimal placeholder handler so `terraform apply` has a real
-artifact to deploy. Publish it before planning/applying:
+`modules/api/lambda-stub/` is a minimal placeholder handler, and its build output is committed
+as `modules/api/lambda-stub/lambda.zip` so `terraform plan`/`apply` (including in CI) has a real
+artifact to deploy without needing a .NET toolchain. If `lambda-stub`'s source ever changes,
+rebuild and re-commit the zip by hand:
 
 ```
 cd modules/api/lambda-stub
 dotnet publish -c Release -r linux-x64 --self-contained false -o publish
+(cd publish && zip -r -X ../lambda.zip .)
 ```
 
 The Lambda resource ignores future changes to its deployment package/handler
@@ -73,9 +76,23 @@ Terraform reverting it.
 
 ## Applying via GitHub Actions
 
-`.github/workflows/terraform.yml` runs `plan` then `apply` on manual trigger
-(`workflow_dispatch`) only - it never runs on push. One-time setup before it
-can be used:
+Plan and apply are two separate workflows, each triggered manually
+(`workflow_dispatch`) - neither ever runs on push, and applying never
+happens automatically as a consequence of planning:
+
+- `.github/workflows/terraform-plan.yml` runs `terraform plan` and uploads
+  the plan file as a build artifact (`tfplan-<environment>`, kept 3 days).
+  It does not apply anything.
+- `.github/workflows/terraform-apply.yml` applies a plan from a *specific*
+  previous plan run. You pass that run's ID (the number in its Actions run
+  URL, e.g. `.../actions/runs/1234567890`) as the `plan_run_id` input, so
+  the plan you reviewed is the plan that gets applied, not a freshly
+  regenerated one.
+
+To run a change: trigger "Terraform Plan", review its output, then trigger
+"Terraform Apply" with that run's ID once you're ready.
+
+One-time setup before either workflow can be used:
 
 - Create a dedicated IAM user for CI (**never root credentials**) with
   least-privilege permissions covering the resources these modules manage
@@ -84,7 +101,7 @@ can be used:
   and add it to the repo as the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
   secrets.
 - Configure the `production` GitHub Environment (repo Settings >
-  Environments) with required reviewers, so an apply still needs a manual
+  Environments) with required reviewers, so apply still needs a manual
   approval even though the trigger itself is already manual.
 - Make sure `backend.tf`'s bucket placeholder has already been replaced (see
   bootstrap step above).

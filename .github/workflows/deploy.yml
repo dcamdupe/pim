@@ -1,0 +1,75 @@
+name: Deploy
+
+# Manual only. Deploys the app (API Lambda code + FrontEnd static assets) to
+# already-provisioned infrastructure - it doesn't touch Terraform at all.
+#
+# Requires the same AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY repo secrets as
+# terraform.yml, plus three repo variables copied by hand from `terraform
+# output` after applying (see Terraform/README.md):
+#   FRONTEND_BUCKET_NAME, API_LAMBDA_FUNCTION_NAME, CLOUDFRONT_DISTRIBUTION_ID
+#
+# The API Lambda's aws_lambda_function.api resource has
+# lifecycle.ignore_changes on its deployment package specifically so this
+# workflow - not Terraform - is the thing that updates the Lambda's code
+# day-to-day.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy (matches the repo variables above)
+        type: choice
+        options:
+          - production
+        default: production
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-2
+
+jobs:
+  deploy-api:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet publish Api -c Release -r linux-x64 --self-contained false -o build
+      - run: (cd build && zip -r -X ../lambda.zip .)
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: aws lambda update-function-code --function-name "${{ vars.API_LAMBDA_FUNCTION_NAME }}" --zip-file fileb://lambda.zip
+      - run: aws lambda wait function-updated --function-name "${{ vars.API_LAMBDA_FUNCTION_NAME }}"
+
+  deploy-frontend:
+    name: Deploy FrontEnd
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FrontEnd
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: FrontEnd/package-lock.json
+      - run: npm ci
+      # Same "copy the right env file into .env" pattern as scripts/setup_local.sh
+      # uses locally with .env.local, so the app always just reads .env regardless
+      # of which environment it's built for.
+      - run: cp .env.production .env
+      - run: npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - run: aws s3 sync dist "s3://${{ vars.FRONTEND_BUCKET_NAME }}" --delete
+      - run: aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*"

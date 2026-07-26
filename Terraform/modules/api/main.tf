@@ -85,6 +85,14 @@ resource "aws_lambda_function" "api" {
   }
 
   tags = local.common_tags
+
+  # Terraform's own build.zip only creates the function on the very first
+  # apply - day-to-day code updates go through .github/workflows/deploy.yml
+  # (aws lambda update-function-code) instead, so Terraform shouldn't fight
+  # over the deployment package on subsequent applies.
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
+  }
 }
 
 resource "aws_apigatewayv2_api" "api" {

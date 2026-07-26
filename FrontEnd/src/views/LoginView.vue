@@ -7,17 +7,24 @@ import { useAuthStore } from '../stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const loginValue = ref('')
+const email = ref('')
 const password = ref('')
-const loginError = ref('')
+const emailInput = ref<HTMLInputElement | null>(null)
+const emailError = ref('')
 const passwordError = ref('')
 const formError = ref('')
 const isSubmitting = ref(false)
 
 function validate(): boolean {
-  loginError.value = loginValue.value.trim() ? '' : 'Login is required.'
+  if (!email.value.trim()) {
+    emailError.value = 'Email is required.'
+  } else if (!emailInput.value?.validity.valid) {
+    emailError.value = 'Enter a valid email address.'
+  } else {
+    emailError.value = ''
+  }
   passwordError.value = password.value ? '' : 'Password is required.'
-  return !loginError.value && !passwordError.value
+  return !emailError.value && !passwordError.value
 }
 
 async function onSubmit() {
@@ -28,7 +35,7 @@ async function onSubmit() {
 
   isSubmitting.value = true
   try {
-    const token = await login(loginValue.value, password.value)
+    const token = await login(email.value, password.value)
     authStore.setToken(token)
     router.push('/dashboard')
   } catch {
@@ -45,9 +52,9 @@ async function onSubmit() {
       <h1>Log in</h1>
 
       <div class="field">
-        <label for="login">Login</label>
-        <input id="login" v-model="loginValue" type="text" autocomplete="username" />
-        <p v-if="loginError" class="field-error">{{ loginError }}</p>
+        <label for="email">Email</label>
+        <input id="email" ref="emailInput" v-model="email" type="email" autocomplete="email" />
+        <p v-if="emailError" class="field-error">{{ emailError }}</p>
       </div>
 
       <div class="field">

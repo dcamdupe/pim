@@ -11,12 +11,12 @@ public class AuthenticationLocalTests
     {
         var users = new List<User>
         {
-            new() { Login = "dave", PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct-password") },
+            new() { Email = "dave@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct-password") },
         };
         var repository = RepositoryMockFactory.Create(users);
         var sut = new AuthenticationLocal(repository.Object);
 
-        var result = await sut.ValidateAsync("dave", "correct-password");
+        var result = await sut.ValidateAsync("dave@example.com", "correct-password");
 
         Assert.True(result);
     }
@@ -27,7 +27,7 @@ public class AuthenticationLocalTests
         var repository = RepositoryMockFactory.Create(new List<User>());
         var sut = new AuthenticationLocal(repository.Object);
 
-        var result = await sut.ValidateAsync("unknown", "whatever");
+        var result = await sut.ValidateAsync("unknown@example.com", "whatever");
 
         Assert.False(result);
     }
@@ -37,12 +37,12 @@ public class AuthenticationLocalTests
     {
         var users = new List<User>
         {
-            new() { Login = "dave", PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct-password") },
+            new() { Email = "dave@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct-password") },
         };
         var repository = RepositoryMockFactory.Create(users);
         var sut = new AuthenticationLocal(repository.Object);
 
-        var result = await sut.ValidateAsync("dave", "wrong-password");
+        var result = await sut.ValidateAsync("dave@example.com", "wrong-password");
 
         Assert.False(result);
     }

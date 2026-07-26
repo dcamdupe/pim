@@ -26,5 +26,5 @@ This creates a Personal Financial Manager specifically for one user.
 
 ## Test login
 
-- Login: `testuser`
+- Email: `testuser@example.com`
 - Password: `TestPassword123!`

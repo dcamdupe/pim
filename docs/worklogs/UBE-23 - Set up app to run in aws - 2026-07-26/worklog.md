@@ -22,13 +22,13 @@ Linear: https://linear.app/uberconcept/issue/UBE-23/set-up-app-to-run-in-aws
 - **Local environment name:** a custom `"Local"` environment (not ASP.NET Core's built-in `"Development"`) — `appsettings.Development.json` → `appsettings.Local.json`, `ASPNETCORE_ENVIRONMENT=Local` in `launchSettings.json`/`.vscode/launch.json`, `Program.cs`'s dev-only block (`IsDevelopment()`) → `IsEnvironment("Local")`, and `Api.IntegrationTests`'s `WebApplicationFactory<Program>` (which otherwise defaults to `"Development"` itself) explicitly told to use `"Local"`.
 - **appsettings split:** `appsettings.Development.json` → `appsettings.Local.json` (keeps `MongoSettings`); new `appsettings.Production.json` (currently no keys of its own — see AWS config note below); shared config (`Logging`, `JwtSettings`, `AllowedHosts`, `Version`, and now `Aws`) stays in the base `appsettings.json`.
 - **AWS config:** region lives in a new shared `Aws` section (`AwsSettings.Region`) in the base `appsettings.json` (`ap-southeast-2`), not per-environment — it's the same value everywhere, so there's no reason to duplicate/override it per environment. `DynamoDbRepository<T>` reads it from there rather than from its own settings class.
-- **`setup_local.sh`:** should actually set `ASPNETCORE_ENVIRONMENT=Local` (not just rely on `launchSettings.json`). Since a script's `export` doesn't persist to the invoking shell unless the script is *sourced*, `setup_local.sh` needs to be run with `source scripts/setup_local.sh` (not executed directly) for this to take effect — README updated accordingly, and the script detects+warns if it's run directly instead of sourced.
+- **`setup_local.sh`:** should actually set `ASPNETCORE_ENVIRONMENT=Local` (not just rely on `launchSettings.json`). Since a script's `export` doesn't persist to the invoking shell unless the script is *sourced*, `setup_local.sh` needs to be run with `source scripts/setup_local.sh` (not executed directly) for this to take effect — README updated accordingly, and the script detects+warns if it's run directly instead of sourced. Rewritten to avoid bash-only constructs (`BASH_SOURCE`, `local -`) so it also works when sourced from zsh (this machine's actual default shell) — uses `git rev-parse --show-toplevel` for the repo root and the portable `(return 0 2>/dev/null)` sourced-detection idiom instead; also replaced the old `set -euo pipefail` + `exit 1` pattern with explicit `|| return 1` checks inside a function, since a bare `exit` in a sourced script would close the user's actual terminal on failure.
 
 ## My calls (low-stakes, flagging rather than asking)
 
 - **Lambda `Handler` value:** with `AddAWSLambdaHosting`, AWS's Lambda .NET base runtime auto-discovers the entry point, so `Handler` becomes just the assembly name (`"Pim.Api"`), no `Class::Method` string needed.
 - **Terraform `lifecycle.ignore_changes`:** removing it from `aws_lambda_function.api` now that a real, evolving artifact is deployed — it existed specifically to protect a future out-of-band CI/CD deploy from Terraform reverting a *stub*; there's no such pipeline yet, so Terraform should manage the full lifecycle for now.
-- **Terraform CI workflow:** `.github/workflows/terraform.yml` needs a `dotnet publish` step again (removed earlier when the stub became a committed static zip) since the real `Api` project changes regularly and can't be a hand-committed artifact.
+- **Terraform CI workflow:** `.github/workflows/terraform.yml` needs a `dotnet publish` step again (removed earlier when the stub became a committed static zip) since the real `Api` project changes regularly and can't be a hand-committed artifact. Discovered during implementation: `dotnet publish` isn't guaranteed byte-reproducible across separate runs, so if both the `plan` and `apply` jobs independently rebuilt it, `data.archive_file.api`'s hash could differ between them - breaking the "apply uses the exact plan that was reviewed" guarantee (and likely erroring as an inconsistent apply result). Fixed by having only the `plan` job run `dotnet publish`, then uploading that build output as a second artifact (alongside `tfplan`) for the `apply` job to download rather than rebuild.
 
 ## Plan
 
@@ -58,19 +58,19 @@ Linear: https://linear.app/uberconcept/issue/UBE-23/set-up-app-to-run-in-aws
 
 ## Checklist
 
-- [ ] `Api/Data/AwsSettings.cs` + shared `Aws` config section in base `appsettings.json`
-- [ ] `Api/Data/DynamoDbRepository.cs`
-- [ ] `Api.csproj` — add AWS SDK + Lambda hosting packages
-- [ ] appsettings split (`Local`/`Production`/base)
-- [ ] `Program.cs` — Lambda hosting, conditional DI, `IsEnvironment("Local")`
-- [ ] `launchSettings.json` + `.vscode/launch.json` — `ASPNETCORE_ENVIRONMENT=Local`
-- [ ] `ApiWebApplicationFactory.cs` — force `"Local"` environment
-- [ ] `scripts/setup_local.sh` — export `ASPNETCORE_ENVIRONMENT=Local`, warn if not sourced
-- [ ] `README.md` — document sourcing requirement
-- [ ] Terraform: `modules/data` — `table_name` variable (`"User"`), hash key `userId` → `id`
-- [ ] Terraform: remove `lambda-stub`, deploy real `Api` artifact, drop `lifecycle.ignore_changes`
-- [ ] `.github/workflows/terraform.yml` — restore `dotnet publish` step
-- [ ] Verify: `dotnet build`/`test`, `terraform fmt`/`validate`, local Kestrel run
+- [x] `Api/Data/AwsSettings.cs` + shared `Aws` config section in base `appsettings.json`
+- [x] `Api/Data/DynamoDbRepository.cs`
+- [x] `Api.csproj` — add AWS SDK + Lambda hosting packages
+- [x] appsettings split (`Local`/`Production`/base)
+- [x] `Program.cs` — Lambda hosting, conditional DI, `IsEnvironment("Local")`
+- [x] `launchSettings.json` + `.vscode/launch.json` — `ASPNETCORE_ENVIRONMENT=Local`
+- [x] `ApiWebApplicationFactory.cs` — force `"Local"` environment
+- [x] `scripts/setup_local.sh` — export `ASPNETCORE_ENVIRONMENT=Local`, warn if not sourced
+- [x] `README.md` — document sourcing requirement
+- [x] Terraform: `modules/data` — `table_name` variable (`"User"`), hash key `userId` → `id`
+- [x] Terraform: remove `lambda-stub`, deploy real `Api` artifact, drop `lifecycle.ignore_changes`
+- [x] `.github/workflows/terraform.yml` — restore `dotnet publish` step (plan job builds once, apply job downloads the same build artifact rather than rebuilding, to keep the deployment package byte-identical between plan and apply)
+- [x] Verify: `dotnet build`/`test`, `terraform fmt`/`validate`, local Kestrel run — all pass; `DynamoDbRepository<T>` has no automated test (no local DynamoDB emulator set up, consistent with `MongoRepository<T>` also having none, relying instead on `Api.IntegrationTests` against a real backing store — that's not available for DynamoDB in this environment)
 
 ## Prompt Log
 

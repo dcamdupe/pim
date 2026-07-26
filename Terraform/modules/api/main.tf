@@ -5,17 +5,15 @@ locals {
   }
 }
 
-# lambda-stub/lambda.zip is a committed, pre-built placeholder deployment
-# package (see lambda-stub/Function.cs) - just enough for `terraform apply`
-# to have a real artifact to create the Lambda with. It's read directly
-# rather than built via a Terraform `archive_file` data source so that
-# plan/apply don't need a .NET toolchain (e.g. in the GitHub Actions
-# workflow). The lifecycle.ignore_changes below means Terraform never
-# touches it again after initial creation - the real Api-based handler will
-# be deployed by a future CI/CD pipeline, not Terraform. If lambda-stub's
-# source ever changes, rebuild and re-commit the zip by hand:
-#   dotnet publish -c Release -r linux-x64 --self-contained false -o publish
-#   (cd publish && zip -r -X ../lambda.zip .)
+# The real Api project must be published to ./build before plan/apply can
+# read it here (see .github/workflows/terraform.yml's `dotnet publish` step,
+# or run it by hand from this directory):
+#   dotnet publish ../../../Api -c Release -r linux-x64 --self-contained false -o build
+data "archive_file" "api" {
+  type        = "zip"
+  source_dir  = "${path.module}/build"
+  output_path = "${path.module}/build.zip"
+}
 
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
@@ -70,13 +68,16 @@ resource "aws_iam_role_policy" "dynamodb_access" {
 resource "aws_lambda_function" "api" {
   function_name = "${var.application}-${var.environment}-api"
   role          = aws_iam_role.lambda.arn
-  handler       = "Pim.Api.LambdaStub::Pim.Api.LambdaStub.Function::Handler"
-  runtime       = "dotnet8"
-  timeout       = 30
-  memory_size   = 128
+  # Amazon.Lambda.AspNetCoreServer.Hosting's AddAWSLambdaHosting auto-detects
+  # the entry point at startup - no Class::Method handler string needed,
+  # just the assembly name.
+  handler     = "Pim.Api"
+  runtime     = "dotnet8"
+  timeout     = 30
+  memory_size = 128
 
-  filename         = "${path.module}/lambda-stub/lambda.zip"
-  source_code_hash = filebase64sha256("${path.module}/lambda-stub/lambda.zip")
+  filename         = data.archive_file.api.output_path
+  source_code_hash = data.archive_file.api.output_base64sha256
 
   vpc_config {
     subnet_ids         = var.private_subnet_ids
@@ -84,12 +85,6 @@ resource "aws_lambda_function" "api" {
   }
 
   tags = local.common_tags
-
-  # Once the real Api-based handler is deployed by CI/CD, Terraform should
-  # stop fighting over the deployment package/handler.
-  lifecycle {
-    ignore_changes = [filename, source_code_hash, handler]
-  }
 }
 
 resource "aws_apigatewayv2_api" "api" {

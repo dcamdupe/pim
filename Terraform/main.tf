@@ -11,6 +11,7 @@ module "data" {
 
   application = var.application
   environment = var.environment
+  table_name  = "User"
 }
 
 module "frontend" {

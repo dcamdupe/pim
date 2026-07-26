@@ -14,8 +14,8 @@ Terraform/
   modules/
     networking/          # VPC, private subnets (one per AZ), NACLs, Security Groups, VPC endpoints
     frontend/            # S3 + CloudFront (Origin Access Control restricts the bucket to CloudFront)
-    data/                # DynamoDB users table (userId key, schemaless JSON `data` attribute)
-    api/                 # Lambda (stub handler for now) + HTTP API Gateway + IAM role
+    data/                # DynamoDB table (id key, schemaless JSON `data` attribute)
+    api/                 # Lambda (real Api project) + HTTP API Gateway + IAM role
   main.tf, variables.tf, providers.tf, backend.tf, outputs.tf   # shared root config
   environments/
     production.tfvars    # the only thing that varies per environment
@@ -60,24 +60,22 @@ terraform plan  -var-file=environments/production.tfvars
 terraform apply -var-file=environments/production.tfvars
 ```
 
-## The API Lambda is a placeholder
+## The API Lambda runs the real Api project
 
-The Lambda's real code (adapting the `Api` ASP.NET Core project to run as a Lambda handler,
-e.g. via `Amazon.Lambda.AspNetCoreServer`) is separate/future work. Until then,
-`modules/api/lambda-stub/` is a minimal placeholder handler, and its build output is committed
-as `modules/api/lambda-stub/lambda.zip` so `terraform plan`/`apply` (including in CI) has a real
-artifact to deploy without needing a .NET toolchain. If `lambda-stub`'s source ever changes,
-rebuild and re-commit the zip by hand:
+The `Api` ASP.NET Core project runs as the Lambda handler directly, via
+`Amazon.Lambda.AspNetCoreServer.Hosting`'s `AddAWSLambdaHosting` - no separate handler
+class/project needed, and the same build runs locally via Kestrel or in Lambda (auto-detected).
+
+`modules/api/main.tf` reads the deployment package from `modules/api/build/` (gitignored, not
+committed - unlike the old lambda-stub placeholder, this changes on every code change, so it's
+published fresh before each `plan`/`apply` rather than hand-committed):
 
 ```
-cd modules/api/lambda-stub
-dotnet publish -c Release -r linux-x64 --self-contained false -o publish
-(cd publish && zip -r -X ../lambda.zip .)
+dotnet publish Api -c Release -r linux-x64 --self-contained false -o Terraform/modules/api/build
 ```
 
-The Lambda resource ignores future changes to its deployment package/handler
-(`lifecycle.ignore_changes`), so a future CI/CD pipeline can redeploy the real handler without
-Terraform reverting it.
+`.github/workflows/terraform.yml` does this automatically before `terraform plan`/`apply`; do the
+same by hand for a local `plan`/`apply`.
 
 ## Applying via GitHub Actions
 

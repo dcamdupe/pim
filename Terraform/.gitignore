@@ -12,9 +12,8 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Lambda build output (bin/obj already covered by the root .gitignore).
-# lambda-stub/lambda.zip is a committed placeholder artifact, not build
-# output - keep it tracked.
-publish/
+# Lambda build output (bin/obj already covered by the root .gitignore) -
+# the real Api project is published fresh before each plan/apply (see
+# modules/api/main.tf), not committed.
+modules/api/build/
 *.zip
-!modules/api/lambda-stub/lambda.zip

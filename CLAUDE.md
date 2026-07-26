@@ -43,7 +43,7 @@ Node's `nvm` default on this machine is a very old version (v11) — too old for
 **Terraform** (from `Terraform/`):
 - `terraform fmt -recursive` / `terraform validate` — safe to run anytime, no AWS credentials needed.
 - `terraform plan`/`apply` need real AWS credentials — **never use root account credentials** for this (a dedicated least-privilege IAM identity should be created first). Not run from this environment so far; see `Terraform/README.md`.
-- `Terraform/bootstrap/` (S3 state bucket + DynamoDB lock table) must exist before the root config's `backend.tf` will work.
+- `Terraform/bootstrap/` (S3 state bucket) must exist before the root config's `backend.tf` will work. No state locking (no DynamoDB lock table) - applies are done by one person, serially.
 
 ## Conventions
 

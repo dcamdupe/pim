@@ -62,6 +62,7 @@ Linear: https://linear.app/uberconcept/issue/UBE-15/create-tf
 
 - **Shared root instead of per-environment folders:** originally built as `environments/production/` with its own duplicated `main.tf`/`providers.tf`/`backend.tf`/`variables.tf`. Per feedback, `environment` should be a variable fed in, not a template — restructured to a single shared root config (`Terraform/main.tf`, `variables.tf`, `providers.tf`, `backend.tf`, `outputs.tf`) with one `.tfvars` file per environment (`environments/production.tfvars`) and a matching Terraform workspace for state isolation (the S3 backend automatically namespaces state per workspace). Adding a new environment is now just a new `.tfvars` + `terraform workspace new <name>`, no duplicated `.tf` files. `environment`/`vpc_cidr` have no defaults in `variables.tf` so they're always set explicitly per environment.
 - **`backend` module renamed to `api`:** `modules/backend/` → `modules/api/`, `module "backend"` → `module "api"`, resource labels/naming convention (`-backend` → `-api`), C# namespace `Pim.Backend.LambdaStub` → `Pim.Api.LambdaStub`, root output `backend_api_endpoint` → `api_endpoint`. (`backend.tf` and the `backend "s3" { ... }` block are unrelated — that's Terraform's own state-backend terminology, left as-is.)
+- **Removed DynamoDB state-locking table:** the `Terraform/bootstrap` config no longer creates an `aws_dynamodb_table.terraform_lock`, and `Terraform/backend.tf` no longer sets `dynamodb_table` on the S3 backend. Per the user: this is applied by one person, serially, so there's no realistic chance of two concurrent applies racing each other — the lock table was unnecessary complexity/cost. State itself is still remote (S3), just unlocked.
 
 ## Prompt Log
 
@@ -75,3 +76,6 @@ Linear: https://linear.app/uberconcept/issue/UBE-15/create-tf
 8. "the structure for the terraform is wrong. production (as an environment) is a variable you feed in, not a specific template. I want one variable file for each environment, shared output, shared everything else"
 9. "rename backend to api"
 10. "raise the pr"
+11. "what is the purpose of the lock.hcl?"
+12. "why is there a dpendancy on dynamodb for this?"
+13. "remove the terraform state locking with dynamodb, there is no chance that there will be 2 TF changes being applied in parallele"

@@ -8,8 +8,9 @@ Gateway + Lambda backend.
 
 ```
 Terraform/
-  bootstrap/            # S3 state bucket + DynamoDB lock table. Its own local state -
-                         # this can't live in the remote state it creates.
+  bootstrap/            # S3 state bucket. Its own local state - this can't live in the
+                         # remote state it creates. No DynamoDB lock table: applies are
+                         # done by one person, serially, so there's no locking need.
   modules/
     networking/          # VPC, private subnets (one per AZ), NACLs, Security Groups, VPC endpoints
     frontend/            # S3 + CloudFront (Origin Access Control restricts the bucket to CloudFront)

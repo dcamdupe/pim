@@ -72,7 +72,7 @@ resource "aws_lambda_function" "api" {
   # the entry point at startup - no Class::Method handler string needed,
   # just the assembly name.
   handler     = "Pim.Api"
-  runtime     = "dotnet8"
+  runtime     = "dotnet10"
   timeout     = 30
   memory_size = 128
 

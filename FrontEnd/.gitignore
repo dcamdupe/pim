@@ -11,6 +11,12 @@ node_modules
 dist
 dist-ssr
 *.local
+# .env.local is a committed template (copied to .env by scripts/setup_local.sh),
+# not a real local-override file - keep it tracked despite the *.local rule above.
+!.env.local
+
+# Local env file, generated from .env.local by scripts/setup_local.sh
+.env
 
 # Editor directories and files
 .vscode/*

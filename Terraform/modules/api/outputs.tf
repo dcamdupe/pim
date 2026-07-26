@@ -4,6 +4,6 @@ output "api_endpoint" {
 }
 
 output "lambda_function_name" {
-  description = "Name of the backend Lambda function."
-  value       = aws_lambda_function.backend.function_name
+  description = "Name of the API Lambda function."
+  value       = aws_lambda_function.api.function_name
 }

@@ -71,6 +71,24 @@ The Lambda resource ignores future changes to its deployment package/handler
 (`lifecycle.ignore_changes`), so a future CI/CD pipeline can redeploy the real handler without
 Terraform reverting it.
 
+## Applying via GitHub Actions
+
+`.github/workflows/terraform.yml` runs `plan` then `apply` on manual trigger
+(`workflow_dispatch`) only - it never runs on push. One-time setup before it
+can be used:
+
+- Create a dedicated IAM user for CI (**never root credentials**) with
+  least-privilege permissions covering the resources these modules manage
+  (VPC/networking, the frontend S3 bucket + CloudFront, the DynamoDB table,
+  the Lambda + its execution role, and API Gateway), generate an access key,
+  and add it to the repo as the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
+  secrets.
+- Configure the `production` GitHub Environment (repo Settings >
+  Environments) with required reviewers, so an apply still needs a manual
+  approval even though the trigger itself is already manual.
+- Make sure `backend.tf`'s bucket placeholder has already been replaced (see
+  bootstrap step above).
+
 ## Verification scope
 
 This was authored and verified with `terraform fmt`/`validate` only - no `plan`/`apply` has been

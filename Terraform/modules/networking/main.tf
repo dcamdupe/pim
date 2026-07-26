@@ -82,6 +82,12 @@ resource "aws_security_group" "lambda" {
   description = "Security group for the API Lambda"
   vpc_id      = aws_vpc.main.id
 
+  # AWS auto-creates an "allow all outbound" rule for every new security
+  # group. Rules are managed as separate aws_vpc_security_group_egress_rule
+  # resources below, so this must be set to strip that default - otherwise
+  # it lingers alongside the explicit HTTPS-only rules.
+  egress = []
+
   tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-lambda" })
 }
 
@@ -89,6 +95,9 @@ resource "aws_security_group" "vpc_endpoints" {
   name        = "${var.application}-${var.environment}-vpc-endpoints"
   description = "Security group for interface VPC endpoints"
   vpc_id      = aws_vpc.main.id
+
+  # See aws_security_group.lambda above for why this is needed.
+  egress = []
 
   tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-vpc-endpoints" })
 }

@@ -27,12 +27,12 @@ Linear: https://linear.app/uberconcept/issue/UBE-26/add-environment-variables-in
 
 ## Checklist
 
-- [ ] `FrontEnd/.env.local.example`
-- [ ] `FrontEnd/.env.production`
-- [ ] `FrontEnd/.gitignore` — exclude `.env`
-- [ ] `FrontEnd/src/services/authService.ts` — env-driven API URL, no fallback
-- [ ] `scripts/setup_local.sh` — copy local env template (skip if exists)
-- [ ] `README.md` — document the new step
+- [x] `FrontEnd/.env.local.example`
+- [x] `FrontEnd/.env.production`
+- [x] `FrontEnd/.gitignore` — exclude `.env`
+- [x] `FrontEnd/src/services/authService.ts` — env-driven API URL, no fallback
+- [x] `scripts/setup_local.sh` — copy local env template (skip if exists)
+- [x] `README.md` — document the new step
 - [ ] Verify: `FrontEnd` build + lint + unit tests, functional tests still pass
 
 ## Prompt Log

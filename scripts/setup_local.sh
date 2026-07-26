@@ -1,7 +1,21 @@
 #!/usr/bin/env bash
-# Seeds the local MongoDB instance with a test login for the Login API (UBE-10).
-# Safe to re-run: skips the insert if the test login already exists.
+# Seeds the local MongoDB instance with a test login for the Login API (UBE-10),
+# and copies the local FrontEnd .env template into place (UBE-26).
+# Safe to re-run: skips the insert/copy if they already exist.
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+FRONTEND_ENV="$REPO_ROOT/FrontEnd/.env"
+FRONTEND_ENV_EXAMPLE="$REPO_ROOT/FrontEnd/.env.local.example"
+
+if [ -f "$FRONTEND_ENV" ]; then
+  echo "FrontEnd/.env already exists, skipping."
+else
+  cp "$FRONTEND_ENV_EXAMPLE" "$FRONTEND_ENV"
+  echo "Copied FrontEnd/.env.local.example to FrontEnd/.env."
+fi
 
 MONGO_URI="${MONGO_URI:-mongodb://localhost:27017}"
 MONGO_DB="${MONGO_DB:-pim}"

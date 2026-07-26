@@ -12,7 +12,7 @@
 # realistic chance of two concurrent applies racing each other.
 terraform {
   backend "s3" {
-    bucket  = "pim-terraform-state-<AWS_ACCOUNT_ID>" # replace with bootstrap's state_bucket_name output
+    bucket  = "pim-terraform-state-274755208687" # replace with bootstrap's state_bucket_name output
     key     = "pim/terraform.tfstate"
     region  = "ap-southeast-2"
     encrypt = true

@@ -68,7 +68,8 @@ class/project needed, and the same build runs locally via Kestrel or in Lambda (
 
 `modules/api/main.tf` reads the deployment package from `modules/api/build/` (gitignored, not
 committed - unlike the old lambda-stub placeholder, this changes on every code change, so it's
-published fresh before each `plan`/`apply` rather than hand-committed):
+published fresh before each `plan`/`apply` rather than hand-committed). Run this from the **repo
+root** (not from inside `Terraform/`):
 
 ```
 dotnet publish Api -c Release -r linux-x64 --self-contained false -o Terraform/modules/api/build

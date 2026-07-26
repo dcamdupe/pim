@@ -26,6 +26,11 @@ environment is just a `.tfvars` file plus its own Terraform workspace for state 
 Adding a new environment later is `environments/<name>.tfvars` + `terraform workspace new <name>`,
 no duplicated `.tf` files.
 
+Each environment is provisioned in its own separate AWS account (not a shared account with
+multiple environments in it). That means account-scoped resources - e.g. DynamoDB table names,
+which only need to be unique per account+region - don't need `environment` baked into their name
+to avoid collisions; there's nothing else in the account for them to collide with.
+
 ## Prerequisites
 
 - Terraform (`brew install hashicorp/tap/terraform` - the `terraform` formula was pulled from

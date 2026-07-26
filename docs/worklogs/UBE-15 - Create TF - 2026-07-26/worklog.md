@@ -49,14 +49,19 @@ Linear: https://linear.app/uberconcept/issue/UBE-15/create-tf
 
 ## Checklist
 
-- [ ] Bootstrap remote state config (S3 bucket + DynamoDB lock table) — authored, not applied
-- [ ] Scaffold `Terraform/` layout (variables, providers, backend config, tagging convention)
-- [ ] Networking: VPC, private subnets per AZ, NACLs, Security Groups, VPC endpoints (DynamoDB + Logs)
-- [ ] Frontend: S3 + CloudFront, bucket policy restricted to CloudFront
-- [ ] DynamoDB table (`userId` key + JSON data, on-demand billing)
-- [ ] Backend: HTTP API Gateway + Lambda (.NET Core stub, VPC-attached, 30s timeout, 128MB, minimal IAM role)
-- [ ] `terraform fmt` / `validate` clean for `production`
-- [ ] Document in `Terraform/README.md` + reference from `CLAUDE.md`
+- [x] Bootstrap remote state config (S3 bucket + DynamoDB lock table) — authored, not applied
+- [x] Scaffold `Terraform/` layout (variables, providers, backend config, tagging convention)
+- [x] Networking: VPC, private subnets per AZ, NACLs, Security Groups, VPC endpoints (DynamoDB + Logs)
+- [x] Frontend: S3 + CloudFront, bucket policy restricted to CloudFront
+- [x] DynamoDB table (`userId` key + JSON data, on-demand billing)
+- [x] API: HTTP API Gateway + Lambda (.NET Core stub, VPC-attached, 30s timeout, 128MB, minimal IAM role)
+- [x] `terraform fmt` / `validate` clean
+- [x] Document in `Terraform/README.md` + reference from `CLAUDE.md`
+
+## Structural changes made after initial implementation (feedback)
+
+- **Shared root instead of per-environment folders:** originally built as `environments/production/` with its own duplicated `main.tf`/`providers.tf`/`backend.tf`/`variables.tf`. Per feedback, `environment` should be a variable fed in, not a template — restructured to a single shared root config (`Terraform/main.tf`, `variables.tf`, `providers.tf`, `backend.tf`, `outputs.tf`) with one `.tfvars` file per environment (`environments/production.tfvars`) and a matching Terraform workspace for state isolation (the S3 backend automatically namespaces state per workspace). Adding a new environment is now just a new `.tfvars` + `terraform workspace new <name>`, no duplicated `.tf` files. `environment`/`vpc_cidr` have no defaults in `variables.tf` so they're always set explicitly per environment.
+- **`backend` module renamed to `api`:** `modules/backend/` → `modules/api/`, `module "backend"` → `module "api"`, resource labels/naming convention (`-backend` → `-api`), C# namespace `Pim.Backend.LambdaStub` → `Pim.Api.LambdaStub`, root output `backend_api_endpoint` → `api_endpoint`. (`backend.tf` and the `backend "s3" { ... }` block are unrelated — that's Terraform's own state-backend terminology, left as-is.)
 
 ## Prompt Log
 
@@ -66,3 +71,7 @@ Linear: https://linear.app/uberconcept/issue/UBE-15/create-tf
 4. "2. Yes"
 5. "3. S3 backend. Initially only a production environment"
 6. "any other questions"
+7. "start"
+8. "the structure for the terraform is wrong. production (as an environment) is a variable you feed in, not a specific template. I want one variable file for each environment, shared output, shared everything else"
+9. "rename backend to api"
+10. "raise the pr"

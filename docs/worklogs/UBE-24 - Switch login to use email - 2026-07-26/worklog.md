@@ -32,19 +32,22 @@ Linear: https://linear.app/uberconcept/issue/UBE-24/switch-login-to-use-email
 
 ## Checklist
 
-- [ ] `Api/Data/User.cs` — rename `Login` → `Email`
-- [ ] `Api/Auth/IAuthenticationLocal.cs` + `AuthenticationLocal.cs` — rename param, update `GetAsync` call
-- [ ] `Api/Auth/IJwtTokenGenerator.cs` + `JwtTokenGenerator.cs` — rename param
-- [ ] `Api/Controllers/LoginController.cs` — rename `LoginRequest.Login` → `Email`
-- [ ] `Api.IntegrationTests/LoginEndpointTests.cs` — email-shaped test value
-- [ ] `scripts/setup_local.sh` — seed an email test login
-- [ ] `FunctionalTests/tests/login.spec.ts` — email value + `#email` locator
-- [ ] `FrontEnd/src/services/authService.ts` — rename param
-- [ ] `FrontEnd/src/views/LoginView.vue` — email input + native validation
-- [ ] `FrontEnd.UnitTests/services/authService.test.ts` — update test data
-- [ ] `README.md` — update documented test login
-- [ ] Run `dotnet test`, `FrontEnd.UnitTests`, `FunctionalTests`
+- [x] `Api/Data/User.cs` — rename `Login` → `Email`
+- [x] `Api/Auth/IAuthenticationLocal.cs` + `AuthenticationLocal.cs` — rename param, update `GetAsync` call
+- [x] `Api/Auth/IJwtTokenGenerator.cs` + `JwtTokenGenerator.cs` — rename param
+- [x] `Api/Controllers/LoginController.cs` — rename `LoginRequest.Login` → `Email`
+- [x] `Api.IntegrationTests/LoginEndpointTests.cs` — email-shaped test value
+- [x] `scripts/setup_local.sh` — seed an email test login
+- [x] `FunctionalTests/tests/login.spec.ts` — email value + `#email` locator
+- [x] `FrontEnd/src/services/authService.ts` — rename param
+- [x] `FrontEnd/src/views/LoginView.vue` — email input + native validation
+- [x] `FrontEnd.UnitTests/services/authService.test.ts` — update test data
+- [x] `README.md` — update documented test login
+- [x] `Api.UnitTests/Auth/AuthenticationLocalTests.cs` — rename `Login` → `Email` (missed in initial file sweep; caught by `dotnet build`)
+- [x] Run `dotnet test`, `FrontEnd.UnitTests`, `FunctionalTests` — all pass (`dotnet test` unit + `LoginEndpointTests` integration, `FrontEnd.UnitTests`, and `FunctionalTests`' `login.spec.ts` against a live local Api/FrontEnd/Mongo)
 
 ## Prompt Log
 
 1. "start worklog for UBE-24"
+2. "Rename to \"Email\" everywhere" / "Native type=\"email\" input" (clarifying question answers)
+3. "start"

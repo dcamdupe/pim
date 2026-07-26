@@ -5,24 +5,24 @@ set -euo pipefail
 
 MONGO_URI="${MONGO_URI:-mongodb://localhost:27017}"
 MONGO_DB="${MONGO_DB:-pim}"
-TEST_LOGIN="testuser"
+TEST_EMAIL="testuser@example.com"
 TEST_PASSWORD="TestPassword123!"
 
 command -v mongosh >/dev/null 2>&1 || { echo "error: mongosh is required but was not found on PATH" >&2; exit 1; }
 command -v htpasswd >/dev/null 2>&1 || { echo "error: htpasswd is required but was not found on PATH" >&2; exit 1; }
 
-PASSWORD_HASH="$(htpasswd -bnBC 10 "$TEST_LOGIN" "$TEST_PASSWORD" | cut -d: -f2)"
+PASSWORD_HASH="$(htpasswd -bnBC 10 "$TEST_EMAIL" "$TEST_PASSWORD" | cut -d: -f2)"
 
-TEST_LOGIN="$TEST_LOGIN" PASSWORD_HASH="$PASSWORD_HASH" \
+TEST_EMAIL="$TEST_EMAIL" PASSWORD_HASH="$PASSWORD_HASH" \
   mongosh "$MONGO_URI/$MONGO_DB" --quiet --eval '
-    const login = process.env.TEST_LOGIN;
-    const existing = db.User.findOne({ _id: login });
+    const email = process.env.TEST_EMAIL;
+    const existing = db.User.findOne({ _id: email });
     if (existing) {
-      print("Test login \"" + login + "\" already exists, skipping.");
+      print("Test login \"" + email + "\" already exists, skipping.");
     } else {
-      db.User.insertOne({ _id: login, PasswordHash: process.env.PASSWORD_HASH });
-      print("Inserted test login \"" + login + "\".");
+      db.User.insertOne({ _id: email, PasswordHash: process.env.PASSWORD_HASH });
+      print("Inserted test login \"" + email + "\".");
     }
   '
 
-echo "Test login: $TEST_LOGIN / $TEST_PASSWORD"
+echo "Test login: $TEST_EMAIL / $TEST_PASSWORD"

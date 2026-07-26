@@ -15,9 +15,9 @@ public sealed class JwtTokenGenerator : IJwtTokenGenerator
         _settings = settings.Value;
     }
 
-    public string GenerateToken(string login)
+    public string GenerateToken(string email)
     {
-        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, login) };
+        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, email) };
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SigningKey));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);

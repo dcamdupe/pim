@@ -11,9 +11,9 @@ public sealed class AuthenticationLocal : IAuthenticationLocal
         _users = users;
     }
 
-    public async Task<bool> ValidateAsync(string login, string password)
+    public async Task<bool> ValidateAsync(string email, string password)
     {
-        var user = await _users.GetAsync(login);
+        var user = await _users.GetAsync(email);
         return user is not null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
     }
 }

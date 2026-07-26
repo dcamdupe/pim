@@ -12,3 +12,18 @@ output "dynamodb_table_name" {
   description = "Name of the DynamoDB users table."
   value       = module.data.table_name
 }
+
+output "frontend_bucket_name" {
+  description = "Name of the S3 bucket the built FrontEnd assets are uploaded to. Copy into the deploy workflow's FRONTEND_BUCKET_NAME repo variable."
+  value       = module.frontend.bucket_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID, used to invalidate the cache after a deploy. Copy into the deploy workflow's CLOUDFRONT_DISTRIBUTION_ID repo variable."
+  value       = module.frontend.cloudfront_distribution_id
+}
+
+output "api_lambda_function_name" {
+  description = "Name of the API Lambda function. Copy into the deploy workflow's API_LAMBDA_FUNCTION_NAME repo variable."
+  value       = module.api.lambda_function_name
+}

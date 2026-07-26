@@ -30,12 +30,12 @@ Linear: https://linear.app/uberconcept/issue/UBE-25/add-deploy-action
 
 ## Checklist
 
-- [ ] Terraform: re-add `lifecycle.ignore_changes` on `aws_lambda_function.api`
-- [ ] Terraform: root outputs for bucket name, Lambda function name, CloudFront distribution ID
-- [ ] `.github/workflows/deploy.yml` — `deploy-api` job
-- [ ] `.github/workflows/deploy.yml` — `deploy-frontend` job
-- [ ] `Terraform/README.md` — document the one-time GitHub variables setup
-- [ ] Verify: `terraform fmt`/`validate`, workflow YAML, local build steps
+- [x] Terraform: re-add `lifecycle.ignore_changes` on `aws_lambda_function.api`
+- [x] Terraform: root outputs for bucket name, Lambda function name, CloudFront distribution ID
+- [x] `.github/workflows/deploy.yml` — `deploy-api` job
+- [x] `.github/workflows/deploy.yml` — `deploy-frontend` job
+- [x] `Terraform/README.md` — document the one-time GitHub variables setup
+- [x] Verify: `terraform fmt`/`validate`, workflow YAML, local build steps — all pass; confirmed the production build embeds `.env.production`'s API URL after the copy step, matching what `deploy.yml` will do in CI
 
 ## Prompt Log
 

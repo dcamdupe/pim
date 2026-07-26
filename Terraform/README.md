@@ -78,6 +78,11 @@ dotnet publish Api -c Release -r linux-x64 --self-contained false -o Terraform/m
 `.github/workflows/terraform.yml` does this automatically before `terraform plan`/`apply`; do the
 same by hand for a local `plan`/`apply`.
 
+`aws_lambda_function.api` has `lifecycle.ignore_changes` on its deployment package, though - this
+build is only actually deployed by the very first `apply` that creates the function. Day-to-day
+code updates after that go through `.github/workflows/deploy.yml` instead (see "Deploying the
+app" below), so Terraform doesn't fight over the Lambda's code on every apply.
+
 ## Applying via GitHub Actions
 
 `.github/workflows/terraform.yml` is a single, manually-triggered
@@ -103,6 +108,23 @@ One-time setup before the workflow can be used:
   secrets.
 - Make sure `backend.tf`'s bucket placeholder has already been replaced (see
   bootstrap step above).
+
+## Deploying the app
+
+Once the infrastructure exists (first `apply` done), `.github/workflows/deploy.yml` is how the
+`Api` Lambda's code and the `FrontEnd`'s static assets actually get updated day-to-day - it's
+manually triggered (`workflow_dispatch`) and doesn't touch Terraform at all.
+
+One-time setup, after the first `apply`: run `terraform output` and copy three values into the
+repo as **variables** (Settings > Secrets and variables > Actions > Variables tab - not secrets,
+these aren't sensitive):
+
+- `FRONTEND_BUCKET_NAME` ← `frontend_bucket_name` output
+- `API_LAMBDA_FUNCTION_NAME` ← `api_lambda_function_name` output
+- `CLOUDFRONT_DISTRIBUTION_ID` ← `cloudfront_distribution_id` output
+
+It reuses the same `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` secrets as `terraform.yml` - no
+separate credentials needed.
 
 ## Verification scope
 

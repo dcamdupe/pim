@@ -13,7 +13,7 @@ describe('authService.login', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const token = await login('testuser', 'TestPassword123!')
+    const token = await login('testuser@example.com', 'TestPassword123!')
 
     expect(token).toBe('a-jwt')
     expect(fetchMock).toHaveBeenCalledWith(
@@ -21,7 +21,7 @@ describe('authService.login', () => {
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login: 'testuser', password: 'TestPassword123!' }),
+        body: JSON.stringify({ email: 'testuser@example.com', password: 'TestPassword123!' }),
       }),
     )
   })
@@ -35,6 +35,6 @@ describe('authService.login', () => {
       }),
     )
 
-    await expect(login('testuser', 'wrong')).rejects.toBeInstanceOf(LoginFailedError)
+    await expect(login('testuser@example.com', 'wrong')).rejects.toBeInstanceOf(LoginFailedError)
   })
 })

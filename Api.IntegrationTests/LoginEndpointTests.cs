@@ -12,7 +12,7 @@ public sealed class LoginEndpointTests : IClassFixture<ApiWebApplicationFactory>
     private const string Password = "Correct-Password-123!";
 
     private readonly ApiWebApplicationFactory _factory;
-    private readonly string _login = $"integration-test-{Guid.NewGuid():N}";
+    private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
     private IMongoCollection<User> _users = null!;
 
     public LoginEndpointTests(ApiWebApplicationFactory factory)
@@ -24,18 +24,18 @@ public sealed class LoginEndpointTests : IClassFixture<ApiWebApplicationFactory>
     {
         _users = _factory.Services.GetRequiredService<IMongoDatabase>().GetCollection<User>("User");
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(Password);
-        return _users.InsertOneAsync(new User { Login = _login, PasswordHash = passwordHash });
+        return _users.InsertOneAsync(new User { Email = _email, PasswordHash = passwordHash });
     }
 
     public Task DisposeAsync() =>
-        _users.DeleteOneAsync(Builders<User>.Filter.Eq("_id", _login));
+        _users.DeleteOneAsync(Builders<User>.Filter.Eq("_id", _email));
 
     [Fact]
     public async Task Post_ReturnsOkWithToken_WhenCredentialsAreValid()
     {
         var client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/login", new { login = _login, password = Password });
+        var response = await client.PostAsJsonAsync("/login", new { email = _email, password = Password });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
@@ -47,7 +47,7 @@ public sealed class LoginEndpointTests : IClassFixture<ApiWebApplicationFactory>
     {
         var client = _factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/login", new { login = _login, password = "wrong-password" });
+        var response = await client.PostAsJsonAsync("/login", new { email = _email, password = "wrong-password" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -59,7 +59,7 @@ public sealed class LoginEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
         var response = await client.PostAsJsonAsync(
             "/login",
-            new { login = $"unknown-{Guid.NewGuid():N}", password = Password });
+            new { email = $"unknown-{Guid.NewGuid():N}@example.com", password = Password });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

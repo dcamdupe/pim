@@ -6,11 +6,11 @@ export class LoginFailedError extends Error {
   }
 }
 
-export async function login(login: string, password: string): Promise<string> {
+export async function login(email: string, password: string): Promise<string> {
   const response = await fetch(`${API_BASE_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ login, password }),
+    body: JSON.stringify({ email, password }),
   })
 
   if (!response.ok) {

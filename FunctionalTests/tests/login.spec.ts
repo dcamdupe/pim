@@ -4,7 +4,7 @@ test.describe('Login', () => {
   test('logs in with a valid login and password', async ({ page }) => {
     await page.goto('/login');
 
-    await page.locator('#login').fill('testuser');
+    await page.locator('#email').fill('testuser@example.com');
     await page.locator('#password').fill('TestPassword123!');
     await page.getByRole('button', { name: 'Log in' }).click();
 
@@ -14,7 +14,7 @@ test.describe('Login', () => {
   test('shows an error for an invalid login/password', async ({ page }) => {
     await page.goto('/login');
 
-    await page.locator('#login').fill('testuser');
+    await page.locator('#email').fill('testuser@example.com');
     await page.locator('#password').fill('wrong-password');
     await page.getByRole('button', { name: 'Log in' }).click();
 

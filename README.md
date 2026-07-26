@@ -7,7 +7,7 @@ This creates a Personal Financial Manager specifically for one user.
 - Install MongoDb https://www.mongodb.com/docs/v8.0/tutorial/install-mongodb-on-os-x/
 - Install node
 - Install dotnet
-- Run `scripts/setup_local.sh` to seed a test login into MongoDB and copy `FrontEnd/.env.local.example` to `FrontEnd/.env` (requires `mongosh` and `htpasswd` on `PATH`; safe to re-run, skips the insert/copy if they already exist)
+- Run `scripts/setup_local.sh` to seed a test login into MongoDB and copy `FrontEnd/.env.local` to `FrontEnd/.env` (requires `mongosh` and `htpasswd` on `PATH`; safe to re-run - skips the login insert if it already exists, always overwrites `FrontEnd/.env`)
 
 ## Running the API
 

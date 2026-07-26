@@ -8,8 +8,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-cp "$REPO_ROOT/FrontEnd/.env.local.example" "$REPO_ROOT/FrontEnd/.env"
-echo "Copied FrontEnd/.env.local.example to FrontEnd/.env."
+cp "$REPO_ROOT/FrontEnd/.env.local" "$REPO_ROOT/FrontEnd/.env"
+echo "Copied FrontEnd/.env.local to FrontEnd/.env."
 
 MONGO_URI="${MONGO_URI:-mongodb://localhost:27017}"
 MONGO_DB="${MONGO_DB:-pim}"

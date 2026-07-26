@@ -79,7 +79,7 @@ resource "aws_network_acl_rule" "private_outbound_vpc" {
 
 resource "aws_security_group" "lambda" {
   name        = "${var.application}-${var.environment}-lambda"
-  description = "Security group for the backend Lambda"
+  description = "Security group for the API Lambda"
   vpc_id      = aws_vpc.main.id
 
   tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-lambda" })

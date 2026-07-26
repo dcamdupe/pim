@@ -3,9 +3,9 @@ output "frontend_cloudfront_domain_name" {
   value       = module.frontend.cloudfront_domain_name
 }
 
-output "backend_api_endpoint" {
-  description = "Invoke URL of the backend HTTP API Gateway."
-  value       = module.backend.api_endpoint
+output "api_endpoint" {
+  description = "Invoke URL of the HTTP API Gateway."
+  value       = module.api.api_endpoint
 }
 
 output "dynamodb_table_name" {

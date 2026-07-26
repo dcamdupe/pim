@@ -20,8 +20,8 @@ module "frontend" {
   environment = var.environment
 }
 
-module "backend" {
-  source = "./modules/backend"
+module "api" {
+  source = "./modules/api"
 
   application              = var.application
   environment              = var.environment

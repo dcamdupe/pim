@@ -9,6 +9,6 @@ output "private_subnet_ids" {
 }
 
 output "lambda_security_group_id" {
-  description = "Security group ID to attach to the backend Lambda."
+  description = "Security group ID to attach to the API Lambda."
   value       = aws_security_group.lambda.id
 }

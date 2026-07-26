@@ -3,11 +3,11 @@ using Amazon.Lambda.Core;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
-namespace Pim.Backend.LambdaStub;
+namespace Pim.Api.LambdaStub;
 
 // Placeholder handler: the real Lambda code (adapting Api to run here) is a
 // separate ticket. This exists only so Terraform has a real artifact to
-// deploy - see the backend module's `lifecycle.ignore_changes` on the
+// deploy - see the api module's `lifecycle.ignore_changes` on the
 // Lambda's deployment package, which lets a future CI/CD pipeline replace
 // this without Terraform reverting it.
 public sealed class Function

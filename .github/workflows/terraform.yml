@@ -50,11 +50,12 @@ jobs:
         with:
           dotnet-version: "10.0.x"
       # The Lambda deployment package (modules/api/main.tf's data.archive_file.api)
-      # needs this build to exist on disk. Published once here and passed to the
-      # apply job as an artifact (rather than rebuilt there) so both jobs zip the
-      # exact same bytes - dotnet publish output isn't guaranteed byte-reproducible
-      # across separate runs, which would otherwise make apply's fresh archive_file
-      # read produce a different hash than the one baked into this plan.
+      # needs this build to exist on disk, and `terraform plan` zips it into
+      # modules/api/build.zip. That zip - not the raw build/ directory - is what
+      # aws_lambda_function.api reads, and `terraform apply` on a saved plan does
+      # not recreate it, so it's passed to the apply job as an artifact instead of
+      # being rebuilt there (which also wouldn't guarantee the same bytes/hash -
+      # dotnet publish output isn't byte-reproducible across separate runs).
       - name: Publish Api for Lambda
         working-directory: ${{ github.workspace }}
         run: dotnet publish Api -c Release -r linux-x64 --self-contained false -o Terraform/modules/api/build
@@ -77,7 +78,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: api-lambda-build
-          path: Terraform/modules/api/build
+          path: Terraform/modules/api/build.zip
           retention-days: 1
 
   apply:
@@ -101,7 +102,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: api-lambda-build
-          path: Terraform/modules/api/build
+          path: Terraform/modules/api
       - run: terraform init
       - run: terraform workspace select ${{ inputs.environment }}
       - uses: actions/download-artifact@v4

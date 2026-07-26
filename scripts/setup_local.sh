@@ -1,36 +1,57 @@
 #!/usr/bin/env bash
 # Seeds the local MongoDB instance with a test login for the Login API (UBE-10),
-# and copies the local FrontEnd .env template into place (UBE-26).
+# copies the local FrontEnd .env template into place (UBE-26), and sets
+# ASPNETCORE_ENVIRONMENT=Local for the Api (UBE-23).
 # Safe to re-run: skips the login insert if it already exists (the .env copy
 # always overwrites, to keep FrontEnd/.env in sync with the template).
-set -euo pipefail
+#
+# Must be sourced, not executed, for the ASPNETCORE_ENVIRONMENT export to
+# persist in your shell - works from bash or zsh:
+#   source scripts/setup_local.sh
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+setup_local() {
+  local repo_root
+  repo_root="$(git rev-parse --show-toplevel)" || return 1
 
-cp "$REPO_ROOT/FrontEnd/.env.local" "$REPO_ROOT/FrontEnd/.env"
-echo "Copied FrontEnd/.env.local to FrontEnd/.env."
+  cp "$repo_root/FrontEnd/.env.local" "$repo_root/FrontEnd/.env" || return 1
+  echo "Copied FrontEnd/.env.local to FrontEnd/.env."
 
-MONGO_URI="${MONGO_URI:-mongodb://localhost:27017}"
-MONGO_DB="${MONGO_DB:-pim}"
-TEST_EMAIL="testuser@example.com"
-TEST_PASSWORD="TestPassword123!"
+  command -v mongosh >/dev/null 2>&1 || { echo "error: mongosh is required but was not found on PATH" >&2; return 1; }
+  command -v htpasswd >/dev/null 2>&1 || { echo "error: htpasswd is required but was not found on PATH" >&2; return 1; }
 
-command -v mongosh >/dev/null 2>&1 || { echo "error: mongosh is required but was not found on PATH" >&2; exit 1; }
-command -v htpasswd >/dev/null 2>&1 || { echo "error: htpasswd is required but was not found on PATH" >&2; exit 1; }
+  local mongo_uri="${MONGO_URI:-mongodb://localhost:27017}"
+  local mongo_db="${MONGO_DB:-pim}"
+  local test_email="testuser@example.com"
+  local test_password="TestPassword123!"
 
-PASSWORD_HASH="$(htpasswd -bnBC 10 "$TEST_EMAIL" "$TEST_PASSWORD" | cut -d: -f2)"
+  local password_hash
+  password_hash="$(htpasswd -bnBC 10 "$test_email" "$test_password" | cut -d: -f2)" || return 1
 
-TEST_EMAIL="$TEST_EMAIL" PASSWORD_HASH="$PASSWORD_HASH" \
-  mongosh "$MONGO_URI/$MONGO_DB" --quiet --eval '
-    const email = process.env.TEST_EMAIL;
-    const existing = db.User.findOne({ _id: email });
-    if (existing) {
-      print("Test login \"" + email + "\" already exists, skipping.");
-    } else {
-      db.User.insertOne({ _id: email, PasswordHash: process.env.PASSWORD_HASH });
-      print("Inserted test login \"" + email + "\".");
-    }
-  '
+  TEST_EMAIL="$test_email" PASSWORD_HASH="$password_hash" \
+    mongosh "$mongo_uri/$mongo_db" --quiet --eval '
+      const email = process.env.TEST_EMAIL;
+      const existing = db.User.findOne({ _id: email });
+      if (existing) {
+        print("Test login \"" + email + "\" already exists, skipping.");
+      } else {
+        db.User.insertOne({ _id: email, PasswordHash: process.env.PASSWORD_HASH });
+        print("Inserted test login \"" + email + "\".");
+      }
+    ' || return 1
 
-echo "Test login: $TEST_EMAIL / $TEST_PASSWORD"
+  echo "Test login: $test_email / $test_password"
+}
+
+if setup_local; then
+  export ASPNETCORE_ENVIRONMENT=Local
+  echo "Set ASPNETCORE_ENVIRONMENT=Local"
+else
+  echo "setup_local.sh failed - ASPNETCORE_ENVIRONMENT was not set" >&2
+fi
+unset -f setup_local
+
+if (return 0 2>/dev/null); then
+  : # sourced - the export above will persist in this shell
+else
+  echo "warning: run this with 'source scripts/setup_local.sh', not directly - otherwise the ASPNETCORE_ENVIRONMENT export above doesn't persist in your shell" >&2
+fi

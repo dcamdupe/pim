@@ -46,6 +46,17 @@ jobs:
         working-directory: Terraform
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      # The Lambda deployment package (modules/api/main.tf's data.archive_file.api)
+      # needs this build to exist on disk. Published once here and passed to the
+      # apply job as an artifact (rather than rebuilt there) so both jobs zip the
+      # exact same bytes - dotnet publish output isn't guaranteed byte-reproducible
+      # across separate runs, which would otherwise make apply's fresh archive_file
+      # read produce a different hash than the one baked into this plan.
+      - name: Publish Api for Lambda
+        run: dotnet publish Api -c Release -r linux-x64 --self-contained false -o Terraform/modules/api/build
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
@@ -61,6 +72,11 @@ jobs:
         with:
           name: tfplan
           path: Terraform/tfplan
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-lambda-build
+          path: Terraform/modules/api/build
           retention-days: 1
 
   apply:
@@ -81,6 +97,10 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-lambda-build
+          path: Terraform/modules/api/build
       - run: terraform init
       - run: terraform workspace select ${{ inputs.environment }}
       - uses: actions/download-artifact@v4

@@ -76,23 +76,20 @@ Terraform reverting it.
 
 ## Applying via GitHub Actions
 
-Plan and apply are two separate workflows, each triggered manually
-(`workflow_dispatch`) - neither ever runs on push, and applying never
-happens automatically as a consequence of planning:
+`.github/workflows/terraform.yml` is a single, manually-triggered
+(`workflow_dispatch`) workflow - it never runs on push. Choose the
+`action` input: `plan` just runs `terraform plan` and stops there; `apply`
+runs `plan` then, in the *same* run, applies exactly that plan (no copying
+run IDs between separate workflows).
 
-- `.github/workflows/terraform-plan.yml` runs `terraform plan` and uploads
-  the plan file as a build artifact (`tfplan-<environment>`, kept 3 days).
-  It does not apply anything.
-- `.github/workflows/terraform-apply.yml` applies a plan from a *specific*
-  previous plan run. You pass that run's ID (the number in its Actions run
-  URL, e.g. `.../actions/runs/1234567890`) as the `plan_run_id` input, so
-  the plan you reviewed is the plan that gets applied, not a freshly
-  regenerated one.
+There's no environment/required-reviewers gate on top of that - GitHub
+only offers that for private repos on a paid plan. The deliberate
+`action: apply` choice at trigger time is the only gate, which matches
+this project's existing "one person, applies done serially" model (see
+`backend.tf`/`bootstrap/main.tf`'s notes on skipping state locking for the
+same reason).
 
-To run a change: trigger "Terraform Plan", review its output, then trigger
-"Terraform Apply" with that run's ID once you're ready.
-
-One-time setup before either workflow can be used:
+One-time setup before the workflow can be used:
 
 - Create a dedicated IAM user for CI (**never root credentials**) with
   least-privilege permissions covering the resources these modules manage
@@ -100,9 +97,6 @@ One-time setup before either workflow can be used:
   the Lambda + its execution role, and API Gateway), generate an access key,
   and add it to the repo as the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
   secrets.
-- Configure the `production` GitHub Environment (repo Settings >
-  Environments) with required reviewers, so apply still needs a manual
-  approval even though the trigger itself is already manual.
 - Make sure `backend.tf`'s bucket placeholder has already been replaced (see
   bootstrap step above).
 

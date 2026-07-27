@@ -53,8 +53,10 @@ Linear: https://linear.app/uberconcept/issue/UBE-32/add-logging
 - [x] `Program.cs` — wire up NLog, clear default providers (implemented in `ServiceMapping.ConfigureLogging`, called from `MapServices`, matching the established pattern of keeping `Program.cs` minimal)
 - [x] `MongoRepository<T>` — request/response logging
 - [x] `DynamoDbRepository<T>` — request/response logging (both via a shared `RepositoryLog` `[LoggerMessage]` source-generated helper, required by `CA1848` under `TreatWarningsAsErrors`)
-- [ ] Verify: `dotnet build`/`test`, real local run showing prefixed + db logs
+- [x] Verify: `dotnet build`/`test`, real local run showing prefixed + db logs — all pass; confirmed via `scripts/run_local.sh` + a real login request that request-scoped logs share one trace-id prefix and DB request/response lines log metadata only (no `PasswordHash`/entity content)
 
 ## Prompt Log
 
 1. "start worklog for UBE-32"
+2. "start"
+3. "use run_local.sh" (during verification, after discovering it wasn't on this branch yet - merged/rebased from `main` to bring it in)

@@ -27,8 +27,10 @@ API (`pim-api.uberconcept.com`) would be blocked by the browser entirely.
 
 - [x] `Api/IoC/ServiceMapping.cs` — environment-based CORS origin, renamed policy constant, extracted into its own `AddCors` function
 - [x] `Program.cs` — `UseCors` runs unconditionally
-- [ ] Verify: `dotnet build`/`test`
+- [x] Verify: `dotnet build`/`test` — unit + integration tests pass; `ApiWebApplicationFactory`'s forced `"Local"` environment exercises the `"Local"` switch case correctly
 
 ## Prompt Log
 
 1. "start worklog for UBE-19"
+2. "start, but move the CORS code into a new function inside ServiceMapping.cs"
+3. "There needs to be an explicit mapping from production to the URL, not just an implicit one of not being local"

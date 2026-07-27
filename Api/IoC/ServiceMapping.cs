@@ -13,7 +13,7 @@ namespace Pim.Api.IoC;
 
 public static class ServiceMapping
 {
-    public const string FrontEndDevCorsPolicy = "FrontEndDev";
+    public const string FrontEndCorsPolicy = "FrontEnd";
 
     public static void MapServices(WebApplicationBuilder builder)
     {
@@ -61,10 +61,28 @@ public static class ServiceMapping
             });
         builder.Services.AddAuthorization();
 
+        AddCors(builder);
+    }
+
+    // Local dev and Production run on different origins, so the allowed
+    // origin has to switch with the environment - explicit per-environment
+    // mapping (rather than "anything not Local") so an unrecognized
+    // environment name fails loudly instead of silently getting the
+    // Production origin.
+    private static void AddCors(WebApplicationBuilder builder)
+    {
+        var origin = builder.Environment.EnvironmentName switch
+        {
+            "Local" => "http://localhost:5173",
+            "Production" => "https://pim.uberconcept.com",
+            _ => throw new InvalidOperationException(
+                $"No CORS origin configured for environment \"{builder.Environment.EnvironmentName}\"."),
+        };
+
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy(FrontEndDevCorsPolicy, policy =>
-                policy.WithOrigins("http://localhost:5173")
+            options.AddPolicy(FrontEndCorsPolicy, policy =>
+                policy.WithOrigins(origin)
                     .AllowAnyHeader()
                     .AllowAnyMethod());
         });

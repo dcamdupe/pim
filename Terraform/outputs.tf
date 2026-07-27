@@ -27,3 +27,8 @@ output "api_lambda_function_name" {
   description = "Name of the API Lambda function. Copy into the deploy workflow's API_LAMBDA_FUNCTION_NAME repo variable."
   value       = module.api.lambda_function_name
 }
+
+output "api_custom_domain_target" {
+  description = "Target domain name for the API's custom domain - point api_domain_name's DNS record (CNAME/ALIAS) at this."
+  value       = module.api.custom_domain_target
+}

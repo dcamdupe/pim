@@ -3,8 +3,9 @@ terraform {
 
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source = "hashicorp/aws"
+      # 6.x is required for the "dotnet10" Lambda runtime value.
+      version = "~> 6.0"
     }
     archive = {
       source  = "hashicorp/archive"

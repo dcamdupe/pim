@@ -65,6 +65,16 @@ resource "aws_iam_role_policy" "dynamodb_access" {
   policy = data.aws_iam_policy_document.dynamodb_access.json
 }
 
+# Declared explicitly (rather than left to Lambda's implicit auto-created
+# log group) so it has our standard 6-month retention instead of AWS's
+# default "never expire".
+resource "aws_cloudwatch_log_group" "api" {
+  name              = "/aws/lambda/${var.application}-${var.environment}-api"
+  retention_in_days = 180
+
+  tags = local.common_tags
+}
+
 resource "aws_lambda_function" "api" {
   function_name = "${var.application}-${var.environment}-api"
   role          = aws_iam_role.lambda.arn
@@ -72,7 +82,7 @@ resource "aws_lambda_function" "api" {
   # the entry point at startup - no Class::Method handler string needed,
   # just the assembly name.
   handler     = "Pim.Api"
-  runtime     = "dotnet8"
+  runtime     = "dotnet10"
   timeout     = 30
   memory_size = 128
 
@@ -99,6 +109,10 @@ resource "aws_lambda_function" "api" {
   lifecycle {
     ignore_changes = [filename, source_code_hash]
   }
+
+  # Created first so the Lambda always logs into our retention-managed group,
+  # never AWS's implicit never-expire default.
+  depends_on = [aws_cloudwatch_log_group.api]
 }
 
 resource "aws_apigatewayv2_api" "api" {

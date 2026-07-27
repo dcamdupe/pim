@@ -20,7 +20,7 @@ public sealed class MongoRepository<T> : IRepository<T> where T : class
     {
         _logger.DbRequest(Store, nameof(GetAsync), _collectionName, id);
         var result = await _collection.Find(IdFilter(id)).FirstOrDefaultAsync();
-        _logger.DbResponse(Store, nameof(GetAsync), _collectionName, id, $"found={result is not null}");
+        _logger.DbResponseFound(Store, nameof(GetAsync), _collectionName, id, result is not null);
         return result;
     }
 
@@ -28,21 +28,21 @@ public sealed class MongoRepository<T> : IRepository<T> where T : class
     {
         _logger.DbRequest(Store, nameof(AddAsync), _collectionName, string.Empty);
         await _collection.InsertOneAsync(entity);
-        _logger.DbResponse(Store, nameof(AddAsync), _collectionName, string.Empty, string.Empty);
+        _logger.DbResponse(Store, nameof(AddAsync), _collectionName, string.Empty);
     }
 
     public async Task UpdateAsync(string id, T entity)
     {
         _logger.DbRequest(Store, nameof(UpdateAsync), _collectionName, id);
         var result = await _collection.ReplaceOneAsync(IdFilter(id), entity);
-        _logger.DbResponse(Store, nameof(UpdateAsync), _collectionName, id, $"matched={result.MatchedCount}");
+        _logger.DbResponseCount(Store, nameof(UpdateAsync), _collectionName, id, result.MatchedCount);
     }
 
     public async Task DeleteAsync(string id)
     {
         _logger.DbRequest(Store, nameof(DeleteAsync), _collectionName, id);
         var result = await _collection.DeleteOneAsync(IdFilter(id));
-        _logger.DbResponse(Store, nameof(DeleteAsync), _collectionName, id, $"deleted={result.DeletedCount}");
+        _logger.DbResponseCount(Store, nameof(DeleteAsync), _collectionName, id, result.DeletedCount);
     }
 
     private static FilterDefinition<T> IdFilter(string id) =>

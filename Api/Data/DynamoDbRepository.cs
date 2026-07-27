@@ -32,11 +32,11 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
         var response = await _client.GetItemAsync(_tableName, IdKey(id));
         if (!response.IsItemSet)
         {
-            _logger.DbResponse(Store, nameof(GetAsync), _tableName, id, "found=false");
+            _logger.DbResponseFound(Store, nameof(GetAsync), _tableName, id, false);
             return null;
         }
 
-        _logger.DbResponse(Store, nameof(GetAsync), _tableName, id, "found=true");
+        _logger.DbResponseFound(Store, nameof(GetAsync), _tableName, id, true);
         return JsonSerializer.Deserialize<T>(response.Item[DataAttribute].S);
     }
 
@@ -48,7 +48,7 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
     {
         _logger.DbRequest(Store, nameof(DeleteAsync), _tableName, id);
         await _client.DeleteItemAsync(_tableName, IdKey(id));
-        _logger.DbResponse(Store, nameof(DeleteAsync), _tableName, id, string.Empty);
+        _logger.DbResponse(Store, nameof(DeleteAsync), _tableName, id);
     }
 
     private async Task PutAsync(string operation, string id, T entity)
@@ -59,7 +59,7 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
             [IdAttribute] = new(id),
             [DataAttribute] = new(JsonSerializer.Serialize(entity)),
         });
-        _logger.DbResponse(Store, operation, _tableName, id, string.Empty);
+        _logger.DbResponse(Store, operation, _tableName, id);
     }
 
     private static Dictionary<string, AttributeValue> IdKey(string id) =>

@@ -18,6 +18,12 @@ PIM — a personal finance manager for a single user (David Cameron). Early-stag
 
 ## Commands
 
+**Starting the app for local testing/dev:** `scripts/run_local.sh` builds and starts both `Api` and
+`FrontEnd` together (killing anything already on their ports first, so it's always safe to re-run;
+`Ctrl+C` stops both). Requires MongoDB running and `source scripts/setup_local.sh` already done at
+least once. Prefer this over manually running `dotnet run --project Api`/`npm run dev` separately
+unless you specifically only need one of the two running.
+
 **Api** (from repo root):
 - Build: `dotnet build`
 - Run: `dotnet run --project Api`

@@ -17,8 +17,10 @@ module "data" {
 module "frontend" {
   source = "./modules/frontend"
 
-  application = var.application
-  environment = var.environment
+  application     = var.application
+  environment     = var.environment
+  domain_name     = var.frontend_domain_name
+  certificate_arn = var.frontend_certificate_arn
 }
 
 module "api" {
@@ -29,4 +31,6 @@ module "api" {
   private_subnet_ids       = module.networking.private_subnet_ids
   lambda_security_group_id = module.networking.lambda_security_group_id
   dynamodb_table_arn       = module.data.table_arn
+  domain_name              = var.api_domain_name
+  certificate_arn          = var.api_certificate_arn
 }

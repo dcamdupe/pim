@@ -109,6 +109,31 @@ One-time setup before the workflow can be used:
 - Make sure `backend.tf`'s bucket placeholder has already been replaced (see
   bootstrap step above).
 
+## Custom domains
+
+`pim.uberconcept.com` (FrontEnd) and `pim-api.uberconcept.com` (API) are set via
+`frontend_domain_name`/`api_domain_name` in `environments/production.tfvars`, each with its own
+ACM certificate ARN (`frontend_certificate_arn`/`api_certificate_arn`). Both certs are requested
+and DNS-validated by hand in the ACM console, same as the rest of DNS for this project (see
+below) - Terraform only references their ARNs, it doesn't provision them.
+
+The two certs **must** be in different regions, and can't be reused across the two services:
+
+- CloudFront (`frontend_certificate_arn`) needs a cert in **us-east-1** - a hard requirement
+  regardless of `aws_region`.
+- The API Gateway custom domain (`api_certificate_arn`) needs a **regional** cert in `aws_region` -
+  HTTP APIs (`apigatewayv2`) don't support edge-optimized custom domains at all.
+
+There's no way to "copy" one ACM certificate into the other region - ACM doesn't let you export
+the private key for its own issued certificates (unlike `aws acm import-certificate`, which only
+works for certs where you already hold the key material yourself). A second cert has to be
+requested and DNS-validated from scratch in the other region for the same domain(s).
+
+DNS itself is created by hand, not by Terraform - after `apply`, point your DNS records at:
+
+- `pim.uberconcept.com` → the `frontend_cloudfront_domain_name` output (CNAME/ALIAS)
+- `pim-api.uberconcept.com` → the `api_custom_domain_target` output (CNAME/ALIAS)
+
 ## Deploying the app
 
 Once the infrastructure exists (first `apply` done), `.github/workflows/deploy.yml` is how the

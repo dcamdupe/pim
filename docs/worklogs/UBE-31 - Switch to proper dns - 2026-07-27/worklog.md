@@ -34,13 +34,13 @@ Linear: https://linear.app/uberconcept/issue/UBE-31/switch-to-proper-dns
 
 - [x] `Terraform/variables.tf` — four new domain/cert variables
 - [x] `Terraform/environments/production.tfvars` — set the four values
-- [ ] `Terraform/main.tf` — pass through to modules
-- [ ] `modules/frontend` — `aliases` + real `viewer_certificate`
-- [ ] `modules/api` — `aws_apigatewayv2_domain_name` + `aws_apigatewayv2_api_mapping`
-- [ ] Outputs — API custom domain target, re-exposed at root
-- [ ] `FrontEnd/.env.production` — update `VITE_API_BASE_URL`
-- [ ] `Terraform/README.md` — document manual DNS + cert management
-- [ ] Verify: `terraform fmt`/`validate`, FrontEnd build embeds new URL
+- [x] `Terraform/main.tf` — pass through to modules
+- [x] `modules/frontend` — `aliases` + real `viewer_certificate`
+- [x] `modules/api` — `aws_apigatewayv2_domain_name` + `aws_apigatewayv2_api_mapping`
+- [x] Outputs — API custom domain target, re-exposed at root
+- [x] `FrontEnd/.env.production` — update `VITE_API_BASE_URL`
+- [x] `Terraform/README.md` — document manual DNS + cert management
+- [x] Verify: `terraform fmt`/`validate`, FrontEnd build embeds new URL — both pass; confirmed `https://pim-api.uberconcept.com` is embedded in the built assets
 
 ## Prompt Log
 

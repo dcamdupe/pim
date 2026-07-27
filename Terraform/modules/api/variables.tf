@@ -22,3 +22,13 @@ variable "dynamodb_table_arn" {
   description = "ARN of the DynamoDB user table the Lambda is allowed to access."
   type        = string
 }
+
+variable "domain_name" {
+  description = "Custom domain for the API Gateway (e.g. pim-api.uberconcept.com)."
+  type        = string
+}
+
+variable "certificate_arn" {
+  description = "ACM certificate ARN for domain_name. Must be a regional cert in the API's own region - API Gateway v2 custom domains don't support edge-optimized certs."
+  type        = string
+}

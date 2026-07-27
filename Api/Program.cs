@@ -18,12 +18,13 @@ var app = builder.Build();
 if (app.Environment.IsEnvironment("Local"))
 {
     app.MapOpenApi();
-    app.UseCors(ServiceMapping.FrontEndDevCorsPolicy);
 }
 else
 {
     app.UseHttpsRedirection();
 }
+
+app.UseCors(ServiceMapping.FrontEndCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();

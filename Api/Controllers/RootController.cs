@@ -5,7 +5,6 @@ using MongoDB.Driver;
 namespace Pim.Api.Controllers;
 
 [ApiController]
-[Route("/")]
 public sealed class RootController : ControllerBase
 {
     private readonly IConfiguration _configuration;
@@ -15,7 +14,7 @@ public sealed class RootController : ControllerBase
         _configuration = configuration;
     }
 
-    [HttpGet]
+    [HttpGet("/")]
     public async Task<ActionResult<RootResponse>> Get()
     {
         var version = _configuration["Version"] ?? "unknown";

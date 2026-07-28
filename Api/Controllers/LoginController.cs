@@ -4,7 +4,6 @@ using Pim.Api.Auth;
 namespace Pim.Api.Controllers;
 
 [ApiController]
-[Route("login")]
 public sealed class LoginController : ControllerBase
 {
     private readonly IAuthenticationLocal _authentication;
@@ -18,7 +17,7 @@ public sealed class LoginController : ControllerBase
         _logger = logger;
     }
 
-    [HttpPost]
+    [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Post(LoginRequest request)
     {
         _logger.LogInformation("Login request received: email={Email}", request.Email);

@@ -114,24 +114,45 @@ Linear: https://linear.app/uberconcept/issue/UBE-42/implement-settings-page
 
 ## Checklist
 
-- [ ] `Api/Data/AccountType.cs`
-- [ ] `Api/Data/Account.cs`
-- [ ] `Api/Data/User.cs` — `Accounts` list
-- [ ] `ServiceMapping.cs` — `JsonStringEnumConverter`
-- [ ] `Api/Controllers/SettingsController.cs` — `GET`/`PUT /settings`, `[Authorize]`
-- [ ] `Api.UnitTests` — `SettingsControllerTests`
-- [ ] `Api.IntegrationTests` — `SettingsEndpointTests` (incl. 401 when unauthenticated)
-- [ ] `FrontEnd/src/components/NavBar.vue`
-- [ ] `FrontEnd/src/App.vue` — render `NavBar`
-- [ ] `FrontEnd/src/views/DashboardView.vue` — remove placeholder
-- [ ] `FrontEnd/src/services/settingsService.ts`
-- [ ] `FrontEnd/src/views/SettingsView.vue`
-- [ ] `FrontEnd/src/router/index.ts` — `/settings` route
-- [ ] `FrontEnd.UnitTests` — `settingsService.test.ts`
-- [ ] `FunctionalTests` — `settings.spec.ts`
-- [ ] Verify: `dotnet build`/`test`, `npm run test`, `npm run build`/`lint`, Playwright, real local run
+- [x] `Api/Data/AccountType.cs`
+- [x] `Api/Data/Account.cs`
+- [x] `Api/Data/User.cs` — `Accounts` list
+- [x] `Program.cs` — `JsonStringEnumConverter` (chained onto the existing `AddControllers()` call
+      there, rather than `ServiceMapping.cs` — that's where `AddControllers()` itself already lives)
+- [x] `Api/Controllers/SettingsController.cs` — `GET`/`PUT /settings`, `[Authorize]`
+- [x] `Api.UnitTests` — `SettingsControllerTests`
+- [x] `Api.IntegrationTests` — `SettingsEndpointTests` (incl. 401 when unauthenticated)
+- [x] `FrontEnd/src/components/NavBar.vue`
+- [x] `FrontEnd/src/App.vue` — render `NavBar`
+- [x] `FrontEnd/src/views/DashboardView.vue` — remove placeholder
+- [x] `FrontEnd/src/services/settingsService.ts`
+- [x] `FrontEnd/src/views/SettingsView.vue`
+- [x] `FrontEnd/src/router/index.ts` — `/settings` route
+- [x] `FrontEnd.UnitTests` — `settingsService.test.ts`
+- [x] `FunctionalTests` — `settings.spec.ts`
+- [x] Verify: `dotnet build`/`test`, `npm run test`, `npm run build`/`lint`, Playwright, real local run
+
+## Notes
+
+- **Discovered while writing `SettingsEndpointTests`:** `HttpContent.ReadFromJsonAsync<T>()` with no
+  explicit options (as `LoginEndpointTests` already uses) defaults to `JsonSerializerDefaults.Web`
+  (case-insensitive property names, camelCase). Once `SettingsEndpointTests` needed its own
+  `JsonSerializerOptions` (to add `JsonStringEnumConverter`, so the test could read the `"Transaction"`/
+  `"Savings"` strings the Api now writes), constructing it as plain `new JsonSerializerOptions { ... }`
+  silently dropped those Web defaults — property names became case-sensitive again, so `"accounts"` in
+  the response no longer bound to the `Accounts` record parameter (silently `null`, not an exception,
+  until an assertion tripped over it). Fixed by building it as
+  `new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } }`.
+- **Out-of-scope repo-wide change, requested after the ticket's own checklist was done:** moved every
+  controller's route from a class-level `[Route("...")]` onto the HTTP method attribute instead
+  (`[HttpGet("settings")]`, `[HttpPost("login")]`, `[HttpGet("/")]`), and documented it as the standing
+  convention in `CLAUDE.md`. Touches `RootController`/`LoginController` too, not just this ticket's
+  `SettingsController` — re-ran the full `dotnet build`/unit/integration suite afterward to confirm
+  `/`, `/login`, and `/settings` still resolve correctly.
 
 ## Prompt Log
 
 1. "start worklog for UBE-42"
 2. Cog interaction → "Click navigates"; Account editing scope → "Add + edit + remove"
+3. "start"
+4. "change all the controllers to specify the full endpoint path in the controller action and update the project md file to set this as standard behaviour"

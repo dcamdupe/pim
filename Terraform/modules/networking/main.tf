@@ -77,6 +77,44 @@ resource "aws_network_acl_rule" "private_outbound_vpc" {
   to_port        = 0
 }
 
+# The DynamoDB gateway endpoint has no ENI in the subnet - traffic to it is
+# addressed to DynamoDB's real AWS IP range (routed via the endpoint's prefix
+# list), not var.vpc_cidr. NACLs evaluate against that real destination, so
+# without these rules the traffic falls through to the implicit deny even
+# though the security group and route table are both correctly configured.
+# aws_ip_ranges looks the current ranges up live per aws_region.current, so
+# nothing here is hardcoded to a specific region.
+data "aws_ip_ranges" "dynamodb" {
+  regions  = [data.aws_region.current.region]
+  services = ["dynamodb"]
+}
+
+resource "aws_network_acl_rule" "private_outbound_dynamodb" {
+  for_each = { for idx, cidr in data.aws_ip_ranges.dynamodb.cidr_blocks : idx => cidr }
+
+  network_acl_id = aws_network_acl.private.id
+  rule_number    = 110 + each.key
+  egress         = true
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = each.value
+  from_port      = 443
+  to_port        = 443
+}
+
+resource "aws_network_acl_rule" "private_inbound_dynamodb" {
+  for_each = { for idx, cidr in data.aws_ip_ranges.dynamodb.cidr_blocks : idx => cidr }
+
+  network_acl_id = aws_network_acl.private.id
+  rule_number    = 210 + each.key
+  egress         = false
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = each.value
+  from_port      = 1024
+  to_port        = 65535
+}
+
 resource "aws_security_group" "lambda" {
   name        = "${var.application}-${var.environment}-lambda"
   description = "Security group for the API Lambda"

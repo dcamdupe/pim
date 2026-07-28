@@ -62,6 +62,18 @@ Linear: https://linear.app/uberconcept/issue/UBE-38/add-auth-check-into-front-en
   Fixed with `resolve.dedupe: ['vue', 'pinia', 'vue-router']` in
   `FrontEnd.UnitTests/vitest.config.ts`. Also added `pinia`/`vue-router` as devDependencies there
   (matching `FrontEnd/package.json`'s versions) since neither was needed by a test before now.
+- **CI-only failure (Linux), not reproducible locally on macOS:** the original `router/index.test.ts`
+  imported the real `router/index.ts`, which transitively imports `LoginView.vue`/`DashboardView.vue`
+  - the first test in this project to pull in a `.vue` file. That tripped the same class of
+  Oxc/tsconfig-discovery bug already logged in `UBE-20`'s worklog (`[TSCONFIG_ERROR] Failed to load
+  tsconfig for '.../LoginView.vue': Tsconfig not found`, via `@vitejs/plugin-vue`'s own
+  `transformWithOxc` call this time, not the plain `.ts` path `UBE-20` fixed). Rather than fight the
+  same upstream issue again, extracted the guard's decision into a pure, dependency-free
+  `FrontEnd/src/router/guard.ts` (`resolveNavigation(routeName, isAuthenticated)`) that
+  `router/index.ts` now calls from `beforeEach`. The unit test targets `guard.ts` directly and never
+  imports `router/index.ts` or any `.vue` file, so it can't hit this bug regardless of platform; the
+  real wiring (real router + real views) is still exercised end-to-end by
+  `FunctionalTests/tests/authGuard.spec.ts`.
 
 ## Prompt Log
 
@@ -70,3 +82,5 @@ Linear: https://linear.app/uberconcept/issue/UBE-38/add-auth-check-into-front-en
 3. "just run_site.sh" (in response to manually checking Mongo/port state with lsof/pgrep)
 4. "wake up"
 5. "just rely on run_website.sh this is what it is there for" (in response to a curl-based readiness poll)
+6. "commit and raise the PR"
+7. "unit tests fail: ... [TSCONFIG_ERROR] Failed to load tsconfig for '../FrontEnd/src/views/LoginView.vue': Tsconfig not found" (CI failure on the just-opened PR)

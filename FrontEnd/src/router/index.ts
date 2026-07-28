@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import { useAuthStore } from '../stores/auth'
+import { resolveNavigation } from './guard'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,5 +23,7 @@ const router = createRouter({
     },
   ],
 })
+
+router.beforeEach((to) => resolveNavigation(to.name, useAuthStore().isAuthenticated))
 
 export default router

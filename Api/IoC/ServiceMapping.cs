@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
+using NLog.Web;
 using Pim.Api.Auth;
 using Pim.Api.Data;
 
@@ -17,6 +18,8 @@ public static class ServiceMapping
 
     public static void MapServices(WebApplicationBuilder builder)
     {
+        ConfigureLogging(builder);
+
         // DynamoDB is used whenever MongoSettings isn't configured (i.e. in
         // production/Lambda, where appsettings.Production.json has no MongoSettings
         // section) - MongoSettings is only present locally, via appsettings.Local.json.
@@ -62,6 +65,14 @@ public static class ServiceMapping
         builder.Services.AddAuthorization();
 
         AddCors(builder);
+    }
+
+    // Replaces the default console provider with NLog (config in nlog.config)
+    // rather than running both side by side.
+    private static void ConfigureLogging(WebApplicationBuilder builder)
+    {
+        builder.Logging.ClearProviders();
+        builder.Host.UseNLog();
     }
 
     // Local dev and Production run on different origins, so the allowed

@@ -127,25 +127,39 @@ From the Linear issue, needs to fix:
 
 ## Checklist
 
-- [ ] `Api/Repository/IdAttribute.cs` — new `[Id]` marker attribute
-- [ ] `Api/Data/User.cs` — `[BsonId]` → `[Id]`
-- [ ] `Api/Data/Account.cs` — drop Mongo attribute/usings
-- [ ] `Api/Repository/DynamoDbRepository.cs` — reflect on `[Id]`
-- [ ] Delete `Api/Repository/MongoRepository.cs`
-- [ ] Delete `Api/Configuration/MongoSettings.cs`
-- [ ] `Api/Configuration/AwsSettings.cs` — add `ServiceUrl`
-- [ ] `Api/IoC/ServiceMapping.cs` — drop Mongo branch, wire endpoint override
-- [ ] `Api/Controllers/RootController.cs` — drop unused Mongo usings
-- [ ] `Api/Pim.Api.csproj` — remove `MongoDB.Driver` package reference
-- [ ] `Api/appsettings.Local.json` — `MongoSettings` → `Aws` (Region + ServiceUrl)
-- [ ] `Api.UnitTests/Helpers/RepositoryMockFactory.cs` — reflect on `[Id]`
-- [ ] `Api.IntegrationTests/LoginEndpointTests.cs` — seed/clean up via `IRepository<User>`
-- [ ] `Api.IntegrationTests/SettingsEndpointTests.cs` — seed/clean up via `IRepository<User>`
-- [ ] `Api.IntegrationTests/RootEndpointTests.cs` — rename Mongo-referencing test
-- [ ] `scripts/setup_local.sh` — Docker container + table bootstrap + Dynamo-based seed
-- [ ] `scripts/run_local.sh` — update prerequisite comment
-- [ ] Update `CLAUDE.md`, `README.md`, `FunctionalTests/README.md` Mongo references
-- [ ] Verify: `dotnet build`/`dotnet test` pass against DynamoDB Local
+- [x] `Api/Repository/IdAttribute.cs` — new `[Id]` marker attribute
+- [x] `Api/Data/User.cs` — `[BsonId]` → `[Id]`
+- [x] `Api/Data/Account.cs` — drop Mongo attribute/usings
+- [x] `Api/Repository/DynamoDbRepository.cs` — reflect on `[Id]` (confirmed no naming collision
+      with the existing `private const string IdAttribute` — build is clean)
+- [x] Delete `Api/Repository/MongoRepository.cs`
+- [x] Delete `Api/Configuration/MongoSettings.cs`
+- [x] `Api/Configuration/AwsSettings.cs` — add `ServiceUrl`
+- [x] `Api/IoC/ServiceMapping.cs` — drop Mongo branch, wire endpoint override (build clean)
+- [x] `Api/Controllers/RootController.cs` — drop unused Mongo usings
+- [x] `Api/Pim.Api.csproj` — remove `MongoDB.Driver` package reference (build clean, package fully
+      gone from `Api`)
+- [x] `Api/appsettings.Local.json` — `MongoSettings` → `Aws` (Region + ServiceUrl)
+- [x] `Api.UnitTests/Helpers/RepositoryMockFactory.cs` — reflect on `[Id]` (build clean)
+- [x] `Api.IntegrationTests/LoginEndpointTests.cs` — seed/clean up via `IRepository<User>`
+      (via `_factory.Services.CreateScope()`, since `IRepository<T>` is scoped — resolving it
+      directly off the root `_factory.Services` risks a DI validation error); full project build
+      still fails until `SettingsEndpointTests.cs` (next step) is also converted, since it's the
+      only other place still referencing the now-removed `MongoDB.Driver` package
+- [x] `Api.IntegrationTests/SettingsEndpointTests.cs` — seed/clean up via `IRepository<User>` —
+      full solution now builds clean with zero Mongo references anywhere
+- [x] `Api.IntegrationTests/RootEndpointTests.cs` — rename Mongo-referencing test
+- [x] `scripts/setup_local.sh` — Docker container + table bootstrap + Dynamo-based seed; tested all
+      4 paths directly: cold start (no container/table), stopped-but-existing container (data
+      resets with `-inMemory`, handled gracefully), already-running+table-exists (seed only), and
+      full idempotency (everything skipped, just reports the existing login)
+- [x] `scripts/run_local.sh` — update prerequisite comment
+- [x] Update `CLAUDE.md`, `README.md`, `FunctionalTests/README.md` Mongo references (also fixed a
+      pre-existing stale claim in `CLAUDE.md` that `GET /` "pings Mongo and returns 503" — confirmed
+      during the earlier repo survey that `RootController` never actually did this)
+- [x] Verify: `dotnet build`/`dotnet test` pass against DynamoDB Local — full solution build clean,
+      14/14 tests pass (7 unit + 7 integration); repo-wide sweep confirms zero remaining Mongo
+      references in any `.cs`/`.json`/`.csproj`/`.md`/`.sh` file
 - [ ] Verify: real local run via `run_local.sh` — login + settings page work end-to-end
 
 ## Prompt Log

@@ -14,7 +14,7 @@ public sealed class RootEndpointTests : IClassFixture<ApiWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Get_ReturnsOkWithVersion_WhenMongoIsReachable()
+    public async Task Get_ReturnsOkWithVersion()
     {
         var client = _factory.CreateClient();
 

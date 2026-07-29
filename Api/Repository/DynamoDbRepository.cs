@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Text.Json;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Pim.Api.Repository;
 
@@ -13,7 +12,7 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
 
     private static readonly PropertyInfo IdProperty = typeof(T)
         .GetProperties()
-        .Single(p => p.GetCustomAttribute<BsonIdAttribute>() is not null);
+        .Single(p => p.GetCustomAttribute<IdAttribute>() is not null);
 
     private readonly IAmazonDynamoDB _client;
     private readonly ILogger<DynamoDbRepository<T>> _logger;

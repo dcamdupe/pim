@@ -91,6 +91,86 @@ public class CsvProcessorTests
         Assert.Contains(months, m => m.Year == 2026 && m.Month == 7 && m.Transactions.Single().Description == "July Row");
     }
 
+    [Fact]
+    public async Task ProcessAsync_SkipsExactDuplicate_WhenReUploadingTheSameTransaction()
+    {
+        var existing = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        };
+        var months = new List<TransactionMonth> { existing };
+        var duplicate = new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns([duplicate]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, months);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var month = Assert.Single(months);
+        Assert.Single(month.Transactions);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_TreatsADifferingCategoryAsStillADuplicate()
+    {
+        var existing = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m }],
+        };
+        var months = new List<TransactionMonth> { existing };
+        var candidate = new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns([candidate]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, months);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var month = Assert.Single(months);
+        Assert.Single(month.Transactions);
+    }
+
+    [Theory]
+    [InlineData("date")]
+    [InlineData("description")]
+    [InlineData("amount")]
+    [InlineData("account")]
+    public async Task ProcessAsync_StillAdds_WhenOneOfTheMatchedFieldsDiffers(string differingField)
+    {
+        var existing = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        };
+        var months = new List<TransactionMonth> { existing };
+        var candidate = new Transaction
+        {
+            Account = differingField == "account" ? "Different Account" : Account,
+            Date = differingField == "date" ? new DateOnly(2026, 6, 2) : new DateOnly(2026, 6, 1),
+            Description = differingField == "description" ? "Different Description" : "Coffee Shop",
+            Category = "",
+            Amount = differingField == "amount" ? -9.99m : -4.50m,
+        };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns([candidate]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, months);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var month = Assert.Single(months);
+        Assert.Equal(2, month.Transactions.Count);
+    }
+
     private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.csv");
 
     private static Mock<ICSVParserFactory> CreateFactory(Mock<ICsvParser> parser)

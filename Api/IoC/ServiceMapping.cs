@@ -10,6 +10,8 @@ using NLog.Web;
 using Pim.Api.Auth;
 using Pim.Api.Configuration;
 using Pim.Api.Repository;
+using Pim.Api.Services;
+using Pim.Api.Services.CSVParsers;
 
 namespace Pim.Api.IoC;
 
@@ -38,6 +40,8 @@ public static class ServiceMapping
                 new AmazonDynamoDBConfig { ServiceURL = awsSettings.ServiceUrl });
         });
         builder.Services.AddScoped(typeof(IRepository<>), typeof(DynamoDbRepository<>));
+        builder.Services.AddSingleton<ICSVParserFactory, CSVParserFactory>();
+        builder.Services.AddScoped<ICsvProcessor, CsvProcessor>();
 
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
         builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();

@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import TransactionsView from '../views/TransactionsView.vue'
+import TransactionUploadView from '../views/TransactionUploadView.vue'
 import { useAuthStore } from '../stores/auth'
 import { resolveNavigation } from './guard'
 
@@ -26,6 +28,16 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: SettingsView,
+    },
+    {
+      path: '/transactions',
+      name: 'transactions',
+      component: TransactionsView,
+    },
+    {
+      path: '/transactions/upload',
+      name: 'transactionUpload',
+      component: TransactionUploadView,
     },
   ],
 })

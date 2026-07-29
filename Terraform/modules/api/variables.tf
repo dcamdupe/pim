@@ -23,6 +23,11 @@ variable "dynamodb_table_arn" {
   type        = string
 }
 
+variable "transaction_dynamodb_table_arn" {
+  description = "ARN of the DynamoDB transaction table the Lambda is allowed to access."
+  type        = string
+}
+
 variable "domain_name" {
   description = "Custom domain for the API Gateway (e.g. pim-api.uberconcept.com)."
   type        = string

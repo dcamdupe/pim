@@ -2,8 +2,10 @@
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
+  --field-bg: #f7f6f9;
   --border: #e5e4e7;
-  --accent: #aa3bff;
+  --accent: #0f766e;
+  --accent-ink: #fff;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -22,8 +24,10 @@
     --text: #9ca3af;
     --text-h: #f3f4f6;
     --bg: #16171d;
+    --field-bg: #1d1f27;
     --border: #2e303a;
-    --accent: #c084fc;
+    --accent: #2dd4bf;
+    --accent-ink: #0b3b36;
   }
 }
 
@@ -41,4 +45,54 @@ h1 {
   font-family: var(--sans);
   font-weight: 500;
   color: var(--text-h);
+}
+
+/* ---------- Form fields & buttons (site-wide default look) ---------- */
+
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--field-bg);
+  color: var(--text-h);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+button {
+  font: inherit;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }

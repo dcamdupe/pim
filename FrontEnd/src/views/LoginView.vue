@@ -107,15 +107,6 @@ label {
   color: var(--text-h);
 }
 
-input {
-  font: inherit;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--text-h);
-}
-
 .field-error,
 .form-error {
   margin: 0;
@@ -124,17 +115,6 @@ input {
 }
 
 button {
-  font: inherit;
-  padding: 10px;
-  border: none;
-  border-radius: 4px;
-  background: var(--accent);
-  color: #fff;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
+  width: 100%;
 }
 </style>

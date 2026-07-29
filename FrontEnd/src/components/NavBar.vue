@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+function onLogout() {
+  authStore.clearToken()
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -12,19 +21,33 @@ import { RouterLink } from 'vue-router'
     <div class="spacer"></div>
 
     <RouterLink to="/settings" class="icon-btn" title="Settings" aria-label="Settings">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-        <circle cx="12" cy="12" r="3" />
-        <path
-          d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12M19.07 19.07l-2.12-2.12M7.05 7.05 4.93 4.93"
-        />
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="12" cy="12" r="6.2" />
+        <circle cx="12" cy="12" r="2.2" />
+        <g fill="currentColor" stroke="none">
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(45 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(90 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(135 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(180 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(225 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(270 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(315 12 12)" />
+        </g>
       </svg>
     </RouterLink>
 
-    <div class="profile" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-      </svg>
+    <div class="profile-wrap">
+      <button type="button" class="profile" aria-haspopup="menu" aria-label="Account menu">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+      </button>
+
+      <div class="menu" role="menu">
+        <button type="button" class="menu-item" role="menuitem" @click="onLogout">Logout</button>
+      </div>
     </div>
   </header>
 </template>
@@ -86,14 +109,76 @@ import { RouterLink } from 'vue-router'
   color: var(--text-h);
 }
 
+.profile-wrap {
+  position: relative;
+}
+
 .profile {
   width: 32px;
   height: 32px;
+  padding: 0;
+  border: none;
   border-radius: 50%;
   background: var(--border);
   color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.profile:hover,
+.profile:focus-visible {
+  color: var(--text-h);
+  filter: none;
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 140px;
+  padding: 6px;
+  margin-top: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+}
+
+/* Bridges the visual gap above so hover doesn't drop between the avatar and the menu. */
+.menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+}
+
+.profile-wrap:hover .menu,
+.profile-wrap:focus-within .menu {
+  opacity: 1;
+  visibility: visible;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: var(--field-bg);
+  filter: none;
 }
 </style>

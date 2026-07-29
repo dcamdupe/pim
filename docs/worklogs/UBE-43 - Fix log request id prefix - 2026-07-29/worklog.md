@@ -1,6 +1,7 @@
 # UBE-43 — Fix log request id prefix
 
 Linear: https://linear.app/uberconcept/issue/UBE-43/fix-logging-to-prefix-all-logs-with-lambda-request-id-not-the-current
+PR: https://github.com/dcamdupe/pim/pull/23
 
 ## Description
 
@@ -69,3 +70,4 @@ CloudWatch/API Gateway/X-Ray by that id.
 4. "yes, go ahead" (step 2 — check tests for old trace-id dependency)
 5. "yes, go ahead" (step 3 — dotnet build/test)
 6. "yes, go ahead" (step 4 — verify via scripts/run_local.sh)
+7. "raise the pr"

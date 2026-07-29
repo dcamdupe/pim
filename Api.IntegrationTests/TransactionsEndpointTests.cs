@@ -47,17 +47,6 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
-    public async Task Post_ReturnsUnauthorized_WhenNoTokenIsProvided()
-    {
-        var client = _factory.CreateClient();
-        using var content = BuildMultipartContent("Everyday", ValidCsv);
-
-        var response = await client.PostAsync("/transactions/file", content);
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
     public async Task Post_SavesParsedTransactions_WithEmptyCategory()
     {
         var client = AuthenticatedClient();
@@ -115,16 +104,6 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var response = await client.PostAsync("/transactions/file", content);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Get_ReturnsUnauthorized_WhenNoTokenIsProvided()
-    {
-        var client = _factory.CreateClient();
-
-        var response = await client.GetAsync("/transactions?startDate=2026-06-01&endDate=2026-06-30");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]

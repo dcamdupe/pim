@@ -1,6 +1,7 @@
 # UBE-36 — Implement transaction upload
 
 Linear: https://linear.app/uberconcept/issue/UBE-36/implement-transaction-upload
+PR: https://github.com/dcamdupe/pim/pull/25
 
 ## Description
 
@@ -259,3 +260,4 @@ Playwright runs spec files in parallel by default (`fullyParallel: true`). Two f
     and return an ICSVParser. The factory class should return CsvParser.cs for now"
 25. "rename CSVParser to TmBankCsvParser"
 26. "run all tests to complete the worklog"
+27. "commit and raise the PR"

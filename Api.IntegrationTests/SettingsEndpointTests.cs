@@ -15,7 +15,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
 {
     // ReadFromJsonAsync<T>() with no explicit options defaults to JsonSerializerDefaults.Web
     // (case-insensitive, camelCase) - matching that here since we also need
-    // JsonStringEnumConverter to read the string AccountType the Api writes (Program.cs).
+    // JsonStringEnumConverter to read the string Account.AccountType the Api writes (Program.cs).
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() },
@@ -37,7 +37,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         {
             Email = _email,
             PasswordHash = "unused-in-these-tests",
-            Accounts = [new Account { Name = "Everyday", Number = "123456", Type = AccountType.Transaction }],
+            Accounts = [new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction }],
         };
         return _users.InsertOneAsync(user);
     }
@@ -66,7 +66,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var body = await response.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
         Assert.Single(body!.Accounts);
         Assert.Equal("Everyday", body.Accounts[0].Name);
-        Assert.Equal(AccountType.Transaction, body.Accounts[0].Type);
+        Assert.Equal(Account.AccountType.Transaction, body.Accounts[0].Type);
     }
 
     [Fact]
@@ -75,8 +75,8 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var client = AuthenticatedClient();
         var newAccounts = new SettingsRequest(
         [
-            new Account { Name = "Everyday", Number = "123456", Type = AccountType.Transaction },
-            new Account { Name = "Rainy day", Number = "789012", Type = AccountType.Savings },
+            new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction },
+            new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings },
         ]);
 
         var putResponse = await client.PutAsJsonAsync("/settings", newAccounts);
@@ -85,7 +85,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var getResponse = await client.GetAsync("/settings");
         var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
         Assert.Equal(2, body!.Accounts.Count);
-        Assert.Contains(body.Accounts, a => a.Name == "Rainy day" && a.Type == AccountType.Savings);
+        Assert.Contains(body.Accounts, a => a.Name == "Rainy day" && a.Type == Account.AccountType.Savings);
     }
 
     private HttpClient AuthenticatedClient()

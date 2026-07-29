@@ -149,6 +149,26 @@ Linear: https://linear.app/uberconcept/issue/UBE-42/implement-settings-page
   convention in `CLAUDE.md`. Touches `RootController`/`LoginController` too, not just this ticket's
   `SettingsController` — re-ran the full `dotnet build`/unit/integration suite afterward to confirm
   `/`, `/login`, and `/settings` still resolve correctly.
+- **Also out-of-scope, also repo-wide:** moved `MongoSettings`/`AwsSettings` out of `Api/Data/` into a
+  new `Api/Configuration/` folder (namespace `Pim.Api.Configuration`) — they're app configuration, not
+  domain/persistence models like the rest of `Pim.Api.Data`. Only `Api/IoC/ServiceMapping.cs`
+  referenced either type (added `using Pim.Api.Configuration;` there, kept `using Pim.Api.Data;` for
+  `User`/`Account`/`IRepository<T>`/the two repository implementations); nothing in the test projects
+  referenced them directly. `JwtSettings` was left in `Api/Auth/` — not part of what was asked, and
+  it's already grouped with the rest of the auth code rather than with `Data`.
+- **Also out-of-scope, this ticket's own model:** nested `AccountType` inside `Account`
+  (`Account.AccountType`) instead of a standalone top-level enum. Updated the four outside
+  references (`SettingsControllerTests`, `SettingsEndpointTests`) to the qualified name; the
+  reference inside `Account.cs` itself stays unqualified since nested types are visible unqualified
+  to the rest of their enclosing type's members.
+- **Also out-of-scope:** moved `IRepository<T>`, `MongoRepository<T>`, `DynamoDbRepository<T>` out of
+  `Api/Data/` into a new `Api/Repository/` folder (namespace `Pim.Api.Repository`) — they're the
+  persistence abstraction/implementations, not domain models like `User`/`Account`, which stay in
+  `Data`. Added `using Pim.Api.Repository;` to the four referencing files
+  (`AuthenticationLocal.cs`, `SettingsController.cs`, `ServiceMapping.cs`,
+  `Api.UnitTests/Helpers/RepositoryMockFactory.cs`); dropped `ServiceMapping.cs`'s now-unused
+  `using Pim.Api.Data;` (it registers the open generic types, not any closed-over `Data` type
+  directly) rather than leave dead code sitting under `TreatWarningsAsErrors`.
 
 ## Prompt Log
 
@@ -156,3 +176,6 @@ Linear: https://linear.app/uberconcept/issue/UBE-42/implement-settings-page
 2. Cog interaction → "Click navigates"; Account editing scope → "Add + edit + remove"
 3. "start"
 4. "change all the controllers to specify the full endpoint path in the controller action and update the project md file to set this as standard behaviour"
+5. "move MongoSettings and AwsSettings into a configuration folder, update namespaces and code that references this"
+6. "Move AccountType to be defined inside the account class"
+7. "move IRepository and dependant classes into a Repsitory folder, update the namespace and the referenced code"

@@ -1,4 +1,4 @@
-namespace Pim.Api.Data;
+namespace Pim.Api.Repository;
 
 public interface IRepository<T> where T : class
 {

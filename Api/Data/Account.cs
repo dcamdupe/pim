@@ -11,4 +11,11 @@ public sealed class Account
 
     [BsonRepresentation(BsonType.String)]
     public required AccountType Type { get; set; }
+
+    public enum AccountType
+    {
+        Credit,
+        Transaction,
+        Savings,
+    }
 }

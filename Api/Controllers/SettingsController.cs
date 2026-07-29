@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pim.Api.Data;
+using Pim.Api.Repository;
 
 namespace Pim.Api.Controllers;
 

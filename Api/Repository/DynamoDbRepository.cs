@@ -4,7 +4,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Pim.Api.Data;
+namespace Pim.Api.Repository;
 
 public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
 {

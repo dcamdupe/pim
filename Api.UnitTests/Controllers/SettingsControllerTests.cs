@@ -15,7 +15,7 @@ public class SettingsControllerTests
     [Fact]
     public async Task Get_ReturnsAccounts_ForAuthenticatedUser()
     {
-        var accounts = new List<Account> { new() { Name = "Everyday", Number = "123456", Type = AccountType.Transaction } };
+        var accounts = new List<Account> { new() { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction } };
         var users = new List<User> { new() { Email = Email, PasswordHash = "hash", Accounts = accounts } };
         var sut = CreateController(users);
 
@@ -42,7 +42,7 @@ public class SettingsControllerTests
     {
         var users = new List<User> { new() { Email = Email, PasswordHash = "hash" } };
         var sut = CreateController(users);
-        var newAccounts = new List<Account> { new() { Name = "Savings", Number = "654321", Type = AccountType.Savings } };
+        var newAccounts = new List<Account> { new() { Name = "Savings", Number = "654321", Type = Account.AccountType.Savings } };
 
         var result = await sut.Put(new SettingsRequest(newAccounts));
 

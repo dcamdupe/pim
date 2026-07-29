@@ -1,4 +1,4 @@
-namespace Pim.Api.Data;
+namespace Pim.Api.Configuration;
 
 public sealed class MongoSettings
 {

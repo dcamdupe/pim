@@ -45,14 +45,27 @@ CloudWatch/API Gateway/X-Ray by that id.
 
 ## Checklist
 
-- [ ] `Api/Program.cs` — middleware to overwrite `TraceIdentifier` with the Lambda `AwsRequestId`
+- [x] `Api/Program.cs` — middleware to overwrite `TraceIdentifier` with the Lambda `AwsRequestId`
       when running in Lambda
-- [ ] Check existing tests for any dependency on the old trace-id-only behaviour
-- [ ] `dotnet build`/`dotnet test` (unit + integration) pass
-- [ ] Verify via `scripts/run_local.sh` that local logging is unaffected
-- [ ] Note in worklog that Lambda-specific behaviour needs confirming post-deploy (can't be
-      verified locally)
+- [x] Check existing tests for any dependency on the old trace-id-only behaviour — none found;
+      only matches are copies of `nlog.config` in build output, no test asserts on trace-id
+      format/values
+- [x] `dotnet build`/`dotnet test` (unit + integration) pass — 7 unit + 7 integration, 0 failures
+- [x] Verify via `scripts/run_local.sh` that local logging is unaffected — confirmed via a real
+      login request: all 5 log lines (controller + Mongo request/response) share one
+      ASP.NET-generated `TraceIdentifier` prefix, unchanged from pre-change behaviour
+- [x] Note in worklog that Lambda-specific behaviour needs confirming post-deploy (can't be
+      verified locally) — **known gap:** the actual `AwsRequestId` prefixing only happens inside a
+      real Lambda invocation; after this deploys, check CloudWatch logs for the
+      `{app}-{env}-api` function and confirm log lines are prefixed with the Lambda request id
+      (matches API Gateway's `x-amzn-RequestId` / the invocation's request id) instead of a
+      W3C trace id
 
 ## Prompt Log
 
 1. "start worklog on UBE-43"
+2. "how will this be handled when running on local?"
+3. "start step 1"
+4. "yes, go ahead" (step 2 — check tests for old trace-id dependency)
+5. "yes, go ahead" (step 3 — dotnet build/test)
+6. "yes, go ahead" (step 4 — verify via scripts/run_local.sh)

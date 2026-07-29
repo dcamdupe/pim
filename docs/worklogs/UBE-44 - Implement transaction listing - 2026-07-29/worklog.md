@@ -154,10 +154,24 @@ From the Linear issue:
       14 integration)
 - [x] Verify: FrontEnd lint/type-check + `FrontEnd.UnitTests` pass — already confirmed clean at
       steps 8-9 (`vue-tsc -b && vite build`, `npm run lint`, 20/20 `FrontEnd.UnitTests`)
-- [ ] Verify: real local run — upload, listing, all 4 date-range filters, empty-range state
+- [x] Verify: real local run — upload/listing/3 of 4 filters covered end-to-end by the Playwright
+      spec; "All time" (10y range) and empty-range state verified directly against the live Api
+      (`GET /transactions`): empty range → `{"transactions":[]}` in 200ms, no error; 10-year range
+      (~120 months enumerated) → 200 OK in 144ms
 
 ## Prompt Log
 
 1. "start a worklog UBE-44"
 2. (design reference clarification) "dashboard-mockup-calm.html"
 3. "note the claude.md where the design is"
+4. "yes, go ahead" (step 1 — ITransactionQueryService/TransactionQueryService)
+5. "`" / "go" (step 2 — TransactionsController GET action)
+6. "go ahead" (step 3 — ServiceMapping DI registration)
+7. "go ahead" (step 4 — TransactionQueryServiceTests.cs)
+8. "go" (step 5 — TransactionsControllerTests.cs GET tests)
+9. "go" (step 6 — TransactionsEndpointTests.cs GET tests)
+10. "go" (step 7 — transactionsService.ts getTransactions)
+11. "go" (step 8 — TransactionsView.vue listing rewrite)
+12. "go ahead" (step 9 — transactionsService.test.ts)
+13. "go" (step 10 — transactionListing.spec.ts)
+14. "go" (final verification, steps 11-13)

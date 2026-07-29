@@ -1,6 +1,7 @@
 # UBE-45 — Deduplicate transactions during transaction upload
 
 Linear: https://linear.app/uberconcept/issue/UBE-45/deduplicate-transactions-during-transaction-upload
+PR: https://github.com/dcamdupe/pim/pull/27
 
 ## Description
 
@@ -76,3 +77,10 @@ gets-or-creates the `TransactionMonth` bucket for each group, and does
 ## Prompt Log
 
 1. "start a worklog in UBE-45"
+2. "yes, go ahead" (step 1 — CsvProcessor dedup check)
+3. "go" (step 2 — CsvProcessorTests dedup tests)
+4. "go" (step 3 — TransactionsEndpointTests re-upload test)
+5. "go" (step 4 — extend transactionUpload.spec.ts)
+6. "why run this command?" (clarified stop_website.sh's purpose before stopping a shared stack)
+7. "create a script stop_website.sh to perform this and use that script instead"
+8. "yes" (commit and raise the PR)

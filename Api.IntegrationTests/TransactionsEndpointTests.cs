@@ -80,6 +80,33 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
+    public async Task Post_SkipsDuplicates_WhenTheSameFileIsUploadedTwice()
+    {
+        var client = AuthenticatedClient();
+
+        using (var firstUpload = BuildMultipartContent("Everyday", ValidCsv))
+        {
+            var firstResponse = await client.PostAsync("/transactions/file", firstUpload);
+            Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
+        }
+
+        using (var secondUpload = BuildMultipartContent("Everyday", ValidCsv))
+        {
+            var secondResponse = await client.PostAsync("/transactions/file", secondUpload);
+            Assert.Equal(HttpStatusCode.NoContent, secondResponse.StatusCode);
+        }
+
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        var month = await repository.GetAsync(monthId);
+
+        Assert.NotNull(month);
+        Assert.Equal(2, month.Transactions.Count);
+    }
+
+    [Fact]
     public async Task Post_ReturnsBadRequest_WhenFileCannotBeParsed()
     {
         var client = AuthenticatedClient();

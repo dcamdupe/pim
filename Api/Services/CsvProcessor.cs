@@ -42,23 +42,39 @@ public sealed class CsvProcessor : ICsvProcessor
 
         _logger.LogInformation("Transaction upload request: email={Email} account={Account} count={Count}", email, account, transactions.Count);
 
+        var skippedDuplicates = 0;
+
         foreach (var group in transactions.GroupBy(t => (t.Date.Year, t.Date.Month)))
         {
             var id = TransactionMonth.BuildId(email, group.Key.Year, group.Key.Month);
             var month = await _transactionMonths.GetAsync(id);
-            if (month is null)
+            var isNewMonth = month is null;
+            month ??= new TransactionMonth { Email = email, Year = group.Key.Year, Month = group.Key.Month };
+
+            var newTransactions = group.Where(t => !month.Transactions.Any(existing => IsDuplicate(existing, t))).ToList();
+            skippedDuplicates += group.Count() - newTransactions.Count;
+            month.Transactions.AddRange(newTransactions);
+
+            if (isNewMonth)
             {
-                month = new TransactionMonth { Email = email, Year = group.Key.Year, Month = group.Key.Month };
-                month.Transactions.AddRange(group);
                 await _transactionMonths.AddAsync(month);
             }
             else
             {
-                month.Transactions.AddRange(group);
                 await _transactionMonths.UpdateAsync(id, month);
             }
         }
 
-        _logger.LogInformation("Transaction upload response: email={Email} count={Count}", email, transactions.Count);
+        _logger.LogInformation(
+            "Transaction upload response: email={Email} count={Count} skippedDuplicates={SkippedDuplicates}",
+            email, transactions.Count, skippedDuplicates);
     }
+
+    // A transaction "overlaps" an existing one if it matches on date, description, amount, and
+    // account - Category is deliberately excluded, since it's expected to be edited after import.
+    private static bool IsDuplicate(Transaction existing, Transaction candidate) =>
+        existing.Date == candidate.Date &&
+        existing.Description == candidate.Description &&
+        existing.Amount == candidate.Amount &&
+        existing.Account == candidate.Account;
 }

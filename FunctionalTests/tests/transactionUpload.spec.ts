@@ -25,11 +25,13 @@ test.describe('Transaction upload', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await expect(page).toHaveURL(/\/transactions\/upload$/);
 
+    // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running
+    // Balance - 6 columns, not the 5 originally assumed. Balance (last column) is never read.
     await page.locator('#account').selectOption('Playwright Upload Account');
     await page.locator('#file-input').setInputFiles({
       name: 'transactions.csv',
       mimeType: 'text/csv',
-      buffer: Buffer.from('Date,Ignore,Description,Amount,Ignore\n01 JUN 2026,x,Coffee Shop,-4.50,x\n'),
+      buffer: Buffer.from('131150S1,,,,,\n01 JUN 2026,,"Coffee Shop",,-4.50,637.57\n'),
     });
     await page.getByRole('button', { name: 'Save' }).click();
 

@@ -10,10 +10,12 @@ namespace Pim.Api.IntegrationTests;
 
 public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationFactory>, IAsyncLifetime
 {
+    // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running
+    // Balance - 6 columns, not the 5 originally assumed. Balance (last column) is never read.
     private const string ValidCsv =
-        "Date,Ignore,Description,Amount,Ignore\n" +
-        "01 JUN 2026,x,Coffee Shop,-4.50,x\n" +
-        "15 JUN 2026,x,Salary,2500.00,x\n";
+        "131150S1,,,,,\n" +
+        "01 JUN 2026,,\"Coffee Shop\",,-4.50,637.57\n" +
+        "15 JUN 2026,,\"Salary\",,2500.00,3137.57\n";
 
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
@@ -73,7 +75,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     public async Task Post_ReturnsBadRequest_WhenFileCannotBeParsed()
     {
         var client = AuthenticatedClient();
-        using var content = BuildMultipartContent("Everyday", "Date,Ignore,Description,Amount,Ignore\nnot-a-date,x,Coffee,-4.50,x\n");
+        using var content = BuildMultipartContent("Everyday", "131150S1,,,,,\nnot-a-date,,\"Coffee\",,-4.50,637.57\n");
 
         var response = await client.PostAsync("/transactions/file", content);
 

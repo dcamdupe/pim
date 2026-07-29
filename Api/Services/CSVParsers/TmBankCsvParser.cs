@@ -35,7 +35,7 @@ public sealed class TmBankCsvParser : ICsvParser
                 Description = _csv.GetField(2) ?? string.Empty,
                 Category = string.Empty,
                 Amount = decimal.Parse(
-                    _csv.GetField(3)!.Trim(),
+                    _csv.GetField(4)!.Trim(),
                     NumberStyles.Number | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowParentheses,
                     CultureInfo.InvariantCulture),
             });

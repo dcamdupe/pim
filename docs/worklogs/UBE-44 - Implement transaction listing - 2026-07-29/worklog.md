@@ -1,6 +1,7 @@
 # UBE-44 — Implement transaction listing
 
 Linear: https://linear.app/uberconcept/issue/UBE-44/implement-transaction-listing
+PR: https://github.com/dcamdupe/pim/pull/26
 
 ## Description
 
@@ -175,3 +176,4 @@ From the Linear issue:
 12. "go ahead" (step 9 — transactionsService.test.ts)
 13. "go" (step 10 — transactionListing.spec.ts)
 14. "go" (final verification, steps 11-13)
+15. "yes, commit and raise the pr"

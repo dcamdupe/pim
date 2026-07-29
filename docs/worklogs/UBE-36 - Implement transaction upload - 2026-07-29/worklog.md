@@ -174,12 +174,88 @@ CSV date format (confirmed by David): `dd MMM yyyy`, e.g. `01 JUN 2026`.
       a fresh repo-wide sweep that no more remain. Known gap noted in the test: it can't assert the
       uploaded data was saved (no listing UI exists yet per this ticket's scope) - that's covered by
       `Api.IntegrationTests` instead.
-- [x] Verify: `dotnet build`/`dotnet test` pass — final full-solution run, 23/23 tests
-      (13 unit + 10 integration)
-- [ ] Verify: FrontEnd lint/type-check + `FrontEnd.UnitTests` pass
-- [ ] Verify: real local run — upload end-to-end, nav switcher, saved data shape confirmed
+- [x] Verify: `dotnet build`/`dotnet test` pass — final full-solution run after the post-implementation
+      refactor below, 30/30 tests (20 unit + 10 integration)
+- [x] Verify: FrontEnd lint/type-check + `FrontEnd.UnitTests` pass — `vue-tsc -b && vite build`
+      clean, 18/18 `FrontEnd.UnitTests` pass
+- [x] Verify: real local run — full Playwright suite (7 tests) green via `scripts/run_local.sh`;
+      saved data shape confirmed directly in DynamoDB Local (`aws dynamodb get-item`)
+
+## Post-implementation refactor (David's direction)
+
+After the initial implementation above, David asked for a series of refactors to
+`TransactionsController`'s CSV handling before running the full test suite:
+
+1. **Extracted `CsvProcessor`/`ICsvProcessor`** (`Api/Services/`) out of the controller — owns
+   parsing + the group-by-month get-or-create/update persistence logic. The controller is now a
+   thin HTTP boundary: validates the request, calls the processor, catches `CsvParseException`
+   (new, `Api/Services/CsvParseException.cs`) and turns it into `BadRequest` - parsing itself never
+   returns an HTTP status, it throws.
+2. **Moved `ICsvParser`/`CsvParser`** into a new `Api/Services/CSVParsers/` folder (namespace
+   `Pim.Api.Services.CSVParsers`), mirrored in `Api.UnitTests/Services/CSVParsers/`.
+3. **Added `ICSVParserFactory`/`CSVParserFactory`** — takes a `CsvReader`, returns an `ICsvParser`;
+   returns the concrete parser below "for now" (an extension point for other bank formats later).
+   Reshaped `ICsvParser`/`CsvParser` to take the `CsvReader` via constructor instead of building it
+   from the `IFormFile` internally - `CsvProcessor` now owns building the `StreamReader`/`CsvReader`
+   from the upload and asking the factory for a parser.
+4. **Renamed `CsvParser` → `TmBankCsvParser`** (the `dd MMM yyyy` format is specific to one bank) -
+   caught and fixed a bad `replace_all` mid-rename that collapsed `ICsvParser` into
+   `ITmBankCsvParser` too (interface wasn't meant to be renamed).
+5. DI: `ICSVParserFactory` registered as a singleton (stateless, no dependencies), `ICsvProcessor`
+   stays scoped (depends on the scoped `IRepository<TransactionMonth>`).
+6. Tests re-split to match the new layering: `TmBankCsvParserTests` (raw parsing, real `CsvReader`),
+   `CSVParserFactoryTests` (factory returns a `TmBankCsvParser`), `CsvProcessorTests` (orchestration,
+   `ICSVParserFactory`/`ICsvParser` mocked), `TransactionsControllerTests` (HTTP boundary,
+   `ICsvProcessor` mocked). One naming gotcha along the way: `CsvHelper` itself has its own unrelated
+   `CsvHelper.CsvParser` class, which collided by simple name in test files that imported both
+   namespaces before the rename made the collision moot.
+
+## Post-refactor verification issue (test isolation, not a code regression)
+
+Running the full functional suite surfaced a real bug in the test suite itself, not in the
+feature: `settings.spec.ts` and the new `transactionUpload.spec.ts` both mutate the *same* shared
+seeded test user's account list via `PUT /settings` (a full-list replace, not an append), and
+Playwright runs spec files in parallel by default (`fullyParallel: true`). Two fixes:
+- `FunctionalTests/playwright.config.ts` — `workers: 1` always (was `undefined` locally, `1` only
+  on CI), so spec files never run concurrently against the shared seeded user.
+- The *pre-fix* racy run had already left stray data behind (a test's assertion failed mid-way, so
+  its own cleanup code never ran) - "Playwright Test Account" (999999, Savings) was clear debris
+  matching `settings.spec.ts`'s own naming; a second stray "test" (123, Transaction) didn't match any
+  test's pattern, so I checked with David before removing it (also stray, both removed) rather than
+  assuming.
+- Full suite (7 tests) then passed cleanly, and DynamoDB Local was confirmed empty again afterward,
+  confirming both specs' cleanup steps now run correctly end-to-end.
 
 ## Prompt Log
 
 1. "start worklog on UBE-36"
 2. "example: 01 JUN 2026," (CSV date format)
+3. "yes, go ahead" (step 1 — Transaction.cs)
+4. "yes" (step 2 — TransactionMonth.cs)
+5. "yes" (step 3 — CsvHelper package)
+6. "yes" (step 4 — TransactionsController.cs)
+7. "go" (step 5 — TransactionsControllerTests.cs)
+8. "go" (step 6 — TransactionsEndpointTests.cs)
+9. "yes, go ahead" (step 7 — Terraform main.tf)
+10. "go" (step 8 — Terraform api variables.tf)
+11. "go" (step 9 — Terraform api main.tf IAM)
+12. "adjust the dynamodb_access IAM policy to create one statement that covers both tables"
+13. "next" (step 10 — setup_local.sh)
+14. "yes, go ahead" (step 11 — transactionsService.ts)
+15. "go" (step 12 — router)
+16. "go" (step 13 — NavBar.vue)
+17. "go" (step 14 — TransactionsView.vue)
+18. "go" (step 15 — TransactionUploadView.vue)
+19. "go" (step 16 — transactionsService.test.ts)
+20. (step 17 — transactionUpload.spec.ts, discovered/fixed port mismatch; "just use run_website.sh"
+    → used scripts/run_local.sh)
+21. "yes, go ahead" (final verification began; interrupted before ad hoc DynamoDB inspection)
+22. "Create a CsvProcessor service inside a Services folder in Api. This should handle parsing and
+    saving the CSV File. It should not throw a BadRequest, but should throw an appropriate exception
+    type."
+23. "create a folder inside services called CSVParsers. Move ICsvParser and CSVParser into this
+    folder"
+24. "create a CSVParserFactory class, with an interface. This should take a CsvReader as a parameter
+    and return an ICSVParser. The factory class should return CsvParser.cs for now"
+25. "rename CSVParser to TmBankCsvParser"
+26. "run all tests to complete the worklog"

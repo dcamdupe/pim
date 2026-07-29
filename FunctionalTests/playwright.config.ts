@@ -19,8 +19,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Single worker always: several spec files (settings, transactionUpload) mutate the same
+   * shared seeded test user's account list via PUT /settings, which is a full-list replace, not
+   * an append - running them concurrently races and clobbers each other's changes. */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */

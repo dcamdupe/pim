@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Pim.Api.IoC;
 
@@ -8,7 +9,8 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 ServiceMapping.MapServices(builder);
 

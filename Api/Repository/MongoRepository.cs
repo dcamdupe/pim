@@ -1,6 +1,6 @@
 using MongoDB.Driver;
 
-namespace Pim.Api.Data;
+namespace Pim.Api.Repository;
 
 public sealed class MongoRepository<T> : IRepository<T> where T : class
 {

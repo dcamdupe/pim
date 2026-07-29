@@ -8,7 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using NLog.Web;
 using Pim.Api.Auth;
-using Pim.Api.Data;
+using Pim.Api.Configuration;
+using Pim.Api.Repository;
 
 namespace Pim.Api.IoC;
 

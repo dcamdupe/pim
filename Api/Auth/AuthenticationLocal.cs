@@ -1,4 +1,5 @@
 using Pim.Api.Data;
+using Pim.Api.Repository;
 
 namespace Pim.Api.Auth;
 

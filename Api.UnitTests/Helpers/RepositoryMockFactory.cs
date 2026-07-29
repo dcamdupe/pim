@@ -1,7 +1,7 @@
 using System.Reflection;
 using Moq;
 using MongoDB.Bson.Serialization.Attributes;
-using Pim.Api.Data;
+using Pim.Api.Repository;
 
 namespace Pim.Api.UnitTests.Helpers;
 

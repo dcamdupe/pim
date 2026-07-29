@@ -56,3 +56,4 @@ Node's `nvm` default on this machine is a very old version (v11) — too old for
 - Branches: `<Linear-ID>/<kebab-case-description>`, branched off `main` (e.g. `UBE-5/basic-project-infrastructure`).
 - Commits: short, lowercase, imperative (e.g. `started to create structure of project`).
 - Issue tracking is in Linear (project "PIM", team "Uberconcept").
+- Api controllers: specify the full route on the HTTP method attribute (e.g. `[HttpGet("settings")]`, `[HttpPost("login")]`), not via a class-level `[Route(...)]`. Every action's endpoint is readable from its own attribute without having to check the controller class.

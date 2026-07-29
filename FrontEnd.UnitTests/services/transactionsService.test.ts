@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { uploadTransactions, TransactionsUploadFailedError } from '../../FrontEnd/src/services/transactionsService'
+import {
+  uploadTransactions,
+  TransactionsUploadFailedError,
+  getTransactions,
+  TransactionsRequestFailedError,
+} from '../../FrontEnd/src/services/transactionsService'
 import { useAuthStore } from '../../FrontEnd/src/stores/auth'
 
 describe('transactionsService', () => {
@@ -41,6 +46,31 @@ describe('transactionsService', () => {
       await expect(uploadTransactions('Everyday', new File([''], 'transactions.csv'))).rejects.toBeInstanceOf(
         TransactionsUploadFailedError,
       )
+    })
+  })
+
+  describe('getTransactions', () => {
+    it('fetches /transactions with the date range, bearer token, and returns the transactions', async () => {
+      const transactions = [{ account: 'Everyday', date: '2026-06-01', description: 'Coffee', category: '', amount: -4.5 }]
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ transactions }),
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      const result = await getTransactions('2026-06-01', '2026-06-30')
+
+      expect(result).toEqual(transactions)
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/transactions\?startDate=2026-06-01&endDate=2026-06-30$/),
+        expect.objectContaining({ headers: { Authorization: 'Bearer a-jwt' } }),
+      )
+    })
+
+    it('throws TransactionsRequestFailedError when the response is not ok', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+      await expect(getTransactions('2026-06-01', '2026-06-30')).rejects.toBeInstanceOf(TransactionsRequestFailedError)
     })
   })
 })

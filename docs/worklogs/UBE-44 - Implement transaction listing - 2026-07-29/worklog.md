@@ -72,6 +72,17 @@ From the Linear issue:
   number in the data model) - showing the account name as a badge (reusing the mockup's
   `.acct-badge` styling minus the number) rather than inventing a lookup into Settings accounts for
   a masked number, which isn't requested.
+- **"All time" date bound**: the API has no "since the beginning" concept - it needs a concrete
+  `startDate`. The FrontEnd sends 10 years back from today for "All time", a pragmatic bound that
+  safely covers any real usage of this brand-new app without needing a real "earliest data" lookup.
+- **No per-category color palette for the chip**: the mockup colors each category chip from a
+  9-entry hex map (Housing, Groceries, etc.). Since CSV upload always saves an *empty* `Category`
+  (category editing is explicitly out of scope, and nothing else sets it yet), every transaction
+  currently in the system would hit the same "Uncategorized" muted-chip state - building a color
+  palette for category values that can never actually occur yet would be speculative. Category
+  renders as a plain chip (single color) when non-empty, muted "Uncategorized" when empty - matches
+  the mockup's `.chip`/`.chip-muted` treatment (from its "recent transactions" list, not the
+  editable table `.cat-select`) without inventing an unused taxonomy.
 
 ## Plan
 
@@ -123,13 +134,26 @@ From the Linear issue:
 - [x] `Api.UnitTests/Controllers/TransactionsControllerTests.cs` — GET action tests (4 new: missing
       start/end date, start>end, success); also had to fix the constructor call broken by step 2's
       controller signature change. All 32 unit tests pass.
-- [ ] `Api.IntegrationTests/TransactionsEndpointTests.cs` — GET tests
-- [ ] `FrontEnd/src/services/transactionsService.ts` — `getTransactions`
-- [ ] `FrontEnd/src/views/TransactionsView.vue` — listing + date filter
-- [ ] `FrontEnd.UnitTests/services/transactionsService.test.ts` — `getTransactions` tests
-- [ ] `FunctionalTests/tests/transactionListing.spec.ts`
-- [ ] Verify: `dotnet build`/`dotnet test` pass
-- [ ] Verify: FrontEnd lint/type-check + `FrontEnd.UnitTests` pass
+- [x] `Api.IntegrationTests/TransactionsEndpointTests.cs` — GET tests (4 new: unauthenticated, bad
+      request on missing/invalid params, range-filtering + a real missing-month gap in the middle of
+      the range) — all 7 integration tests pass against real DynamoDB Local
+- [x] `FrontEnd/src/services/transactionsService.ts` — `getTransactions` + `Transaction` interface +
+      `TransactionsRequestFailedError` (`vue-tsc -b` clean)
+- [x] `FrontEnd/src/views/TransactionsView.vue` — listing + date filter (`vue-tsc -b && vite build`
+      and `npm run lint` both clean; date range computed client-side per option, table styled per
+      the mockup's `table.tx`, read-only category chips, Upload button retained)
+- [x] `FrontEnd.UnitTests/services/transactionsService.test.ts` — `getTransactions` tests (2 new:
+      query params + bearer token + returns transactions, error on non-ok); all 20 tests pass
+- [x] `FunctionalTests/tests/transactionListing.spec.ts` — uploads a today-dated + a 6-weeks-ago
+      transaction, verifies the default "Last month" filter shows only today's, switching to "Last
+      3 months" shows both, switching to "Last week" hides the old one again - real date-range
+      filtering coverage, not just presence-check. Passes; full suite run shows the same pre-existing
+      `settings.spec.ts` concurrent-manual-editing race diagnosed earlier this session (unrelated to
+      this change) - 7/8 pass, all transaction-related tests green.
+- [x] Verify: `dotnet build`/`dotnet test` pass — final full-solution run, 46/46 tests (32 unit +
+      14 integration)
+- [x] Verify: FrontEnd lint/type-check + `FrontEnd.UnitTests` pass — already confirmed clean at
+      steps 8-9 (`vue-tsc -b && vite build`, `npm run lint`, 20/20 `FrontEnd.UnitTests`)
 - [ ] Verify: real local run — upload, listing, all 4 date-range filters, empty-range state
 
 ## Prompt Log

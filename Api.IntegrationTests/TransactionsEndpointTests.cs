@@ -1,8 +1,11 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Pim.Api.Auth;
+using Pim.Api.Controllers;
 using Pim.Api.Data;
 using Pim.Api.Repository;
 
@@ -10,6 +13,11 @@ namespace Pim.Api.IntegrationTests;
 
 public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationFactory>, IAsyncLifetime
 {
+    // ReadFromJsonAsync<T>() with no explicit options defaults to JsonSerializerDefaults.Web
+    // (case-insensitive, camelCase) - matching that here since the Api writes camelCase
+    // (Program.cs's controller JSON options).
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running
     // Balance - 6 columns, not the 5 originally assumed. Balance (last column) is never read.
     private const string ValidCsv =
@@ -80,6 +88,79 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var response = await client.PostAsync("/transactions/file", content);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_ReturnsUnauthorized_WhenNoTokenIsProvided()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/transactions?startDate=2026-06-01&endDate=2026-06-30");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_ReturnsBadRequest_WhenDateParamsAreMissing()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.GetAsync("/transactions");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_ReturnsBadRequest_WhenStartDateIsAfterEndDate()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.GetAsync("/transactions?startDate=2026-06-30&endDate=2026-06-01");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_ReturnsTransactionsWithinRange_AndHandlesAMonthWithNoDataAtAll()
+    {
+        var client = AuthenticatedClient();
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+
+        var juneId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(juneId);
+        await repository.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions =
+            [
+                new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "In range", Category = "", Amount = -4.50m },
+                new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 1), Description = "Before range", Category = "", Amount = -1m },
+            ],
+        });
+
+        // July intentionally has no bucket at all - proves a gap in the middle of the requested
+        // range doesn't error, per the ticket's "handle not all date ranges being populated".
+        var augustId = TransactionMonth.BuildId(_email, 2026, 8);
+        _seededMonthIds.Add(augustId);
+        await repository.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 8,
+            Transactions = [new Transaction { Account = "Everyday", Date = new DateOnly(2026, 8, 1), Description = "August", Category = "", Amount = 100m }],
+        });
+
+        var response = await client.GetAsync("/transactions?startDate=2026-06-05&endDate=2026-08-31");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
+        Assert.Equal(2, body!.Transactions.Count);
+        Assert.Contains(body.Transactions, t => t.Description == "In range");
+        Assert.Contains(body.Transactions, t => t.Description == "August");
+        Assert.DoesNotContain(body.Transactions, t => t.Description == "Before range");
     }
 
     private static MultipartFormDataContent BuildMultipartContent(string account, string csv)

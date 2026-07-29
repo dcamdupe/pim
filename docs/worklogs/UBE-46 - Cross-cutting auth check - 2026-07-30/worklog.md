@@ -1,6 +1,7 @@
 # UBE-46 — Implement cross cutting auth check for all endpoints
 
 Linear: https://linear.app/uberconcept/issue/UBE-46/implement-cross-cutting-auth-check-for-all-endpoints
+PR: https://github.com/dcamdupe/pim/pull/28
 
 ## Description
 
@@ -75,3 +76,4 @@ change there.
 1. "start worklog in UBE-46"
 2. "go ahead" (steps 1-2 — AuthorizationTests.cs + empirical verification)
 3. "go ahead" (steps 3-4 — delete old tests + final verify)
+4. "yes, commit and raise the pr"

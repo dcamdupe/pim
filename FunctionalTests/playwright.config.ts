@@ -70,8 +70,8 @@ export default defineConfig({
     // },
   ],
 
-  /* Start the FrontEnd dev server before running tests. Requires Api + MongoDB to already be
-   * running separately (see FunctionalTests/README.md). */
+  /* Start the FrontEnd dev server before running tests. Requires Api + the DynamoDB Local
+   * emulator to already be running separately (see FunctionalTests/README.md). */
   webServer: {
     command: 'npm run dev',
     cwd: '../FrontEnd',

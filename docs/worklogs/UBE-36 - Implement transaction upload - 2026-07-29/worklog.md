@@ -133,24 +133,49 @@ CSV date format (confirmed by David): `dd MMM yyyy`, e.g. `01 JUN 2026`.
 
 ## Checklist
 
-- [ ] `Api/Data/Transaction.cs`
-- [ ] `Api/Data/TransactionMonth.cs`
-- [ ] `Api/Pim.Api.csproj` — add `CsvHelper`
-- [ ] `Api/Controllers/TransactionsController.cs`
-- [ ] `Api.UnitTests/Controllers/TransactionsControllerTests.cs`
-- [ ] `Api.IntegrationTests/TransactionsEndpointTests.cs`
-- [ ] `Terraform/main.tf` — `module "transactions_data"`
-- [ ] `Terraform/modules/api/variables.tf` — `transaction_dynamodb_table_arn`
-- [ ] `Terraform/modules/api/main.tf` — extend IAM policy
-- [ ] `scripts/setup_local.sh` — create `TransactionMonth` table
-- [ ] `FrontEnd/src/services/transactionsService.ts`
-- [ ] `FrontEnd/src/router/index.ts` — new routes
-- [ ] `FrontEnd/src/components/NavBar.vue` — Dashboard/Transactions switcher
-- [ ] `FrontEnd/src/views/TransactionsView.vue`
-- [ ] `FrontEnd/src/views/TransactionUploadView.vue`
-- [ ] `FrontEnd.UnitTests/services/transactionsService.test.ts`
-- [ ] `FunctionalTests/tests/transactionUpload.spec.ts`
-- [ ] Verify: `dotnet build`/`dotnet test` pass
+- [x] `Api/Data/Transaction.cs`
+- [x] `Api/Data/TransactionMonth.cs` (computed `[Id]` property builds fine, build clean)
+- [x] `Api/Pim.Api.csproj` — add `CsvHelper` (33.1.0, build clean)
+- [x] `Api/Controllers/TransactionsController.cs` (build clean)
+- [x] `Api.UnitTests/Controllers/TransactionsControllerTests.cs` — 6 tests covering validation
+      (missing account/empty file/unparseable CSV), correct field mapping + empty Category,
+      appending to an existing month bucket, and grouping rows across months into separate buckets;
+      all 13 unit tests pass (7 existing + 6 new)
+- [x] `Api.IntegrationTests/TransactionsEndpointTests.cs` (3 tests — unauthenticated, successful
+      upload verified via `IRepository<TransactionMonth>`, malformed-file BadRequest — now run for
+      real against DynamoDB Local: all 10 integration tests pass, 7 existing + 3 new)
+- [x] `Terraform/main.tf` — `module "transactions_data"`, wired into `module "api"`
+      (`terraform fmt` applied)
+- [x] `Terraform/modules/api/variables.tf` — `transaction_dynamodb_table_arn`
+- [x] `Terraform/modules/api/main.tf` — extend IAM policy; combined into a single `TableAccess`
+      statement covering both table ARNs (per David's request, rather than a duplicated second
+      statement) — `terraform fmt -check`/`terraform validate` both pass
+- [x] `scripts/setup_local.sh` — extracted a `create_table_if_missing` helper (now used for both
+      `User` and `TransactionMonth`, avoiding duplicating the create-table block); tested directly —
+      creates the new table, leaves `User` alone, and re-running skips both
+- [x] `FrontEnd/src/services/transactionsService.ts`
+- [x] `FrontEnd/src/router/index.ts` — new routes (`transactions`, `transactionUpload`); references
+      view files that don't exist until steps 14-15, so build/type-check won't pass until then
+- [x] `FrontEnd/src/components/NavBar.vue` — Dashboard/Transactions switcher (two `RouterLink` tabs,
+      active state via vue-router's `router-link-active` class + `--accent`)
+- [x] `FrontEnd/src/views/TransactionsView.vue`
+- [x] `FrontEnd/src/views/TransactionUploadView.vue` — account select + drag/drop zone + Save;
+      caught and fixed a theming bug while writing it: hardcoded `color: #fff` on accent-background
+      buttons (in this file and `NavBar.vue`'s active tab) instead of `var(--accent-ink)`, which
+      would've been wrong in dark mode. `vue-tsc -b && vite build` and `npm run lint` both pass
+      clean now that all referenced view files exist (confirms steps 12-14 too)
+- [x] `FrontEnd.UnitTests/services/transactionsService.test.ts` — 2 tests (multipart FormData +
+      bearer token, error on non-ok response); all 18 FrontEnd.UnitTests pass across 5 files
+- [x] `FunctionalTests/tests/transactionUpload.spec.ts` — full end-to-end pass (login → add a
+      Settings account → nav switcher to Transactions → Upload page → select account → drag/drop
+      file input → Save → redirect back → cleanup) against the real stack via `scripts/run_local.sh`.
+      Also fixed a second stale Mongo reference in `playwright.config.ts`'s comment, missed by
+      UBE-28's doc sweep (only covered `.cs`/`.json`/`.csproj`/`.md`/`.sh`, not `.ts`) — confirmed via
+      a fresh repo-wide sweep that no more remain. Known gap noted in the test: it can't assert the
+      uploaded data was saved (no listing UI exists yet per this ticket's scope) - that's covered by
+      `Api.IntegrationTests` instead.
+- [x] Verify: `dotnet build`/`dotnet test` pass — final full-solution run, 23/23 tests
+      (13 unit + 10 integration)
 - [ ] Verify: FrontEnd lint/type-check + `FrontEnd.UnitTests` pass
 - [ ] Verify: real local run — upload end-to-end, nav switcher, saved data shape confirmed
 

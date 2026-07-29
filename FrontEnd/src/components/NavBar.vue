@@ -18,6 +18,11 @@ function onLogout() {
       Pim
     </RouterLink>
 
+    <nav class="tabs">
+      <RouterLink to="/dashboard" class="tab">Dashboard</RouterLink>
+      <RouterLink to="/transactions" class="tab">Transactions</RouterLink>
+    </nav>
+
     <div class="spacer"></div>
 
     <RouterLink to="/settings" class="icon-btn" title="Settings" aria-label="Settings">
@@ -86,6 +91,32 @@ function onLogout() {
   justify-content: center;
   font-size: 13px;
   font-weight: 800;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.tab:hover,
+.tab:focus-visible {
+  background: var(--border);
+  color: var(--text-h);
+}
+
+.tab.router-link-active {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .spacer {

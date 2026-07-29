@@ -46,7 +46,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
 
 data "aws_iam_policy_document" "dynamodb_access" {
   statement {
-    sid    = "UserTableAccess"
+    sid    = "TableAccess"
     effect = "Allow"
     actions = [
       "dynamodb:GetItem",
@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "dynamodb_access" {
       "dynamodb:DeleteItem",
       "dynamodb:Query",
     ]
-    resources = [var.dynamodb_table_arn]
+    resources = [var.dynamodb_table_arn, var.transaction_dynamodb_table_arn]
   }
 }
 

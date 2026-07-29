@@ -36,6 +36,7 @@ public sealed class CsvProcessor : ICsvProcessor
             // Broad catch deliberately: this is parsing an untrusted, user-uploaded file, where
             // many different exception types (CsvHelper's own, FormatException, etc.) can
             // legitimately arise from malformed data - all of them become one CsvParseException.
+            _logger.LogWarning(ex, "Transaction upload: could not parse file: email={Email} account={Account}", email, account);
             throw new CsvParseException("Could not parse the uploaded file.", ex);
         }
 

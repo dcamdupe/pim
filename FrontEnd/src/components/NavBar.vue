@@ -12,11 +12,19 @@ import { RouterLink } from 'vue-router'
     <div class="spacer"></div>
 
     <RouterLink to="/settings" class="icon-btn" title="Settings" aria-label="Settings">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-        <circle cx="12" cy="12" r="3" />
-        <path
-          d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12M19.07 19.07l-2.12-2.12M7.05 7.05 4.93 4.93"
-        />
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="12" cy="12" r="6.2" />
+        <circle cx="12" cy="12" r="2.2" />
+        <g fill="currentColor" stroke="none">
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(45 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(90 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(135 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(180 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(225 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(270 12 12)" />
+          <rect x="10.7" y="1.3" width="2.6" height="4.2" rx="1" transform="rotate(315 12 12)" />
+        </g>
       </svg>
     </RouterLink>
 

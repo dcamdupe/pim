@@ -146,66 +146,33 @@ label {
   color: var(--text-h);
 }
 
-input,
-select {
-  font: inherit;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--text-h);
+.remove-button,
+.add-button {
+  font-size: 13px;
+  padding: 8px 12px;
+  background: none;
+  color: var(--text);
 }
 
 .remove-button {
-  font: inherit;
-  font-size: 13px;
-  padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: none;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.remove-button:hover {
-  color: var(--text-h);
-  border-color: var(--text);
 }
 
 .add-button {
-  font: inherit;
-  padding: 8px 12px;
   border: 1px dashed var(--border);
-  border-radius: 4px;
-  background: none;
-  color: var(--text);
-  cursor: pointer;
   margin-bottom: 24px;
 }
 
-.add-button:hover {
+.remove-button:hover:not(:disabled),
+.add-button:hover:not(:disabled) {
   color: var(--text-h);
   border-color: var(--text);
+  filter: none;
 }
 
 .save-row {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.save-button {
-  font: inherit;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  background: var(--accent);
-  color: #fff;
-  cursor: pointer;
-}
-
-.save-button:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 </style>

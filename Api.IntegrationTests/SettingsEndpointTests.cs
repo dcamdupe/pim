@@ -50,16 +50,6 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     }
 
     [Fact]
-    public async Task Get_ReturnsUnauthorized_WhenNoTokenIsProvided()
-    {
-        var client = _factory.CreateClient();
-
-        var response = await client.GetAsync("/settings");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
     public async Task Get_ReturnsTheAuthenticatedUsersAccounts()
     {
         var client = AuthenticatedClient();

@@ -1,6 +1,7 @@
 # UBE-28 — Switch local to DynamoDB
 
 Linear: https://linear.app/uberconcept/issue/UBE-28/switch-local-to-a-dynamodb-emulator
+PR: https://github.com/dcamdupe/pim/pull/24
 
 ## Description
 
@@ -186,3 +187,4 @@ From the Linear issue, needs to fix:
 19. "yes, go ahead" (step 18 — CLAUDE.md/README.md/FunctionalTests/README.md)
 20. "yes, go ahead" (step 19 — dotnet build/test verification)
 21. "verified" (step 20 — real local run confirmed by David)
+22. "yes, commit and raise the pr"

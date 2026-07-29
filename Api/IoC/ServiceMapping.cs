@@ -42,6 +42,7 @@ public static class ServiceMapping
         builder.Services.AddScoped(typeof(IRepository<>), typeof(DynamoDbRepository<>));
         builder.Services.AddSingleton<ICSVParserFactory, CSVParserFactory>();
         builder.Services.AddScoped<ICsvProcessor, CsvProcessor>();
+        builder.Services.AddScoped<ITransactionQueryService, TransactionQueryService>();
 
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
         builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();

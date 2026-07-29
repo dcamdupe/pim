@@ -113,11 +113,16 @@ From the Linear issue:
 
 ## Checklist
 
-- [ ] `Api/Services/ITransactionQueryService.cs` / `TransactionQueryService.cs`
-- [ ] `Api/Controllers/TransactionsController.cs` — `GET /transactions`
-- [ ] `Api/IoC/ServiceMapping.cs` — register `ITransactionQueryService`
-- [ ] `Api.UnitTests/Services/TransactionQueryServiceTests.cs`
-- [ ] `Api.UnitTests/Controllers/TransactionsControllerTests.cs` — GET action tests
+- [x] `Api/Services/ITransactionQueryService.cs` / `TransactionQueryService.cs` (build clean)
+- [x] `Api/Controllers/TransactionsController.cs` — `GET /transactions` (build clean; DI
+      registration for `ITransactionQueryService` is next step, controller won't resolve until then)
+- [x] `Api/IoC/ServiceMapping.cs` — register `ITransactionQueryService` (build clean)
+- [x] `Api.UnitTests/Services/TransactionQueryServiceTests.cs` — 6 tests (empty when no data,
+      partial-range filtering, multi-month combining, missing month mid-range, year-boundary
+      enumeration, descending sort)
+- [x] `Api.UnitTests/Controllers/TransactionsControllerTests.cs` — GET action tests (4 new: missing
+      start/end date, start>end, success); also had to fix the constructor call broken by step 2's
+      controller signature change. All 32 unit tests pass.
 - [ ] `Api.IntegrationTests/TransactionsEndpointTests.cs` — GET tests
 - [ ] `FrontEnd/src/services/transactionsService.ts` — `getTransactions`
 - [ ] `FrontEnd/src/views/TransactionsView.vue` — listing + date filter

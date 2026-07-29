@@ -160,8 +160,29 @@ From the Linear issue, needs to fix:
 - [x] Verify: `dotnet build`/`dotnet test` pass against DynamoDB Local — full solution build clean,
       14/14 tests pass (7 unit + 7 integration); repo-wide sweep confirms zero remaining Mongo
       references in any `.cs`/`.json`/`.csproj`/`.md`/`.sh` file
-- [ ] Verify: real local run via `run_local.sh` — login + settings page work end-to-end
+- [x] Verify: real local run via `run_local.sh` — login + settings page work end-to-end (confirmed
+      by David)
 
 ## Prompt Log
 
 1. "start UBE-28"
+2. "yes, go ahead" (step 1 — IdAttribute.cs)
+3. "yes" (step 2 — User.cs)
+4. "yes, go ahead" (step 3 — Account.cs)
+5. "yes, go ahead" (step 4 — DynamoDbRepository.cs)
+6. "yes, go ahead" (step 5 — delete MongoRepository.cs)
+7. "yes, go ahead" (step 6 — delete MongoSettings.cs)
+8. "yes, go ahead" (step 7 — AwsSettings.cs ServiceUrl)
+9. "yes, go ahead" (step 8 — ServiceMapping.cs)
+10. "yes, go ahead" (step 9 — RootController.cs usings)
+11. "yes, go ahead" (step 10 — Pim.Api.csproj)
+12. "yes, go ahead" (step 11 — appsettings.Local.json)
+13. "yes, go ahead" (step 12 — RepositoryMockFactory.cs)
+14. "yes, go ahead" (step 13 — LoginEndpointTests.cs)
+15. "yes, go ahead" (step 14 — SettingsEndpointTests.cs)
+16. "yes, go ahead" (step 15 — RootEndpointTests.cs rename)
+17. "yes, go ahead" (step 16 — setup_local.sh)
+18. "yes, go ahead" (step 17 — run_local.sh)
+19. "yes, go ahead" (step 18 — CLAUDE.md/README.md/FunctionalTests/README.md)
+20. "yes, go ahead" (step 19 — dotnet build/test verification)
+21. "verified" (step 20 — real local run confirmed by David)

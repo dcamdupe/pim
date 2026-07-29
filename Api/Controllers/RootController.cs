@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
-using MongoDB.Driver;
 
 namespace Pim.Api.Controllers;
 

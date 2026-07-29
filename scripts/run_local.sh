@@ -4,8 +4,8 @@
 # always safe to re-run - no manual cleanup needed if a previous run wasn't
 # stopped cleanly. Ctrl+C stops both.
 #
-# Requires MongoDB already running, and `source scripts/setup_local.sh`
-# already done at least once (seeds the test login, creates FrontEnd/.env).
+# Requires `source scripts/setup_local.sh` already done at least once (starts the local
+# DynamoDB emulator, seeds the test login, creates FrontEnd/.env).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

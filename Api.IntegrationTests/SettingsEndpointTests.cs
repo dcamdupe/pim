@@ -4,10 +4,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Driver;
 using Pim.Api.Auth;
 using Pim.Api.Controllers;
 using Pim.Api.Data;
+using Pim.Api.Repository;
 
 namespace Pim.Api.IntegrationTests;
 
@@ -23,27 +23,31 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
 
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
-    private IMongoCollection<User> _users = null!;
 
     public SettingsEndpointTests(ApiWebApplicationFactory factory)
     {
         _factory = factory;
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        _users = _factory.Services.GetRequiredService<IMongoDatabase>().GetCollection<User>("User");
+        using var scope = _factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
         var user = new User
         {
             Email = _email,
             PasswordHash = "unused-in-these-tests",
             Accounts = [new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction }],
         };
-        return _users.InsertOneAsync(user);
+        await users.AddAsync(user);
     }
 
-    public Task DisposeAsync() =>
-        _users.DeleteOneAsync(Builders<User>.Filter.Eq("_id", _email));
+    public async Task DisposeAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
+        await users.DeleteAsync(_email);
+    }
 
     [Fact]
     public async Task Get_ReturnsUnauthorized_WhenNoTokenIsProvided()

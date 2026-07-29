@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Driver;
 using Pim.Api.Controllers;
 using Pim.Api.Data;
+using Pim.Api.Repository;
 
 namespace Pim.Api.IntegrationTests;
 
@@ -13,22 +13,26 @@ public sealed class LoginEndpointTests : IClassFixture<ApiWebApplicationFactory>
 
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
-    private IMongoCollection<User> _users = null!;
 
     public LoginEndpointTests(ApiWebApplicationFactory factory)
     {
         _factory = factory;
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        _users = _factory.Services.GetRequiredService<IMongoDatabase>().GetCollection<User>("User");
+        using var scope = _factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(Password);
-        return _users.InsertOneAsync(new User { Email = _email, PasswordHash = passwordHash });
+        await users.AddAsync(new User { Email = _email, PasswordHash = passwordHash });
     }
 
-    public Task DisposeAsync() =>
-        _users.DeleteOneAsync(Builders<User>.Filter.Eq("_id", _email));
+    public async Task DisposeAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
+        await users.DeleteAsync(_email);
+    }
 
     [Fact]
     public async Task Post_ReturnsOkWithToken_WhenCredentialsAreValid()

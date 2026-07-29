@@ -1,6 +1,5 @@
 using System.Reflection;
 using Moq;
-using MongoDB.Bson.Serialization.Attributes;
 using Pim.Api.Repository;
 
 namespace Pim.Api.UnitTests.Helpers;
@@ -48,11 +47,11 @@ internal static class RepositoryMockFactory
     {
         var type = typeof(T);
         var property = type.GetProperties()
-            .FirstOrDefault(p => p.IsDefined(typeof(BsonIdAttribute), inherit: true))
+            .FirstOrDefault(p => p.IsDefined(typeof(IdAttribute), inherit: true))
             ?? type.GetProperty("Id");
 
         return property ?? throw new InvalidOperationException(
-            $"Type '{type.Name}' has no [BsonId] property or a property named 'Id' to key mocked lookups on.");
+            $"Type '{type.Name}' has no [Id] property or a property named 'Id' to key mocked lookups on.");
     }
 
     private static string GetId<T>(T entity, PropertyInfo idProperty) =>

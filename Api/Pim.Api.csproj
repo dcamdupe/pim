@@ -21,7 +21,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
-    <PackageReference Include="MongoDB.Driver" Version="3.10.0" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="6.1.4" />
   </ItemGroup>
 

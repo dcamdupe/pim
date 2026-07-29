@@ -1,10 +1,10 @@
-using MongoDB.Bson.Serialization.Attributes;
+using Pim.Api.Repository;
 
 namespace Pim.Api.Data;
 
 public sealed class User
 {
-    [BsonId]
+    [Id]
     public required string Email { get; set; }
 
     public required string PasswordHash { get; set; }

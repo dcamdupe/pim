@@ -2,10 +2,10 @@ using System.Text;
 using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.Lambda.AspNetCoreServer.Hosting;
+using Amazon.Runtime;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver;
 using NLog.Web;
 using Pim.Api.Auth;
 using Pim.Api.Configuration;
@@ -21,25 +21,23 @@ public static class ServiceMapping
     {
         ConfigureLogging(builder);
 
-        // DynamoDB is used whenever MongoSettings isn't configured (i.e. in
-        // production/Lambda, where appsettings.Production.json has no MongoSettings
-        // section) - MongoSettings is only present locally, via appsettings.Local.json.
-        if (builder.Configuration.GetSection("MongoSettings").Exists())
+        builder.Services.Configure<AwsSettings>(builder.Configuration.GetSection("Aws"));
+        builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
         {
-            builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("MongoSettings"));
-            builder.Services.AddSingleton<IMongoClient>(sp =>
-                new MongoClient(sp.GetRequiredService<IOptions<MongoSettings>>().Value.ConnectionString));
-            builder.Services.AddSingleton(sp =>
-                sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<MongoSettings>>().Value.DatabaseName));
-            builder.Services.AddScoped(typeof(IRepository<>), typeof(MongoRepository<>));
-        }
-        else
-        {
-            builder.Services.Configure<AwsSettings>(builder.Configuration.GetSection("Aws"));
-            builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
-                new AmazonDynamoDBClient(RegionEndpoint.GetBySystemName(sp.GetRequiredService<IOptions<AwsSettings>>().Value.Region)));
-            builder.Services.AddScoped(typeof(IRepository<>), typeof(DynamoDbRepository<>));
-        }
+            var awsSettings = sp.GetRequiredService<IOptions<AwsSettings>>().Value;
+            if (awsSettings.ServiceUrl is null)
+            {
+                return new AmazonDynamoDBClient(RegionEndpoint.GetBySystemName(awsSettings.Region));
+            }
+
+            // ServiceUrl is only set locally, to point at DynamoDB Local - it doesn't check
+            // credentials, but the SDK still needs some static credentials supplied since
+            // there's no real AWS environment/role to fall back to.
+            return new AmazonDynamoDBClient(
+                new BasicAWSCredentials("local", "local"),
+                new AmazonDynamoDBConfig { ServiceURL = awsSettings.ServiceUrl });
+        });
+        builder.Services.AddScoped(typeof(IRepository<>), typeof(DynamoDbRepository<>));
 
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
         builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();

@@ -1,11 +1,9 @@
 using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Pim.Api.Controllers;
-using Pim.Api.Data;
-using Pim.Api.UnitTests.Helpers;
+using Pim.Api.Services;
 
 namespace Pim.Api.UnitTests.Controllers;
 
@@ -17,9 +15,9 @@ public class TransactionsControllerTests
     [Fact]
     public async Task UploadFile_ReturnsBadRequest_WhenAccountIsMissing()
     {
-        var sut = CreateController([]);
+        var sut = CreateController(new Mock<ICsvProcessor>());
 
-        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = " ", File = CreateCsvFile(ValidCsv) });
+        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = " ", File = CreateFile() });
 
         Assert.IsType<BadRequestResult>(result);
     }
@@ -27,92 +25,45 @@ public class TransactionsControllerTests
     [Fact]
     public async Task UploadFile_ReturnsBadRequest_WhenFileIsEmpty()
     {
-        var sut = CreateController([]);
+        var sut = CreateController(new Mock<ICsvProcessor>());
 
-        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = CreateCsvFile("") });
+        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = CreateFile(0) });
 
         Assert.IsType<BadRequestResult>(result);
     }
 
     [Fact]
-    public async Task UploadFile_ReturnsBadRequest_WhenFileCannotBeParsed()
+    public async Task UploadFile_ReturnsBadRequest_WhenProcessorThrowsCsvParseException()
     {
-        var sut = CreateController([]);
-        var malformedCsv = "Date,Ignore,Description,Amount,Ignore\nnot-a-date,x,Coffee,-4.50,x\n";
+        var processor = new Mock<ICsvProcessor>();
+        processor.Setup(p => p.ProcessAsync(Email, Account, It.IsAny<IFormFile>()))
+            .ThrowsAsync(new CsvParseException("bad file", new FormatException()));
+        var sut = CreateController(processor);
 
-        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = CreateCsvFile(malformedCsv) });
+        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = CreateFile() });
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
-    public async Task UploadFile_SavesTransactions_WithEmptyCategory()
+    public async Task UploadFile_ReturnsNoContent_AndCallsProcessor_WhenSuccessful()
     {
-        var months = new List<TransactionMonth>();
-        var sut = CreateController(months);
+        var processor = new Mock<ICsvProcessor>();
+        var file = CreateFile();
+        var sut = CreateController(processor);
 
-        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = CreateCsvFile(ValidCsv) });
+        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = file });
 
         Assert.IsType<NoContentResult>(result);
-        var month = Assert.Single(months);
-        Assert.Equal(TransactionMonth.BuildId(Email, 2026, 6), month.Id);
-        Assert.Equal(2, month.Transactions.Count);
-        Assert.All(month.Transactions, t => Assert.Equal(Account, t.Account));
-        Assert.All(month.Transactions, t => Assert.Equal(string.Empty, t.Category));
-        Assert.Contains(month.Transactions, t => t.Description == "Coffee Shop" && t.Amount == -4.50m);
-        Assert.Contains(month.Transactions, t => t.Description == "Salary" && t.Amount == 2500.00m);
+        processor.Verify(p => p.ProcessAsync(Email, Account, file), Times.Once);
     }
 
-    [Fact]
-    public async Task UploadFile_AppendsToExistingMonth_WhenBucketAlreadyExists()
+    private static IFormFile CreateFile(long length = 10) =>
+        new FormFile(new MemoryStream(new byte[length]), 0, length, "file", "transactions.csv");
+
+    private static TransactionsController CreateController(Mock<ICsvProcessor> processor)
     {
-        var existing = new TransactionMonth
-        {
-            Email = Email,
-            Year = 2026,
-            Month = 6,
-            Transactions = [new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Existing", Category = "", Amount = -1m }],
-        };
-        var months = new List<TransactionMonth> { existing };
-        var sut = CreateController(months);
-
-        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = CreateCsvFile(ValidCsv) });
-
-        Assert.IsType<NoContentResult>(result);
-        var month = Assert.Single(months);
-        Assert.Equal(3, month.Transactions.Count);
-    }
-
-    [Fact]
-    public async Task UploadFile_GroupsRowsAcrossMonths_IntoSeparateBuckets()
-    {
-        var months = new List<TransactionMonth>();
-        var sut = CreateController(months);
-        var csv = "Date,Ignore,Description,Amount,Ignore\n01 JUN 2026,x,June Row,-1.00,x\n01 JUL 2026,x,July Row,-2.00,x\n";
-
-        var result = await sut.UploadFile(new UploadTransactionsRequest { Account = Account, File = CreateCsvFile(csv) });
-
-        Assert.IsType<NoContentResult>(result);
-        Assert.Equal(2, months.Count);
-        Assert.Contains(months, m => m.Year == 2026 && m.Month == 6 && m.Transactions.Single().Description == "June Row");
-        Assert.Contains(months, m => m.Year == 2026 && m.Month == 7 && m.Transactions.Single().Description == "July Row");
-    }
-
-    private const string ValidCsv =
-        "Date,Ignore,Description,Amount,Ignore\n" +
-        "01 JUN 2026,x,Coffee Shop,-4.50,x\n" +
-        "15 JUN 2026,x,Salary,2500.00,x\n";
-
-    private static IFormFile CreateCsvFile(string content)
-    {
-        var bytes = Encoding.UTF8.GetBytes(content);
-        return new FormFile(new MemoryStream(bytes), 0, bytes.Length, "file", "transactions.csv");
-    }
-
-    private static TransactionsController CreateController(List<TransactionMonth> months)
-    {
-        var repository = RepositoryMockFactory.Create(months);
-        var controller = new TransactionsController(repository.Object, NullLogger<TransactionsController>.Instance);
+        var controller = new TransactionsController(processor.Object);
         var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, Email)], "TestAuth");
         controller.ControllerContext = new ControllerContext
         {

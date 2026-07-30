@@ -1,7 +1,7 @@
 # UBE-48 — Implement Transaction classification for credit transactions
 
 Linear: https://linear.app/uberconcept/issue/UBE-48/implement-transaction-classification-for-credit-transactions
-PR: (not yet raised)
+PR: https://github.com/dcamdupe/pim/pull/30
 
 ## Description
 

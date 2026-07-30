@@ -237,6 +237,20 @@ This requires:
   `CsvProcessor.cs` referencing the old path. Verified: `dotnet build`/`dotnet test` (still 63/63 +
   26/26, just redistributed across files), `FrontEnd.UnitTests` (37/37), and the
   `transactionCategorization.spec.ts` Playwright scenario against a real `run_local.sh` stack.
+- Added the 3 endpoints introduced by this ticket (`PUT /transactions`,
+  `GET /transactions/descriptions`, `POST /mapping/credit`) to
+  `Api.IntegrationTests/AuthorizationTests.cs`'s `ProtectedEndpoints()` list - they'd been covered
+  by their own controller/integration tests but missed the UBE-46 cross-cutting "no token → 401"
+  check. Also added a CLAUDE.md rule (next to the existing "new endpoints need a functional test"
+  line) that every authenticated endpoint must have an entry there, so this doesn't get missed
+  again for future endpoints. Verified: `dotnet test` - 63/63 unit + 29/29 integration (26 + 3
+  new).
+- Removed all `Api.UnitTests/Controllers/*` (`SettingsControllerTests.cs`,
+  `TransactionsControllerTests.cs`, `MappingControllerTests.cs`), at David's request - controllers
+  are already covered by `Api.IntegrationTests` hitting the real endpoints. Added a CLAUDE.md rule
+  against writing controller unit tests going forward (unit tests belong on the services/logic
+  underneath them instead). Verified: `dotnet test` - 44/44 unit (down from 63, as expected) +
+  29/29 integration, unaffected.
 
 ## Notes for next session
 

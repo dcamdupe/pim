@@ -22,6 +22,18 @@ export class TransactionsRequestFailedError extends Error {
   }
 }
 
+export class TransactionsUpdateFailedError extends Error {
+  constructor() {
+    super('Transactions update failed')
+  }
+}
+
+export class CreditDescriptionMappingRequestFailedError extends Error {
+  constructor() {
+    super('Credit description mapping request failed')
+  }
+}
+
 function authHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${useAuthStore().token}` }
 }
@@ -59,4 +71,28 @@ export async function getTransactions(startDate: string | undefined, endDate: st
 
   const data = (await response.json()) as { transactions: Transaction[] }
   return data.transactions
+}
+
+export async function updateTransactions(transactions: Transaction[]): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/transactions`, {
+    method: 'PUT',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(transactions),
+  })
+
+  if (!response.ok) {
+    throw new TransactionsUpdateFailedError()
+  }
+}
+
+export async function saveCreditDescriptionMapping(descriptionStart: string, category: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/mapping/credit`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ descriptionStart, category }),
+  })
+
+  if (!response.ok) {
+    throw new CreditDescriptionMappingRequestFailedError()
+  }
 }

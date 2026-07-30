@@ -55,7 +55,12 @@ data "aws_iam_policy_document" "dynamodb_access" {
       "dynamodb:DeleteItem",
       "dynamodb:Query",
     ]
-    resources = [var.dynamodb_table_arn, var.transaction_dynamodb_table_arn]
+    resources = [
+      var.dynamodb_table_arn,
+      var.transaction_dynamodb_table_arn,
+      var.transaction_descriptions_dynamodb_table_arn,
+      var.credit_description_mapping_dynamodb_table_arn,
+    ]
   }
 }
 

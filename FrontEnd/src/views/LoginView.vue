@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '../services/authService'
+import { refreshTransactionDescriptions } from '../services/transactionDescriptionsService'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
@@ -37,6 +38,9 @@ async function onSubmit() {
   try {
     const token = await login(email.value, password.value)
     authStore.setToken(token)
+    // Best-effort cache warm - a failure here shouldn't block login, the category-matching UI
+    // just falls back to an empty cache until the next successful refresh.
+    void refreshTransactionDescriptions().catch(() => {})
     router.push('/dashboard')
   } catch {
     formError.value = 'Invalid login or password.'

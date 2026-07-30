@@ -53,6 +53,9 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
         await users.DeleteAsync(_email);
+
+        var transactionDescriptions = scope.ServiceProvider.GetRequiredService<IRepository<TransactionDescriptions>>();
+        await transactionDescriptions.DeleteAsync(_email);
     }
 
     [Fact]
@@ -210,6 +213,69 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
         Assert.Empty(body!.Transactions);
+    }
+
+    [Fact]
+    public async Task Post_PopulatesTransactionDescriptions_WithNewlyParsedDescriptions()
+    {
+        var client = AuthenticatedClient();
+        using var content = BuildMultipartContent("Everyday", ValidCsv);
+
+        var response = await client.PostAsync("/transactions/file", content);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        _seededMonthIds.Add(TransactionMonth.BuildId(_email, 2026, 6));
+
+        var descriptionsResponse = await client.GetAsync("/transactions/descriptions");
+        Assert.Equal(HttpStatusCode.OK, descriptionsResponse.StatusCode);
+        var body = await descriptionsResponse.Content.ReadFromJsonAsync<TransactionDescriptionsResponse>(JsonOptions);
+        Assert.Equal(["Coffee Shop", "Salary"], body!.Descriptions);
+    }
+
+    [Fact]
+    public async Task Get_TransactionDescriptions_ReturnsEmptyList_WhenUserHasNeverUploaded()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.GetAsync("/transactions/descriptions");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TransactionDescriptionsResponse>(JsonOptions);
+        Assert.Empty(body!.Descriptions);
+    }
+
+    [Fact]
+    public async Task Put_UpdatesTheCategory_OnTheMatchingStoredTransaction()
+    {
+        var client = AuthenticatedClient();
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        await repository.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        });
+
+        var updated = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
+        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { updated });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var month = await repository.GetAsync(monthId);
+        Assert.Equal("Dining", month!.Transactions.Single().Category);
+    }
+
+    [Fact]
+    public async Task Put_ReturnsBadRequest_WhenListIsEmpty()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction>());
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     private static MultipartFormDataContent BuildMultipartContent(string account, string csv)

@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSettings, type Account } from '../services/settingsService'
+import { refreshTransactionDescriptions } from '../services/transactionDescriptionsService'
 import { uploadTransactions } from '../services/transactionsService'
 
 const router = useRouter()
@@ -56,6 +57,9 @@ async function onSave() {
   saving.value = true
   try {
     await uploadTransactions(selectedAccount.value, file.value)
+    // Best-effort cache refresh - the upload itself already succeeded, so a failure here
+    // shouldn't surface as an upload error.
+    await refreshTransactionDescriptions().catch(() => {})
     router.push('/transactions')
   } catch {
     saveError.value = 'Could not upload the file. Please try again.'

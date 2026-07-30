@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pim.Api.Data;
+using Pim.Api.Repository;
 using Pim.Api.Services;
 
 namespace Pim.Api.Controllers;
@@ -12,11 +13,19 @@ public sealed class TransactionsController : ControllerBase
 {
     private readonly ICsvProcessor _csvProcessor;
     private readonly ITransactionQueryService _transactionQueryService;
+    private readonly ITransactionUpdateService _transactionUpdateService;
+    private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
 
-    public TransactionsController(ICsvProcessor csvProcessor, ITransactionQueryService transactionQueryService)
+    public TransactionsController(
+        ICsvProcessor csvProcessor,
+        ITransactionQueryService transactionQueryService,
+        ITransactionUpdateService transactionUpdateService,
+        IRepository<TransactionDescriptions> transactionDescriptions)
     {
         _csvProcessor = csvProcessor;
         _transactionQueryService = transactionQueryService;
+        _transactionUpdateService = transactionUpdateService;
+        _transactionDescriptions = transactionDescriptions;
     }
 
     [HttpPost("transactions/file")]
@@ -54,6 +63,29 @@ public sealed class TransactionsController : ControllerBase
 
         return Ok(new TransactionsResponse(transactions));
     }
+
+    [HttpPut("transactions")]
+    public async Task<IActionResult> UpdateTransactions(List<Transaction> transactions)
+    {
+        if (transactions.Count == 0)
+        {
+            return BadRequest();
+        }
+
+        var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        await _transactionUpdateService.UpdateTransactionsAsync(email, transactions);
+
+        return NoContent();
+    }
+
+    [HttpGet("transactions/descriptions")]
+    public async Task<ActionResult<TransactionDescriptionsResponse>> GetTransactionDescriptions()
+    {
+        var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var record = await _transactionDescriptions.GetAsync(email);
+
+        return Ok(new TransactionDescriptionsResponse(record?.Descriptions ?? []));
+    }
 }
 
 public sealed class UploadTransactionsRequest
@@ -64,3 +96,5 @@ public sealed class UploadTransactionsRequest
 }
 
 public sealed record TransactionsResponse(List<Transaction> Transactions);
+
+public sealed record TransactionDescriptionsResponse(List<string> Descriptions);

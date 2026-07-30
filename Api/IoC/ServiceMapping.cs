@@ -43,6 +43,7 @@ public static class ServiceMapping
         builder.Services.AddSingleton<ICSVParserFactory, CSVParserFactory>();
         builder.Services.AddScoped<ICsvProcessor, CsvProcessor>();
         builder.Services.AddScoped<ITransactionQueryService, TransactionQueryService>();
+        builder.Services.AddScoped<ITransactionUpdateService, TransactionUpdateService>();
 
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
         builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();

@@ -31,6 +31,10 @@ unless you specifically only need one of the two running.
 - `TreatWarningsAsErrors` is enabled on `Pim.Api` — analyzer warnings fail the build.
 - Requires a local DynamoDB Local emulator (`http://localhost:8000` by default, see `Api/appsettings.Local.json` and `scripts/setup_local.sh`). `Api.IntegrationTests` also needs it running since it exercises the real endpoints/DB, not mocks.
 - New endpoints must have a corresponding functional test added to `Api.IntegrationTests`.
+- Every authenticated endpoint must have an entry in `Api.IntegrationTests/AuthorizationTests.cs`'s
+  `ProtectedEndpoints()` list, so the cross-cutting "no token → 401" check (UBE-46) covers it too.
+- Do not write `Api.UnitTests` for controllers - controllers are covered by `Api.IntegrationTests`
+  hitting the real endpoints instead; put unit tests on the services/logic underneath them.
 
 **FrontEnd** (from `FrontEnd/`):
 - Dev server: `npm run dev`

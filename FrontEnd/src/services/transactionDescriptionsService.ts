@@ -29,7 +29,7 @@ export function getCachedTransactionDescriptions(): string[] {
 }
 
 export async function refreshTransactionDescriptions(): Promise<string[]> {
-  const response = await fetch(`${API_BASE_URL}/transaction_descriptions`, {
+  const response = await fetch(`${API_BASE_URL}/transactions/descriptions`, {
     headers: authHeaders(),
   })
 

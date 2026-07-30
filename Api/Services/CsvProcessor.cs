@@ -13,7 +13,7 @@ public sealed class CsvProcessor : ICsvProcessor
     private readonly ICSVParserFactory _csvParserFactory;
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<User> _users;
-    private readonly IRepository<UniqueDescriptions> _uniqueDescriptions;
+    private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
     private readonly IRepository<CreditDescriptionMapping> _creditDescriptionMappings;
     private readonly ILogger<CsvProcessor> _logger;
 
@@ -21,14 +21,14 @@ public sealed class CsvProcessor : ICsvProcessor
         ICSVParserFactory csvParserFactory,
         IRepository<TransactionMonth> transactionMonths,
         IRepository<User> users,
-        IRepository<UniqueDescriptions> uniqueDescriptions,
+        IRepository<TransactionDescriptions> transactionDescriptions,
         IRepository<CreditDescriptionMapping> creditDescriptionMappings,
         ILogger<CsvProcessor> logger)
     {
         _csvParserFactory = csvParserFactory;
         _transactionMonths = transactionMonths;
         _users = users;
-        _uniqueDescriptions = uniqueDescriptions;
+        _transactionDescriptions = transactionDescriptions;
         _creditDescriptionMappings = creditDescriptionMappings;
         _logger = logger;
     }
@@ -84,7 +84,7 @@ public sealed class CsvProcessor : ICsvProcessor
             await UpdateMinTransactionDateAsync(email, transactions.Min(t => t.Date));
         }
 
-        await AddNewUniqueDescriptionsAsync(email, transactions);
+        await AddNewTransactionDescriptionsAsync(email, transactions);
 
         _logger.LogInformation(
             "Transaction upload response: email={Email} count={Count} skippedDuplicates={SkippedDuplicates}",
@@ -106,7 +106,7 @@ public sealed class CsvProcessor : ICsvProcessor
         }
     }
 
-    // Applies any rules the user has already saved (via POST /credit_description_mapping) to the
+    // Applies any rules the user has already saved (via POST /mapping/credit) to the
     // newly-parsed rows, before they're persisted - so a re-categorised merchant stays categorised
     // on every future statement import, not just the transactions that existed at the time.
     private async Task ApplyCreditDescriptionMappingAsync(string email, List<Transaction> transactions)
@@ -134,11 +134,11 @@ public sealed class CsvProcessor : ICsvProcessor
         }
     }
 
-    private async Task AddNewUniqueDescriptionsAsync(string email, List<Transaction> transactions)
+    private async Task AddNewTransactionDescriptionsAsync(string email, List<Transaction> transactions)
     {
-        var descriptions = await _uniqueDescriptions.GetAsync(email);
+        var descriptions = await _transactionDescriptions.GetAsync(email);
         var isNew = descriptions is null;
-        descriptions ??= new UniqueDescriptions { Email = email };
+        descriptions ??= new TransactionDescriptions { Email = email };
 
         var existing = new HashSet<string>(descriptions.Descriptions);
         var newDescriptions = transactions.Select(t => t.Description).Distinct().Where(d => !existing.Contains(d)).ToList();
@@ -152,11 +152,11 @@ public sealed class CsvProcessor : ICsvProcessor
 
         if (isNew)
         {
-            await _uniqueDescriptions.AddAsync(descriptions);
+            await _transactionDescriptions.AddAsync(descriptions);
         }
         else
         {
-            await _uniqueDescriptions.UpdateAsync(email, descriptions);
+            await _transactionDescriptions.UpdateAsync(email, descriptions);
         }
     }
 

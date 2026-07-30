@@ -2,7 +2,7 @@ using Pim.Api.Repository;
 
 namespace Pim.Api.Data;
 
-public sealed class UniqueDescriptions
+public sealed class TransactionDescriptions
 {
     [Id]
     public required string Email { get; set; }

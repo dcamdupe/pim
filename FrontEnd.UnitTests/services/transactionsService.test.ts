@@ -129,7 +129,7 @@ describe('transactionsService', () => {
       await saveCreditDescriptionMapping('COLES', 'Groceries')
 
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringMatching(/\/credit_description_mapping$/),
+        expect.stringMatching(/\/mapping\/credit$/),
         expect.objectContaining({
           method: 'POST',
           headers: { Authorization: 'Bearer a-jwt', 'Content-Type': 'application/json' },

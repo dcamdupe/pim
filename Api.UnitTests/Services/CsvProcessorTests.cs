@@ -238,7 +238,7 @@ public class CsvProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_AddsNewDescriptions_WhenNoUniqueDescriptionsExistYet()
+    public async Task ProcessAsync_AddsNewDescriptions_WhenNoTransactionDescriptionsExistYet()
     {
         var parser = new Mock<ICsvParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
@@ -247,19 +247,19 @@ public class CsvProcessorTests
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Salary", Category = "", Amount = 2500.00m },
         ]);
         var factory = CreateFactory(parser);
-        var uniqueDescriptions = new List<UniqueDescriptions>();
-        var sut = CreateProcessor(factory, [], uniqueDescriptions: uniqueDescriptions);
+        var transactionDescriptions = new List<TransactionDescriptions>();
+        var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions);
 
         await sut.ProcessAsync(Email, Account, CreateFile());
 
-        var record = Assert.Single(uniqueDescriptions);
+        var record = Assert.Single(transactionDescriptions);
         Assert.Equal(["Coffee Shop", "Salary"], record.Descriptions);
     }
 
     [Fact]
     public async Task ProcessAsync_OnlyAddsGenuinelyNewDescriptions_ToAnExistingRecord()
     {
-        var existing = new UniqueDescriptions { Email = Email, Descriptions = ["Coffee Shop"] };
+        var existing = new TransactionDescriptions { Email = Email, Descriptions = ["Coffee Shop"] };
         var parser = new Mock<ICsvParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
@@ -267,12 +267,12 @@ public class CsvProcessorTests
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Salary", Category = "", Amount = 2500.00m },
         ]);
         var factory = CreateFactory(parser);
-        var uniqueDescriptions = new List<UniqueDescriptions> { existing };
-        var sut = CreateProcessor(factory, [], uniqueDescriptions: uniqueDescriptions);
+        var transactionDescriptions = new List<TransactionDescriptions> { existing };
+        var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions);
 
         await sut.ProcessAsync(Email, Account, CreateFile());
 
-        var record = Assert.Single(uniqueDescriptions);
+        var record = Assert.Single(transactionDescriptions);
         Assert.Equal(["Coffee Shop", "Salary"], record.Descriptions);
     }
 
@@ -341,18 +341,18 @@ public class CsvProcessorTests
         Mock<ICSVParserFactory> factory,
         List<TransactionMonth> months,
         List<User>? users = null,
-        List<UniqueDescriptions>? uniqueDescriptions = null,
+        List<TransactionDescriptions>? transactionDescriptions = null,
         List<CreditDescriptionMapping>? creditDescriptionMappings = null)
     {
         var transactionRepository = RepositoryMockFactory.Create(months);
         var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
-        var uniqueDescriptionsRepository = RepositoryMockFactory.Create(uniqueDescriptions ?? []);
+        var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
         var creditDescriptionMappingRepository = RepositoryMockFactory.Create(creditDescriptionMappings ?? []);
         return new CsvProcessor(
             factory.Object,
             transactionRepository.Object,
             userRepository.Object,
-            uniqueDescriptionsRepository.Object,
+            transactionDescriptionsRepository.Object,
             creditDescriptionMappingRepository.Object,
             NullLogger<CsvProcessor>.Instance);
     }

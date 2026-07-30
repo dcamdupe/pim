@@ -39,7 +39,7 @@ describe('transactionDescriptionsService', () => {
   })
 
   describe('refreshTransactionDescriptions', () => {
-    it('fetches /transaction_descriptions with the bearer token and caches the result', async () => {
+    it('fetches /transactions/descriptions with the bearer token and caches the result', async () => {
       const descriptions = ['Coffee Shop', 'Salary']
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
@@ -51,7 +51,7 @@ describe('transactionDescriptionsService', () => {
 
       expect(result).toEqual(descriptions)
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringMatching(/\/transaction_descriptions$/),
+        expect.stringMatching(/\/transactions\/descriptions$/),
         expect.objectContaining({ headers: { Authorization: 'Bearer a-jwt' } }),
       )
       expect(getCachedTransactionDescriptions()).toEqual(descriptions)

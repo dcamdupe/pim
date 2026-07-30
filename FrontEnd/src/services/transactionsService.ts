@@ -86,7 +86,7 @@ export async function updateTransactions(transactions: Transaction[]): Promise<v
 }
 
 export async function saveCreditDescriptionMapping(descriptionStart: string, category: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/credit_description_mapping`, {
+  const response = await fetch(`${API_BASE_URL}/mapping/credit`, {
     method: 'POST',
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ descriptionStart, category }),

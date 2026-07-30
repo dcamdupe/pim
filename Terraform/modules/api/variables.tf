@@ -28,7 +28,7 @@ variable "transaction_dynamodb_table_arn" {
   type        = string
 }
 
-variable "unique_descriptions_dynamodb_table_arn" {
+variable "transaction_descriptions_dynamodb_table_arn" {
   description = "ARN of the DynamoDB unique-descriptions table the Lambda is allowed to access."
   type        = string
 }

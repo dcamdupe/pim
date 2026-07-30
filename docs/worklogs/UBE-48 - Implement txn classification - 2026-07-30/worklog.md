@@ -213,6 +213,31 @@ This requires:
    string matches. Choose the longest match." - implemented as `descriptionMatching.ts`'s
    boundary-search algorithm and verified against all 3 of the ticket's own worked examples
 
+## Post-completion changes
+
+- Renamed `UniqueDescriptions` (table, C# class, and all dependent code: `CsvProcessor`,
+  `TransactionsController`, DI, Terraform module/variable names, `scripts/setup_local.sh`) to
+  `TransactionDescriptions`, at David's request - the FrontEnd already used
+  "TransactionDescriptions" terminology throughout (`transactionDescriptionsService.ts`,
+  `GET /transaction_descriptions`), so this just brings the backend name in line with it.
+  Verified: `terraform validate`, `dotnet build`/`dotnet test` (63/63 unit + 26/26 integration).
+- Moved the `GET /transaction_descriptions` endpoint to `GET /transactions/descriptions`, at
+  David's request - keeps it grouped under `/transactions/*` alongside the other transaction
+  endpoints. Updated the controller route, `transactionDescriptionsService.ts`, and both test
+  suites' references. Verified: `dotnet build`/`dotnet test` (63/63 + 26/26),
+  `FrontEnd.UnitTests` (37/37), `FrontEnd` build, and the `transactionCategorization.spec.ts`
+  Playwright scenario against a real `run_local.sh` stack.
+- Moved `POST /credit_description_mapping` to `POST /mapping/credit` and into its own new
+  `MappingController`, at David's request. `TransactionsController` keeps `ITransactionUpdateService`
+  (still used by `PUT /transactions`) but no longer owns the mapping endpoint or
+  `CreditDescriptionMappingRequest`. Split the tests to match the 1:1 controller/test-file
+  convention already used elsewhere (`SettingsController`/`SettingsControllerTests`, etc.): new
+  `MappingControllerTests.cs` and `MappingEndpointTests.cs`, moved out of
+  `TransactionsControllerTests.cs`/`TransactionsEndpointTests.cs`. Also fixed a stale comment in
+  `CsvProcessor.cs` referencing the old path. Verified: `dotnet build`/`dotnet test` (still 63/63 +
+  26/26, just redistributed across files), `FrontEnd.UnitTests` (37/37), and the
+  `transactionCategorization.spec.ts` Playwright scenario against a real `run_local.sh` stack.
+
 ## Notes for next session
 
 - The Chrome extension isn't installed in this session, so step 15's local-stack check ran via

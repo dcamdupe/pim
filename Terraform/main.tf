@@ -22,12 +22,12 @@ module "transactions_data" {
   table_name  = "TransactionMonth"
 }
 
-module "unique_descriptions_data" {
+module "transaction_descriptions_data" {
   source = "./modules/data"
 
   application = var.application
   environment = var.environment
-  table_name  = "UniqueDescriptions"
+  table_name  = "TransactionDescriptions"
 }
 
 module "credit_description_mapping_data" {
@@ -56,7 +56,7 @@ module "api" {
   lambda_security_group_id                      = module.networking.lambda_security_group_id
   dynamodb_table_arn                            = module.data.table_arn
   transaction_dynamodb_table_arn                = module.transactions_data.table_arn
-  unique_descriptions_dynamodb_table_arn        = module.unique_descriptions_data.table_arn
+  transaction_descriptions_dynamodb_table_arn   = module.transaction_descriptions_data.table_arn
   credit_description_mapping_dynamodb_table_arn = module.credit_description_mapping_data.table_arn
   domain_name                                   = var.api_domain_name
   certificate_arn                               = var.api_certificate_arn

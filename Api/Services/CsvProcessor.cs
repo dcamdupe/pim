@@ -12,12 +12,18 @@ public sealed class CsvProcessor : ICsvProcessor
 {
     private readonly ICSVParserFactory _csvParserFactory;
     private readonly IRepository<TransactionMonth> _transactionMonths;
+    private readonly IRepository<User> _users;
     private readonly ILogger<CsvProcessor> _logger;
 
-    public CsvProcessor(ICSVParserFactory csvParserFactory, IRepository<TransactionMonth> transactionMonths, ILogger<CsvProcessor> logger)
+    public CsvProcessor(
+        ICSVParserFactory csvParserFactory,
+        IRepository<TransactionMonth> transactionMonths,
+        IRepository<User> users,
+        ILogger<CsvProcessor> logger)
     {
         _csvParserFactory = csvParserFactory;
         _transactionMonths = transactionMonths;
+        _users = users;
         _logger = logger;
     }
 
@@ -65,9 +71,29 @@ public sealed class CsvProcessor : ICsvProcessor
             }
         }
 
+        if (transactions.Count > 0)
+        {
+            await UpdateMinTransactionDateAsync(email, transactions.Min(t => t.Date));
+        }
+
         _logger.LogInformation(
             "Transaction upload response: email={Email} count={Count} skippedDuplicates={SkippedDuplicates}",
             email, transactions.Count, skippedDuplicates);
+    }
+
+    private async Task UpdateMinTransactionDateAsync(string email, DateOnly candidateMinDate)
+    {
+        var user = await _users.GetAsync(email);
+        if (user is null)
+        {
+            return;
+        }
+
+        if (user.MinTransactionDate is null || candidateMinDate < user.MinTransactionDate)
+        {
+            user.MinTransactionDate = candidateMinDate;
+            await _users.UpdateAsync(email, user);
+        }
     }
 
     // A transaction "overlaps" an existing one if it matches on date, description, amount, and

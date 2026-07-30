@@ -42,8 +42,13 @@ export async function uploadTransactions(account: string, file: File): Promise<v
   }
 }
 
-export async function getTransactions(startDate: string, endDate: string): Promise<Transaction[]> {
-  const params = new URLSearchParams({ startDate, endDate })
+export async function getTransactions(startDate: string | undefined, endDate: string): Promise<Transaction[]> {
+  const params = new URLSearchParams()
+  if (startDate) {
+    params.set('startDate', startDate)
+  }
+  params.set('endDate', endDate)
+
   const response = await fetch(`${API_BASE_URL}/transactions?${params}`, {
     headers: authHeaders(),
   })

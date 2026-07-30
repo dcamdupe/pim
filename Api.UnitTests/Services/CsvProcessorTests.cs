@@ -171,6 +171,72 @@ public class CsvProcessorTests
         Assert.Equal(2, month.Transactions.Count);
     }
 
+    [Fact]
+    public async Task ProcessAsync_SetsMinTransactionDate_WhenNoneWasSetBefore()
+    {
+        var user = new User { Email = Email, PasswordHash = "hash" };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 15), Description = "Later", Category = "", Amount = -1m },
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Earlier", Category = "", Amount = -2m },
+        ]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, [], [user]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        Assert.Equal(new DateOnly(2026, 6, 1), user.MinTransactionDate);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_LowersMinTransactionDate_WhenNewBatchHasAnEarlierDate()
+    {
+        var user = new User { Email = Email, PasswordHash = "hash", MinTransactionDate = new DateOnly(2026, 6, 1) };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 5, 1), Description = "Earlier", Category = "", Amount = -1m },
+        ]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, [], [user]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        Assert.Equal(new DateOnly(2026, 5, 1), user.MinTransactionDate);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DoesNotRaiseMinTransactionDate_WhenNewBatchIsAllLater()
+    {
+        var user = new User { Email = Email, PasswordHash = "hash", MinTransactionDate = new DateOnly(2026, 5, 1) };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 15), Description = "Later", Category = "", Amount = -1m },
+        ]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, [], [user]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        Assert.Equal(new DateOnly(2026, 5, 1), user.MinTransactionDate);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DoesNotThrow_WhenParsedFileHasNoRows()
+    {
+        var user = new User { Email = Email, PasswordHash = "hash" };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns([]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, [], [user]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        Assert.Null(user.MinTransactionDate);
+    }
+
     private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.csv");
 
     private static Mock<ICSVParserFactory> CreateFactory(Mock<ICsvParser> parser)
@@ -180,9 +246,10 @@ public class CsvProcessorTests
         return factory;
     }
 
-    private static CsvProcessor CreateProcessor(Mock<ICSVParserFactory> factory, List<TransactionMonth> months)
+    private static CsvProcessor CreateProcessor(Mock<ICSVParserFactory> factory, List<TransactionMonth> months, List<User>? users = null)
     {
-        var repository = RepositoryMockFactory.Create(months);
-        return new CsvProcessor(factory.Object, repository.Object, NullLogger<CsvProcessor>.Instance);
+        var transactionRepository = RepositoryMockFactory.Create(months);
+        var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
+        return new CsvProcessor(factory.Object, transactionRepository.Object, userRepository.Object, NullLogger<CsvProcessor>.Instance);
     }
 }

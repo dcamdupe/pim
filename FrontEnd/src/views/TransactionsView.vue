@@ -17,10 +17,15 @@ function formatDateForApi(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
-function computeRange(option: RangeOption): { startDate: string; endDate: string } {
+function computeRange(option: RangeOption): { startDate: string | undefined; endDate: string } {
   const end = new Date()
-  const start = new Date(end)
 
+  if (option === 'allTime') {
+    // No startDate - the Api resolves this to the user's real earliest transaction date.
+    return { startDate: undefined, endDate: formatDateForApi(end) }
+  }
+
+  const start = new Date(end)
   switch (option) {
     case 'week':
       start.setDate(start.getDate() - 7)
@@ -30,11 +35,6 @@ function computeRange(option: RangeOption): { startDate: string; endDate: string
       break
     case 'threeMonths':
       start.setMonth(start.getMonth() - 3)
-      break
-    case 'allTime':
-      // No real "since the beginning" concept on the API - a bound far enough back to safely
-      // cover any real usage of this app.
-      start.setFullYear(start.getFullYear() - 10)
       break
   }
 

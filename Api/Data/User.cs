@@ -10,4 +10,6 @@ public sealed class User
     public required string PasswordHash { get; set; }
 
     public List<Account> Accounts { get; set; } = [];
+
+    public DateOnly? MinTransactionDate { get; set; }
 }

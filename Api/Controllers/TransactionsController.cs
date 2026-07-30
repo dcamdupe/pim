@@ -44,13 +44,13 @@ public sealed class TransactionsController : ControllerBase
     [HttpGet("transactions")]
     public async Task<ActionResult<TransactionsResponse>> GetTransactions([FromQuery] DateOnly? startDate, [FromQuery] DateOnly? endDate)
     {
-        if (startDate is null || endDate is null || startDate > endDate)
+        if (endDate is null || (startDate is not null && startDate > endDate))
         {
             return BadRequest();
         }
 
         var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var transactions = await _transactionQueryService.GetTransactionsAsync(email, startDate.Value, endDate.Value);
+        var transactions = await _transactionQueryService.GetTransactionsAsync(email, startDate, endDate.Value);
 
         return Ok(new TransactionsResponse(transactions));
     }

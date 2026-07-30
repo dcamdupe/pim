@@ -60,13 +60,18 @@ public class TransactionsControllerTests
     }
 
     [Fact]
-    public async Task GetTransactions_ReturnsBadRequest_WhenStartDateIsMissing()
+    public async Task GetTransactions_ReturnsOkAndPassesNullStartDate_WhenStartDateIsOmitted()
     {
-        var sut = CreateController(queryService: new Mock<ITransactionQueryService>());
+        var endDate = new DateOnly(2026, 6, 30);
+        var transactions = new List<Transaction>();
+        var queryService = new Mock<ITransactionQueryService>();
+        queryService.Setup(s => s.GetTransactionsAsync(Email, null, endDate)).ReturnsAsync(transactions);
+        var sut = CreateController(queryService: queryService);
 
-        var result = await sut.GetTransactions(null, new DateOnly(2026, 6, 30));
+        var result = await sut.GetTransactions(null, endDate);
 
-        Assert.IsType<BadRequestResult>(result.Result);
+        Assert.IsType<OkObjectResult>(result.Result);
+        queryService.Verify(s => s.GetTransactionsAsync(Email, null, endDate), Times.Once);
     }
 
     [Fact]

@@ -13,17 +13,23 @@ public sealed class CsvProcessor : ICsvProcessor
     private readonly ICSVParserFactory _csvParserFactory;
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<User> _users;
+    private readonly IRepository<UniqueDescriptions> _uniqueDescriptions;
+    private readonly IRepository<CreditDescriptionMapping> _creditDescriptionMappings;
     private readonly ILogger<CsvProcessor> _logger;
 
     public CsvProcessor(
         ICSVParserFactory csvParserFactory,
         IRepository<TransactionMonth> transactionMonths,
         IRepository<User> users,
+        IRepository<UniqueDescriptions> uniqueDescriptions,
+        IRepository<CreditDescriptionMapping> creditDescriptionMappings,
         ILogger<CsvProcessor> logger)
     {
         _csvParserFactory = csvParserFactory;
         _transactionMonths = transactionMonths;
         _users = users;
+        _uniqueDescriptions = uniqueDescriptions;
+        _creditDescriptionMappings = creditDescriptionMappings;
         _logger = logger;
     }
 
@@ -47,6 +53,8 @@ public sealed class CsvProcessor : ICsvProcessor
         }
 
         _logger.LogInformation("Transaction upload request: email={Email} account={Account} count={Count}", email, account, transactions.Count);
+
+        await ApplyCreditDescriptionMappingAsync(email, transactions);
 
         var skippedDuplicates = 0;
 
@@ -76,6 +84,8 @@ public sealed class CsvProcessor : ICsvProcessor
             await UpdateMinTransactionDateAsync(email, transactions.Min(t => t.Date));
         }
 
+        await AddNewUniqueDescriptionsAsync(email, transactions);
+
         _logger.LogInformation(
             "Transaction upload response: email={Email} count={Count} skippedDuplicates={SkippedDuplicates}",
             email, transactions.Count, skippedDuplicates);
@@ -96,11 +106,60 @@ public sealed class CsvProcessor : ICsvProcessor
         }
     }
 
-    // A transaction "overlaps" an existing one if it matches on date, description, amount, and
-    // account - Category is deliberately excluded, since it's expected to be edited after import.
+    // Applies any rules the user has already saved (via POST /credit_description_mapping) to the
+    // newly-parsed rows, before they're persisted - so a re-categorised merchant stays categorised
+    // on every future statement import, not just the transactions that existed at the time.
+    private async Task ApplyCreditDescriptionMappingAsync(string email, List<Transaction> transactions)
+    {
+        var mapping = await _creditDescriptionMappings.GetAsync(email);
+        if (mapping is null || mapping.Mappings.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var transaction in transactions)
+        {
+            // Prefer the most precise (longest DescriptionStart) match, matching the frontend's
+            // approximate-match rule - a description can legitimately match more than one saved
+            // rule (e.g. both a generic "COLES" and a more specific "COLES 0717" rule).
+            var match = mapping.Mappings
+                .Where(m => transaction.Description.StartsWith(m.DescriptionStart, StringComparison.Ordinal))
+                .OrderByDescending(m => m.DescriptionStart.Length)
+                .FirstOrDefault();
+
+            if (match is not null)
+            {
+                transaction.Category = match.Category;
+            }
+        }
+    }
+
+    private async Task AddNewUniqueDescriptionsAsync(string email, List<Transaction> transactions)
+    {
+        var descriptions = await _uniqueDescriptions.GetAsync(email);
+        var isNew = descriptions is null;
+        descriptions ??= new UniqueDescriptions { Email = email };
+
+        var existing = new HashSet<string>(descriptions.Descriptions);
+        var newDescriptions = transactions.Select(t => t.Description).Distinct().Where(d => !existing.Contains(d)).ToList();
+
+        if (newDescriptions.Count == 0)
+        {
+            return;
+        }
+
+        descriptions.Descriptions.AddRange(newDescriptions);
+
+        if (isNew)
+        {
+            await _uniqueDescriptions.AddAsync(descriptions);
+        }
+        else
+        {
+            await _uniqueDescriptions.UpdateAsync(email, descriptions);
+        }
+    }
+
     private static bool IsDuplicate(Transaction existing, Transaction candidate) =>
-        existing.Date == candidate.Date &&
-        existing.Description == candidate.Description &&
-        existing.Amount == candidate.Amount &&
-        existing.Account == candidate.Account;
+        Transaction.MatchesIdentity(existing, candidate);
 }

@@ -237,6 +237,97 @@ public class CsvProcessorTests
         Assert.Null(user.MinTransactionDate);
     }
 
+    [Fact]
+    public async Task ProcessAsync_AddsNewDescriptions_WhenNoUniqueDescriptionsExistYet()
+    {
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m },
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Salary", Category = "", Amount = 2500.00m },
+        ]);
+        var factory = CreateFactory(parser);
+        var uniqueDescriptions = new List<UniqueDescriptions>();
+        var sut = CreateProcessor(factory, [], uniqueDescriptions: uniqueDescriptions);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var record = Assert.Single(uniqueDescriptions);
+        Assert.Equal(["Coffee Shop", "Salary"], record.Descriptions);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_OnlyAddsGenuinelyNewDescriptions_ToAnExistingRecord()
+    {
+        var existing = new UniqueDescriptions { Email = Email, Descriptions = ["Coffee Shop"] };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m },
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Salary", Category = "", Amount = 2500.00m },
+        ]);
+        var factory = CreateFactory(parser);
+        var uniqueDescriptions = new List<UniqueDescriptions> { existing };
+        var sut = CreateProcessor(factory, [], uniqueDescriptions: uniqueDescriptions);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var record = Assert.Single(uniqueDescriptions);
+        Assert.Equal(["Coffee Shop", "Salary"], record.Descriptions);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_AppliesExistingCreditDescriptionMapping_ToNewlyParsedTransactions()
+    {
+        var mapping = new CreditDescriptionMapping
+        {
+            Email = Email,
+            Mappings = [new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
+        };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Salary", Category = "", Amount = 2500.00m },
+        ]);
+        var factory = CreateFactory(parser);
+        var months = new List<TransactionMonth>();
+        var sut = CreateProcessor(factory, months, creditDescriptionMappings: [mapping]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var month = Assert.Single(months);
+        Assert.Equal("Groceries", month.Transactions.Single(t => t.Description == "COLES 0717 TURRAMURRA AUS").Category);
+        Assert.Equal("", month.Transactions.Single(t => t.Description == "Salary").Category);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_PrefersTheMostPreciseCreditDescriptionMapping_WhenMoreThanOneMatches()
+    {
+        var mapping = new CreditDescriptionMapping
+        {
+            Email = Email,
+            Mappings =
+            [
+                new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" },
+                new CreditDescriptionMappingEntry { DescriptionStart = "COLES 0717", Category = "Specific Coles" },
+            ],
+        };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
+        ]);
+        var factory = CreateFactory(parser);
+        var months = new List<TransactionMonth>();
+        var sut = CreateProcessor(factory, months, creditDescriptionMappings: [mapping]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var month = Assert.Single(months);
+        Assert.Equal("Specific Coles", month.Transactions.Single().Category);
+    }
+
     private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.csv");
 
     private static Mock<ICSVParserFactory> CreateFactory(Mock<ICsvParser> parser)
@@ -246,10 +337,23 @@ public class CsvProcessorTests
         return factory;
     }
 
-    private static CsvProcessor CreateProcessor(Mock<ICSVParserFactory> factory, List<TransactionMonth> months, List<User>? users = null)
+    private static CsvProcessor CreateProcessor(
+        Mock<ICSVParserFactory> factory,
+        List<TransactionMonth> months,
+        List<User>? users = null,
+        List<UniqueDescriptions>? uniqueDescriptions = null,
+        List<CreditDescriptionMapping>? creditDescriptionMappings = null)
     {
         var transactionRepository = RepositoryMockFactory.Create(months);
         var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
-        return new CsvProcessor(factory.Object, transactionRepository.Object, userRepository.Object, NullLogger<CsvProcessor>.Instance);
+        var uniqueDescriptionsRepository = RepositoryMockFactory.Create(uniqueDescriptions ?? []);
+        var creditDescriptionMappingRepository = RepositoryMockFactory.Create(creditDescriptionMappings ?? []);
+        return new CsvProcessor(
+            factory.Object,
+            transactionRepository.Object,
+            userRepository.Object,
+            uniqueDescriptionsRepository.Object,
+            creditDescriptionMappingRepository.Object,
+            NullLogger<CsvProcessor>.Instance);
     }
 }

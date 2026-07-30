@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getTransactions, type Transaction } from '../services/transactionsService'
+import { CATEGORIES, categoryColor } from '../constants/categories'
+import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
+import { getTransactions, updateTransactions, saveCreditDescriptionMapping, type Transaction } from '../services/transactionsService'
+import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 
 type RangeOption = 'week' | 'month' | 'threeMonths' | 'allTime'
+
+interface PendingCategoryChange {
+  transaction: Transaction
+  category: string
+  match: ApproximateMatch
+}
 
 const transactions = ref<Transaction[]>([])
 const loading = ref(true)
 const loadError = ref('')
 const selectedRange = ref<RangeOption>('month')
+const pendingCategoryChange = ref<PendingCategoryChange | null>(null)
+const savingCategory = ref(false)
+const categorySaveError = ref('')
 
 function formatDateForApi(date: Date): string {
   const year = date.getFullYear()
@@ -64,6 +76,59 @@ async function fetchTransactions() {
   }
 }
 
+async function applySingleCategory(transaction: Transaction, category: string) {
+  categorySaveError.value = ''
+  savingCategory.value = true
+  try {
+    await updateTransactions([{ ...transaction, category }])
+    transaction.category = category
+  } catch {
+    categorySaveError.value = 'Could not save the category. Please try again.'
+  } finally {
+    savingCategory.value = false
+  }
+}
+
+function onCategoryChange(transaction: Transaction, event: Event) {
+  const category = (event.target as HTMLSelectElement).value
+  const otherDescriptions = getCachedTransactionDescriptions()
+  const match = findApproximateMatch(transaction.description, otherDescriptions)
+
+  if (match) {
+    pendingCategoryChange.value = { transaction, category, match }
+  } else {
+    void applySingleCategory(transaction, category)
+  }
+}
+
+async function confirmBulkApply() {
+  const pending = pendingCategoryChange.value
+  if (!pending) {
+    return
+  }
+  pendingCategoryChange.value = null
+
+  categorySaveError.value = ''
+  savingCategory.value = true
+  try {
+    await saveCreditDescriptionMapping(pending.match.descriptionStart, pending.category)
+    await fetchTransactions()
+  } catch {
+    categorySaveError.value = 'Could not save the category. Please try again.'
+  } finally {
+    savingCategory.value = false
+  }
+}
+
+function declineBulkApply() {
+  const pending = pendingCategoryChange.value
+  if (!pending) {
+    return
+  }
+  pendingCategoryChange.value = null
+  void applySingleCategory(pending.transaction, pending.category)
+}
+
 onMounted(fetchTransactions)
 watch(selectedRange, fetchTransactions)
 </script>
@@ -87,6 +152,7 @@ watch(selectedRange, fetchTransactions)
 
     <p v-if="loading" class="status">Loading transactions…</p>
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
+    <p v-else-if="categorySaveError" class="status status-error">{{ categorySaveError }}</p>
     <p v-else-if="transactions.length === 0" class="status">No transactions in this range.</p>
 
     <div v-else class="table-card">
@@ -107,12 +173,41 @@ watch(selectedRange, fetchTransactions)
             <td><span class="acct-badge">{{ t.account }}</span></td>
             <td :class="['amount', { pos: t.amount > 0 }]">{{ formatAmount(t.amount) }}</td>
             <td>
-              <span v-if="t.category" class="chip">{{ t.category }}</span>
-              <span v-else class="chip chip-muted">Uncategorized</span>
+              <div class="category-cell">
+                <span v-if="t.category" class="cat-dot" :style="{ background: categoryColor(t.category) }"></span>
+                <select
+                  class="category-select"
+                  :class="{ needs: !t.category }"
+                  :value="t.category"
+                  :disabled="savingCategory"
+                  @change="onCategoryChange(t, $event)"
+                >
+                  <option value="" disabled>+ Add category</option>
+                  <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+                </select>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div v-if="pendingCategoryChange" class="modal-backdrop">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h2>Apply to similar transactions?</h2>
+        <p>
+          {{ pendingCategoryChange.match.matchingDescriptions.length }}
+          other transaction{{ pendingCategoryChange.match.matchingDescriptions.length === 1 ? '' : 's' }}
+          starting with "<strong>{{ pendingCategoryChange.match.descriptionStart }}</strong>" could also be categorised
+          as <strong>{{ pendingCategoryChange.category }}</strong>.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="modal-button secondary" @click="declineBulkApply">Just this one</button>
+          <button type="button" class="modal-button primary" @click="confirmBulkApply">
+            Apply to {{ pendingCategoryChange.match.matchingDescriptions.length }} similar transactions
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -249,5 +344,87 @@ th.num {
   border: 1px dashed var(--text);
   color: var(--text);
   background: none;
+}
+
+.category-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.category-select {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+}
+
+.category-select.needs {
+  border-style: dashed;
+  color: var(--text);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  box-shadow: 0 16px 48px -12px rgba(0, 0, 0, 0.35);
+}
+
+.modal h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.modal p {
+  margin: 0 0 20px;
+  color: var(--text-h);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.modal-button.secondary {
+  background: var(--field-bg);
+  color: var(--text-h);
+}
+
+.modal-button.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
 }
 </style>

@@ -154,23 +154,71 @@ This requires:
 
 ## Checklist
 
-- [ ] 1. Terraform: two new tables + IAM policy wiring
-- [ ] 2. `UniqueDescriptions`/`CreditDescriptionMapping` data models
-- [ ] 3. `CsvProcessor`: populate unique descriptions + auto-apply existing mapping
-- [ ] 4. Controller: `GET /transaction_descriptions`, `PUT /transactions`,
-      `POST /credit_description_mapping`
-- [ ] 5. Backend unit tests
-- [ ] 6. Backend integration tests
-- [ ] 7. FrontEnd shared categories/colours module
-- [ ] 8. FrontEnd transaction-descriptions service + login/upload cache refresh
-- [ ] 9. FrontEnd transactions service additions (`PUT`/`POST`)
-- [ ] 10. FrontEnd category dropdown + approximate-match modal on `TransactionsView`
-- [ ] 11. FrontEnd unit tests + Playwright scenario
-- [ ] 12. Verify: `dotnet build`/`dotnet test`
-- [ ] 13. Verify: `FrontEnd.UnitTests` `npm run test`
-- [ ] 14. Verify: `FunctionalTests` `npm test`
-- [ ] 15. Verify: real local run via `scripts/run_local.sh`
+- [x] 1. Terraform: two new tables + IAM policy wiring (`terraform fmt`/`validate` clean)
+- [x] 2. `UniqueDescriptions`/`CreditDescriptionMapping` data models (`dotnet build` clean)
+- [x] 3. `CsvProcessor`: populate unique descriptions + auto-apply existing mapping
+- [x] 4. Controller: `GET /transaction_descriptions`, `PUT /transactions`,
+      `POST /credit_description_mapping` (new `ITransactionUpdateService` backs the two mutating
+      endpoints; `Transaction.MatchesIdentity` extracted so `PUT /transactions` and `CsvProcessor`
+      share one "same transaction" rule instead of two)
+- [x] 5. Backend unit tests (4 new `CsvProcessorTests`, 6 new `TransactionsControllerTests`, new
+      `TransactionUpdateServiceTests` (6 tests); 63/63 unit tests pass)
+- [x] 6. Backend integration tests (7 new tests covering all 3 new endpoints + the auto-apply
+      loop; also added `UniqueDescriptions`/`CreditDescriptionMapping` table creation to
+      `scripts/setup_local.sh`; full backend suite 63/63 unit + 26/26 integration pass)
+- [x] 7. FrontEnd shared categories/colours module (`FrontEnd/src/constants/categories.ts`)
+- [x] 8. FrontEnd transaction-descriptions service + login/upload cache refresh (best-effort,
+      failures don't block login or surface as an upload error)
+- [x] 9. FrontEnd transactions service additions (`updateTransactions`,
+      `saveCreditDescriptionMapping`); `FrontEnd.UnitTests` 30/30 pass
+- [x] 10. FrontEnd category dropdown + approximate-match modal on `TransactionsView`
+      (`FrontEnd/src/utils/descriptionMatching.ts` implements the match rule confirmed with
+      David: longest word-boundary-terminated common prefix wins, e.g. two "DAVID JONES ..."
+      rows match each other over a weaker "DAVID"-only match against an unrelated "DAVID
+      CAMERON ..." row; `npm run build`/`npm run lint` clean)
+- [x] 11. FrontEnd unit tests + Playwright scenario. Unit tests for `descriptionMatching.ts`
+      (including all 3 of the ticket's own worked examples), `transactionsService.ts`,
+      `transactionDescriptionsService.ts` - 37/37 `FrontEnd.UnitTests` pass. New
+      `FunctionalTests/tests/transactionCategorization.spec.ts`: uploads 3 transactions (2
+      COLES-prefixed, 1 unrelated), categorising the unrelated one saves with no modal,
+      categorising the first COLES one offers + confirms a bulk-apply to the second, then a
+      follow-up upload with a third COLES-prefixed description is auto-categorised via the
+      remembered mapping. (Hit and fixed a test-data bug first: all 3 descriptions shared a
+      literal `runId` as a leading word, so they spuriously matched each other regardless of
+      merchant - fixed by embedding the runId into the merchant token instead.) Full suite 9/9
+      Playwright specs pass (`settings.spec.ts`'s pre-existing stale-account flakiness, noted
+      back in UBE-45, is unrelated - and I cleaned up the one leftover account my own earlier
+      failed attempts left behind).
+- [x] 12. Verify: `dotnet build`/`dotnet test` - 63/63 unit + 26/26 integration pass
+- [x] 13. Verify: `FrontEnd.UnitTests` `npm run test` - 37/37 pass
+- [x] 14. Verify: `FunctionalTests` `npm test` - all 9 specs pass (including the new
+      `transactionCategorization.spec.ts`)
+- [x] 15. Verify: real local run via `scripts/run_local.sh`. The Chrome extension isn't installed
+      in this session, so I couldn't drive it interactively myself - verification here is the
+      Playwright suite (a real Chromium browser, not mocked) run against the actual `run_local.sh`
+      stack (real Api + real DynamoDB Local + the FrontEnd dev server), which is what caught and
+      required fixing a genuine bug (test-data collision, see step 11). David may still want to
+      click through it by hand.
 
 ## Prompt Log
 
 1. "start a worklog for UBE-48"
+2. "start work" (steps 1-9: Terraform, data models, `CsvProcessor`, the 3 new endpoints, and all
+   supporting backend/frontend service-layer work, run through without further check-ins)
+3. (tool-permission denial on an intermediate test-file edit, then) "continue" / "go" - resumed
+   the same edit
+4. Clarifying question asked back to David on the ambiguous approximate-match algorithm (the
+   ticket's own "DAVID JONES" example was ambiguous - see "Open questions" above); David's
+   answer: "Find all matches where the last matching character is a space and the start of the
+   string matches. Choose the longest match." - implemented as `descriptionMatching.ts`'s
+   boundary-search algorithm and verified against all 3 of the ticket's own worked examples
+
+## Notes for next session
+
+- The Chrome extension isn't installed in this session, so step 15's local-stack check ran via
+  Playwright's real Chromium browser rather than me clicking through it interactively - David may
+  still want to do that by hand before merging.
+- `docs/worklogs/UBE-47 - Store min transaction date - 2026-07-30/` landed on `main` after this
+  branch's parent commit but before this worklog started - `git pull --ff-only origin main` was
+  run before branching, so this branch already includes it (`User.MinTransactionDate`, reused for
+  the "update all matching transactions" step).

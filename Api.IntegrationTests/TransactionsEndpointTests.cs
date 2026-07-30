@@ -53,6 +53,12 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
         await users.DeleteAsync(_email);
+
+        var uniqueDescriptions = scope.ServiceProvider.GetRequiredService<IRepository<UniqueDescriptions>>();
+        await uniqueDescriptions.DeleteAsync(_email);
+
+        var creditDescriptionMappings = scope.ServiceProvider.GetRequiredService<IRepository<CreditDescriptionMapping>>();
+        await creditDescriptionMappings.DeleteAsync(_email);
     }
 
     [Fact]
@@ -210,6 +216,137 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
         Assert.Empty(body!.Transactions);
+    }
+
+    [Fact]
+    public async Task Post_PopulatesUniqueDescriptions_WithNewlyParsedDescriptions()
+    {
+        var client = AuthenticatedClient();
+        using var content = BuildMultipartContent("Everyday", ValidCsv);
+
+        var response = await client.PostAsync("/transactions/file", content);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        _seededMonthIds.Add(TransactionMonth.BuildId(_email, 2026, 6));
+
+        var descriptionsResponse = await client.GetAsync("/transaction_descriptions");
+        Assert.Equal(HttpStatusCode.OK, descriptionsResponse.StatusCode);
+        var body = await descriptionsResponse.Content.ReadFromJsonAsync<TransactionDescriptionsResponse>(JsonOptions);
+        Assert.Equal(["Coffee Shop", "Salary"], body!.Descriptions);
+    }
+
+    [Fact]
+    public async Task Get_TransactionDescriptions_ReturnsEmptyList_WhenUserHasNeverUploaded()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.GetAsync("/transaction_descriptions");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TransactionDescriptionsResponse>(JsonOptions);
+        Assert.Empty(body!.Descriptions);
+    }
+
+    [Fact]
+    public async Task Put_UpdatesTheCategory_OnTheMatchingStoredTransaction()
+    {
+        var client = AuthenticatedClient();
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        await repository.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        });
+
+        var updated = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
+        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { updated });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var month = await repository.GetAsync(monthId);
+        Assert.Equal("Dining", month!.Transactions.Single().Category);
+    }
+
+    [Fact]
+    public async Task Put_ReturnsBadRequest_WhenListIsEmpty()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction>());
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_CreditDescriptionMapping_UpdatesAllMatchingExistingTransactions()
+    {
+        var client = AuthenticatedClient();
+        using (var upload = BuildMultipartContent(
+            "Everyday",
+            "131150S1,,,,,\n" +
+            "01 JUN 2026,,\"COLES 0717 TURRAMURRA AUS\",,-20.00,637.57\n" +
+            "02 JUN 2026,,\"COLES 0760 ASQUITH AUS\",,-15.00,617.57\n" +
+            "03 JUN 2026,,\"Salary\",,2500.00,3117.57\n"))
+        {
+            var uploadResponse = await client.PostAsync("/transactions/file", upload);
+            Assert.Equal(HttpStatusCode.NoContent, uploadResponse.StatusCode);
+        }
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+
+        var mappingResponse = await client.PostAsJsonAsync(
+            "/credit_description_mapping",
+            new CreditDescriptionMappingRequest("COLES", "Groceries"));
+
+        Assert.Equal(HttpStatusCode.NoContent, mappingResponse.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        var month = await repository.GetAsync(monthId);
+        Assert.Equal("Groceries", month!.Transactions.Single(t => t.Description == "COLES 0717 TURRAMURRA AUS").Category);
+        Assert.Equal("Groceries", month.Transactions.Single(t => t.Description == "COLES 0760 ASQUITH AUS").Category);
+        Assert.Equal("", month.Transactions.Single(t => t.Description == "Salary").Category);
+    }
+
+    [Fact]
+    public async Task Post_CreditDescriptionMapping_IsAppliedAutomatically_ToATransactionUploadedAfterwards()
+    {
+        var client = AuthenticatedClient();
+        var mappingResponse = await client.PostAsJsonAsync(
+            "/credit_description_mapping",
+            new CreditDescriptionMappingRequest("COLES", "Groceries"));
+        Assert.Equal(HttpStatusCode.NoContent, mappingResponse.StatusCode);
+
+        using var content = BuildMultipartContent(
+            "Everyday",
+            "131150S1,,,,,\n" +
+            "01 JUN 2026,,\"COLES 0717 TURRAMURRA AUS\",,-20.00,637.57\n");
+        var response = await client.PostAsync("/transactions/file", content);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        var month = await repository.GetAsync(monthId);
+        Assert.Equal("Groceries", month!.Transactions.Single().Category);
+    }
+
+    [Theory]
+    [InlineData(" ", "Groceries")]
+    [InlineData("COLES", " ")]
+    public async Task Post_CreditDescriptionMapping_ReturnsBadRequest_WhenFieldsAreBlank(string descriptionStart, string category)
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/credit_description_mapping",
+            new CreditDescriptionMappingRequest(descriptionStart, category));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     private static MultipartFormDataContent BuildMultipartContent(string account, string csv)

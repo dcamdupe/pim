@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Starts (or reuses) the local DynamoDB Local emulator, creates the User and
-# TransactionMonth tables if they don't already exist, and seeds a test login for the
+# Starts (or reuses) the local DynamoDB Local emulator, creates the User, TransactionMonth,
+# UniqueDescriptions, and CreditDescriptionMapping tables if they don't already exist, and
+# seeds a test login for the
 # Login API (UBE-10) - also copies the local FrontEnd .env template into place (UBE-26),
 # and sets ASPNETCORE_ENVIRONMENT=Local for the Api (UBE-23).
 # Safe to re-run: reuses an already-running/existing container, skips table creation
@@ -73,6 +74,8 @@ setup_local() {
 
   create_table_if_missing User "$dynamo_endpoint" "$dynamo_region" || return 1
   create_table_if_missing TransactionMonth "$dynamo_endpoint" "$dynamo_region" || return 1
+  create_table_if_missing UniqueDescriptions "$dynamo_endpoint" "$dynamo_region" || return 1
+  create_table_if_missing CreditDescriptionMapping "$dynamo_endpoint" "$dynamo_region" || return 1
 
   local test_email="testuser@example.com"
   local test_password="TestPassword123!"

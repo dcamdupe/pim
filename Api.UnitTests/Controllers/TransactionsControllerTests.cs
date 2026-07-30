@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Pim.Api.Controllers;
 using Pim.Api.Data;
+using Pim.Api.Repository;
 using Pim.Api.Services;
 
 namespace Pim.Api.UnitTests.Controllers;
@@ -114,14 +115,99 @@ public class TransactionsControllerTests
         Assert.Equal(transactions, response.Transactions);
     }
 
+    [Fact]
+    public async Task UpdateTransactions_ReturnsBadRequest_WhenListIsEmpty()
+    {
+        var sut = CreateController();
+
+        var result = await sut.UpdateTransactions([]);
+
+        Assert.IsType<BadRequestResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateTransactions_ReturnsNoContent_AndCallsUpdateService_WhenSuccessful()
+    {
+        var transactions = new List<Transaction>
+        {
+            new() { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee", Category = "Dining", Amount = -4.50m },
+        };
+        var updateService = new Mock<ITransactionUpdateService>();
+        var sut = CreateController(updateService: updateService);
+
+        var result = await sut.UpdateTransactions(transactions);
+
+        Assert.IsType<NoContentResult>(result);
+        updateService.Verify(s => s.UpdateTransactionsAsync(Email, transactions), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetTransactionDescriptions_ReturnsEmptyList_WhenNoRecordExists()
+    {
+        var uniqueDescriptions = new Mock<IRepository<UniqueDescriptions>>();
+        uniqueDescriptions.Setup(r => r.GetAsync(Email)).ReturnsAsync((UniqueDescriptions?)null);
+        var sut = CreateController(uniqueDescriptions: uniqueDescriptions);
+
+        var result = await sut.GetTransactionDescriptions();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<TransactionDescriptionsResponse>(ok.Value);
+        Assert.Empty(response.Descriptions);
+    }
+
+    [Fact]
+    public async Task GetTransactionDescriptions_ReturnsStoredDescriptions_WhenRecordExists()
+    {
+        var uniqueDescriptions = new Mock<IRepository<UniqueDescriptions>>();
+        uniqueDescriptions.Setup(r => r.GetAsync(Email))
+            .ReturnsAsync(new UniqueDescriptions { Email = Email, Descriptions = ["Coffee Shop", "Salary"] });
+        var sut = CreateController(uniqueDescriptions: uniqueDescriptions);
+
+        var result = await sut.GetTransactionDescriptions();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<TransactionDescriptionsResponse>(ok.Value);
+        Assert.Equal(["Coffee Shop", "Salary"], response.Descriptions);
+    }
+
+    [Theory]
+    [InlineData(" ", "Groceries")]
+    [InlineData("COLES", " ")]
+    public async Task SaveCreditDescriptionMapping_ReturnsBadRequest_WhenFieldsAreBlank(string descriptionStart, string category)
+    {
+        var sut = CreateController();
+
+        var result = await sut.SaveCreditDescriptionMapping(new CreditDescriptionMappingRequest(descriptionStart, category));
+
+        Assert.IsType<BadRequestResult>(result);
+    }
+
+    [Fact]
+    public async Task SaveCreditDescriptionMapping_ReturnsNoContent_AndCallsUpdateService_WhenSuccessful()
+    {
+        var updateService = new Mock<ITransactionUpdateService>();
+        var sut = CreateController(updateService: updateService);
+
+        var result = await sut.SaveCreditDescriptionMapping(new CreditDescriptionMappingRequest("COLES", "Groceries"));
+
+        Assert.IsType<NoContentResult>(result);
+        updateService.Verify(s => s.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries"), Times.Once);
+    }
+
     private static IFormFile CreateFile(long length = 10) =>
         new FormFile(new MemoryStream(new byte[length]), 0, length, "file", "transactions.csv");
 
-    private static TransactionsController CreateController(Mock<ICsvProcessor>? csvProcessor = null, Mock<ITransactionQueryService>? queryService = null)
+    private static TransactionsController CreateController(
+        Mock<ICsvProcessor>? csvProcessor = null,
+        Mock<ITransactionQueryService>? queryService = null,
+        Mock<ITransactionUpdateService>? updateService = null,
+        Mock<IRepository<UniqueDescriptions>>? uniqueDescriptions = null)
     {
         var controller = new TransactionsController(
             (csvProcessor ?? new Mock<ICsvProcessor>()).Object,
-            (queryService ?? new Mock<ITransactionQueryService>()).Object);
+            (queryService ?? new Mock<ITransactionQueryService>()).Object,
+            (updateService ?? new Mock<ITransactionUpdateService>()).Object,
+            (uniqueDescriptions ?? new Mock<IRepository<UniqueDescriptions>>()).Object);
         var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, Email)], "TestAuth");
         controller.ControllerContext = new ControllerContext
         {

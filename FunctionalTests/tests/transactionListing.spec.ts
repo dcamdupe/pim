@@ -12,16 +12,21 @@ test.describe('Transaction listing', () => {
     const runId = Date.now();
     const todayDesc = `Listing Test Today ${runId}`;
     const oldDesc = `Listing Test Old ${runId}`;
+    const veryOldDesc = `Listing Test Very Old ${runId}`;
 
     const today = new Date();
     const sixWeeksAgo = new Date(today);
     sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42); // outside "last week"/"last month", inside "last 3 months"
+    // Older than any hardcoded lookback window could plausibly use - only found under "All time"
+    // if it's genuinely resolved from the real stored MinTransactionDate (UBE-47), not a guess.
+    const veryOld = new Date(2010, 0, 1);
 
     // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running Balance.
     const csv =
       '131150S1,,,,,\n' +
       `${formatForUpload(today)},,"${todayDesc}",,-4.50,637.57\n` +
-      `${formatForUpload(sixWeeksAgo)},,"${oldDesc}",,-9.00,637.57\n`;
+      `${formatForUpload(sixWeeksAgo)},,"${oldDesc}",,-9.00,637.57\n` +
+      `${formatForUpload(veryOld)},,"${veryOldDesc}",,-1.00,637.57\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -64,6 +69,14 @@ test.describe('Transaction listing', () => {
     await page.getByLabel('Date range').selectOption('week');
     await expect(page.getByText(todayDesc)).toBeVisible();
     await expect(page.getByText(oldDesc)).not.toBeVisible();
+
+    // Switch to "All time" - all three rows show, including the 2010 one. Only possible if the
+    // Api resolved the omitted startDate from the real stored MinTransactionDate, not a fixed
+    // lookback window.
+    await page.getByLabel('Date range').selectOption('allTime');
+    await expect(page.getByText(todayDesc)).toBeVisible();
+    await expect(page.getByText(oldDesc)).toBeVisible();
+    await expect(page.getByText(veryOldDesc)).toBeVisible();
 
     // clean up the Settings account added for this test so repeated runs don't accumulate it
     // (the uploaded transactions themselves aren't cleaned up - there's no delete UI, matching

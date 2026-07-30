@@ -140,6 +140,78 @@ public class TransactionQueryServiceTests
         Assert.Equal(["Later", "Earlier"], result.Select(t => t.Description));
     }
 
+    [Fact]
+    public async Task GetTransactionsAsync_ResolvesStartDate_FromUsersMinTransactionDate_WhenOmitted()
+    {
+        var user = new User { Email = Email, PasswordHash = "hash", MinTransactionDate = new DateOnly(2026, 6, 10) };
+        var month = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions =
+            [
+                Transaction("Before min date", new DateOnly(2026, 6, 5)),
+                Transaction("At min date", new DateOnly(2026, 6, 10)),
+                Transaction("After min date", new DateOnly(2026, 6, 20)),
+            ],
+        };
+        var sut = CreateService([month], [user]);
+
+        var result = await sut.GetTransactionsAsync(Email, null, new DateOnly(2026, 6, 30));
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, t => t.Description == "At min date");
+        Assert.Contains(result, t => t.Description == "After min date");
+        Assert.DoesNotContain(result, t => t.Description == "Before min date");
+    }
+
+    [Fact]
+    public async Task GetTransactionsAsync_ReturnsEmpty_WhenStartDateOmittedAndNoMinTransactionDateSet()
+    {
+        var user = new User { Email = Email, PasswordHash = "hash" };
+        var month = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("Some transaction", new DateOnly(2026, 6, 10))],
+        };
+        var sut = CreateService([month], [user]);
+
+        var result = await sut.GetTransactionsAsync(Email, null, new DateOnly(2026, 6, 30));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetTransactionsAsync_ReturnsEmpty_WhenStartDateOmittedAndUserDoesNotExist()
+    {
+        var sut = CreateService([], []);
+
+        var result = await sut.GetTransactionsAsync(Email, null, new DateOnly(2026, 6, 30));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetTransactionsAsync_UsesExplicitStartDate_IgnoringMinTransactionDate_WhenBothProvided()
+    {
+        var user = new User { Email = Email, PasswordHash = "hash", MinTransactionDate = new DateOnly(2026, 6, 15) };
+        var month = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("Before stored min date", new DateOnly(2026, 6, 5))],
+        };
+        var sut = CreateService([month], [user]);
+
+        var result = await sut.GetTransactionsAsync(Email, new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30));
+
+        Assert.Contains(result, t => t.Description == "Before stored min date");
+    }
+
     private static Transaction Transaction(string description, DateOnly date) => new()
     {
         Account = Account,
@@ -149,9 +221,10 @@ public class TransactionQueryServiceTests
         Amount = -1m,
     };
 
-    private static TransactionQueryService CreateService(List<TransactionMonth> months)
+    private static TransactionQueryService CreateService(List<TransactionMonth> months, List<User>? users = null)
     {
-        var repository = RepositoryMockFactory.Create(months);
-        return new TransactionQueryService(repository.Object);
+        var transactionRepository = RepositoryMockFactory.Create(months);
+        var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
+        return new TransactionQueryService(transactionRepository.Object, userRepository.Object);
     }
 }

@@ -67,6 +67,21 @@ describe('transactionsService', () => {
       )
     })
 
+    it('omits startDate from the query string when not provided', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ transactions: [] }),
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      await getTransactions(undefined, '2026-06-30')
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/transactions\?endDate=2026-06-30$/),
+        expect.objectContaining({ headers: { Authorization: 'Bearer a-jwt' } }),
+      )
+    })
+
     it('throws TransactionsRequestFailedError when the response is not ok', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 

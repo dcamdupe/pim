@@ -34,16 +34,25 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         _factory = factory;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public async Task InitializeAsync()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
+        await users.AddAsync(new User { Email = _email, PasswordHash = "unused-in-these-tests" });
+    }
 
     public async Task DisposeAsync()
     {
         using var scope = _factory.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+
+        var transactionMonths = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
         foreach (var id in _seededMonthIds)
         {
-            await repository.DeleteAsync(id);
+            await transactionMonths.DeleteAsync(id);
         }
+
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
+        await users.DeleteAsync(_email);
     }
 
     [Fact]
@@ -167,6 +176,40 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         Assert.Contains(body.Transactions, t => t.Description == "In range");
         Assert.Contains(body.Transactions, t => t.Description == "August");
         Assert.DoesNotContain(body.Transactions, t => t.Description == "Before range");
+    }
+
+    [Fact]
+    public async Task Get_ResolvesStartDate_FromRealMinTransactionDate_AfterUpload()
+    {
+        var client = AuthenticatedClient();
+        using (var upload = BuildMultipartContent("Everyday", ValidCsv))
+        {
+            var uploadResponse = await client.PostAsync("/transactions/file", upload);
+            Assert.Equal(HttpStatusCode.NoContent, uploadResponse.StatusCode);
+        }
+        _seededMonthIds.Add(TransactionMonth.BuildId(_email, 2026, 6));
+
+        // ValidCsv's earliest row is 01 JUN 2026 - startDate is omitted, so this only succeeds if
+        // the real (not mocked) MinTransactionDate flow resolved it correctly.
+        var response = await client.GetAsync("/transactions?endDate=2026-06-30");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
+        Assert.Equal(2, body!.Transactions.Count);
+        Assert.Contains(body.Transactions, t => t.Description == "Coffee Shop");
+        Assert.Contains(body.Transactions, t => t.Description == "Salary");
+    }
+
+    [Fact]
+    public async Task Get_ReturnsEmptyTransactions_WhenStartDateOmittedAndUserHasNeverUploaded()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.GetAsync("/transactions?endDate=2026-06-30");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
+        Assert.Empty(body!.Transactions);
     }
 
     private static MultipartFormDataContent BuildMultipartContent(string account, string csv)

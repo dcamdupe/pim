@@ -1,6 +1,7 @@
 # UBE-47 — Update user object to store min date
 
 Linear: https://linear.app/uberconcept/issue/UBE-47/update-user-object-to-store-min-date
+PR: https://github.com/dcamdupe/pim/pull/29
 
 ## Description
 
@@ -137,3 +138,4 @@ the API... a pragmatic bound"). This ticket replaces that guess with the real ea
 10. "go ahead" (step 8 — TransactionsView.vue)
 11. "go ahead" (step 9 — transactionsService.test.ts, caught a real param-order regression)
 12. "go" (step 10 — transactionListing.spec.ts "All time" coverage; final verification)
+13. "yes, commit and raise the pr"

@@ -40,8 +40,8 @@ public static class ServiceMapping
                 new AmazonDynamoDBConfig { ServiceURL = awsSettings.ServiceUrl });
         });
         builder.Services.AddScoped(typeof(IRepository<>), typeof(DynamoDbRepository<>));
-        builder.Services.AddSingleton<ICSVParserFactory, CSVParserFactory>();
-        builder.Services.AddScoped<ICsvProcessor, CsvProcessor>();
+        builder.Services.AddSingleton<IFileParserFactory, FileParserFactory>();
+        builder.Services.AddScoped<IFileProcessor, FileProcessor>();
         builder.Services.AddScoped<ITransactionQueryService, TransactionQueryService>();
         builder.Services.AddScoped<ITransactionUpdateService, TransactionUpdateService>();
 

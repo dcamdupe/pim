@@ -96,21 +96,32 @@ does for `T`.
 
 ## Checklist
 
-- [ ] 1. `ICsvParser` → `IFileParser`
-- [ ] 2. `TmBankCsvParser` implements `IFileParser`
-- [ ] 3. `ICSVParserFactory` → `IFileParserFactory`, new `Create(Stream, string)` signature
-- [ ] 4. `CSVParserFactory` → `FileParserFactory`, dispatches on file extension
-- [ ] 5. `QifParser` implemented
-- [ ] 6. `ICsvProcessor` → `IFileProcessor`
-- [ ] 7. `CsvProcessor` → `FileProcessor`
-- [ ] 8. `ServiceMapping` DI updated
-- [ ] 9. `TransactionsController` updated
-- [ ] 10. Backend unit tests renamed/updated + new `QifParserTests`
-- [ ] 11. Integration test for `.qif` upload
-- [ ] 12. FrontEnd `accept` attribute widened to include `.qif`
-- [ ] 13. Verify: `dotnet build` / `dotnet test`
-- [ ] 14. Verify: `FrontEnd` `npm run build`
-- [ ] 15. Verify: real local run with a real `.qif` sample
+- [x] 1. `ICsvParser` → `IFileParser`
+- [x] 2. `TmBankCsvParser` implements `IFileParser`
+- [x] 3. `ICSVParserFactory` → `IFileParserFactory`, new `Create(Stream, string)` signature
+- [x] 4. `CSVParserFactory` → `FileParserFactory`, dispatches on file extension
+- [x] 5. `QifParser` implemented (constructor takes the raw `Stream`, wraps it in a local
+      `using var reader = new StreamReader(...)` inside `Parse` rather than a field - storing a
+      `StreamReader` field created via `new` in the constructor trips `CA1001`, since
+      `TreatWarningsAsErrors` is on)
+- [x] 6. `ICsvProcessor` → `IFileProcessor`
+- [x] 7. `CsvProcessor` → `FileProcessor`
+- [x] 8. `ServiceMapping` DI updated
+- [x] 9. `TransactionsController` updated (also renamed `_csvProcessor`/`csvProcessor` to
+      `_fileProcessor`/`fileProcessor` for consistency, not just the type)
+- [x] 10. Backend unit tests renamed/updated (`FileProcessorTests`, `FileParserFactoryTests`) +
+      new `QifParserTests` (5 cases, one per real-file shape + a multi-record case) - 60/60 pass
+- [x] 11. Integration tests for `.qif` upload + unrecognised-extension `400` - 31/31 pass
+- [x] 12. FrontEnd `accept` attribute widened to include `.qif` (also updated the dropzone
+      placeholder text: "Drag a CSV file..." → "Drag a CSV or QIF file...")
+- [x] 13. Verify: `dotnet build` / `dotnet test` - 60/60 unit + 31/31 integration pass
+- [x] 14. Verify: `FrontEnd` `npm run build` - clean
+- [x] 15. Verify: real local run with a real `.qif` sample - restarted the stack via
+      `scripts/run_local.sh` (picks up the renamed types), logged in as the seeded test user, and
+      uploaded the real `TMBank.qif` attachment (216 records) directly against `POST
+      /transactions/file` - got `204`, and `GET /transactions` shows all 216 "Everyday" rows with
+      correct descriptions/dates/amounts, including the 2-digit-year (`01/07/25` → `2025-07-01`)
+      and 4-digit-year cases
 
 ## Prompt Log
 
@@ -120,3 +131,5 @@ does for `T`.
 2. Asked whether the FrontEnd upload accept attribute should be widened too, since the ticket's
    own change list is backend-only but the feature isn't reachable from the UI without it —
    confirmed: include it.
+3. "yes go ahead" — implemented the full plan end to end (steps 1-15), pausing once mid-step 4
+   when a file write was interrupted for review, then continuing on request.

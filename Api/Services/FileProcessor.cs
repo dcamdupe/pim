@@ -1,6 +1,3 @@
-using System.Globalization;
-using CsvHelper;
-using CsvHelper.Configuration;
 using Microsoft.AspNetCore.Http;
 using Pim.Api.Data;
 using Pim.Api.Repository;
@@ -8,24 +5,24 @@ using Pim.Api.Services.CSVParsers;
 
 namespace Pim.Api.Services;
 
-public sealed class CsvProcessor : ICsvProcessor
+public sealed class FileProcessor : IFileProcessor
 {
-    private readonly ICSVParserFactory _csvParserFactory;
+    private readonly IFileParserFactory _fileParserFactory;
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<User> _users;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
     private readonly IRepository<CreditDescriptionMapping> _creditDescriptionMappings;
-    private readonly ILogger<CsvProcessor> _logger;
+    private readonly ILogger<FileProcessor> _logger;
 
-    public CsvProcessor(
-        ICSVParserFactory csvParserFactory,
+    public FileProcessor(
+        IFileParserFactory fileParserFactory,
         IRepository<TransactionMonth> transactionMonths,
         IRepository<User> users,
         IRepository<TransactionDescriptions> transactionDescriptions,
         IRepository<CreditDescriptionMapping> creditDescriptionMappings,
-        ILogger<CsvProcessor> logger)
+        ILogger<FileProcessor> logger)
     {
-        _csvParserFactory = csvParserFactory;
+        _fileParserFactory = fileParserFactory;
         _transactionMonths = transactionMonths;
         _users = users;
         _transactionDescriptions = transactionDescriptions;
@@ -38,16 +35,16 @@ public sealed class CsvProcessor : ICsvProcessor
         List<Transaction> transactions;
         try
         {
-            using var reader = new StreamReader(file.OpenReadStream());
-            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = false });
-            var parser = _csvParserFactory.Create(csv);
+            using var stream = file.OpenReadStream();
+            var parser = _fileParserFactory.Create(stream, file.FileName);
             transactions = parser.Parse(account);
         }
         catch (Exception ex)
         {
             // Broad catch deliberately: this is parsing an untrusted, user-uploaded file, where
-            // many different exception types (CsvHelper's own, FormatException, etc.) can
-            // legitimately arise from malformed data - all of them become one CsvParseException.
+            // many different exception types (CsvHelper's own, FormatException, an unsupported
+            // file extension, etc.) can legitimately arise from malformed data - all of them
+            // become one CsvParseException.
             _logger.LogWarning(ex, "Transaction upload: could not parse file: email={Email} account={Account}", email, account);
             throw new CsvParseException("Could not parse the uploaded file.", ex);
         }

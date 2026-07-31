@@ -96,4 +96,71 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Saved.')).toBeVisible();
   });
+
+  test('offers to bulk-apply when two transactions share the exact same description (UBE-54)', async ({ page }) => {
+    // Real bank data commonly has no distinguishing suffix at all for a repeat merchant (unlike
+    // the COLES example above, which varies by store number) - this covers that case, which used
+    // to never trigger the modal because the description-stats cache is deduplicated by
+    // description string.
+    const runId = Date.now();
+    const netflix = `NETFLIX${runId} COM`;
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const year = today.getFullYear();
+    const dateForUpload = `${day} ${month} ${year}`;
+
+    const csv =
+      '131150S1,,,,,\n' +
+      `${dateForUpload},,"${netflix}",,-15.99,637.57\n` +
+      `${dateForUpload},,"${netflix}",,-15.99,621.58\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill('Playwright Duplicate Desc Account');
+    await newRow.locator('input').nth(1).fill('555777');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption('Playwright Duplicate Desc Account');
+    await page.locator('#file-input').setInputFiles({
+      name: 'transactions.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(csv),
+    });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    const netflixRows = page.locator('tr', { hasText: netflix });
+    await expect(netflixRows).toHaveCount(2);
+
+    // Categorising one of the two identical-description rows still offers to bulk-apply to the
+    // other, with an accurate "1 other transaction" count.
+    await netflixRows.first().locator('.category-select').selectOption('Entertainment');
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByText('1 other transaction')).toBeVisible();
+    await page.getByRole('button', { name: /Apply to 1 similar transactions/ }).click();
+
+    const netflixSelects = netflixRows.locator('.category-select');
+    for (const select of await netflixSelects.all()) {
+      await expect(select).toHaveValue('Entertainment');
+    }
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    const addedRow = page.locator('.account-row').last();
+    await addedRow.getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+  });
 });

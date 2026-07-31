@@ -196,15 +196,15 @@ watch(selectedRange, fetchTransactions)
       <div class="modal" role="dialog" aria-modal="true">
         <h2>Apply to similar transactions?</h2>
         <p>
-          {{ pendingCategoryChange.match.matchingDescriptions.length }}
-          other transaction{{ pendingCategoryChange.match.matchingDescriptions.length === 1 ? '' : 's' }}
+          {{ pendingCategoryChange.match.matchingTransactionCount }}
+          other transaction{{ pendingCategoryChange.match.matchingTransactionCount === 1 ? '' : 's' }}
           starting with "<strong>{{ pendingCategoryChange.match.descriptionStart }}</strong>" could also be categorised
           as <strong>{{ pendingCategoryChange.category }}</strong>.
         </p>
         <div class="modal-actions">
           <button type="button" class="modal-button secondary" @click="declineBulkApply">Just this one</button>
           <button type="button" class="modal-button primary" @click="confirmBulkApply">
-            Apply to {{ pendingCategoryChange.match.matchingDescriptions.length }} similar transactions
+            Apply to {{ pendingCategoryChange.match.matchingTransactionCount }} similar transactions
           </button>
         </div>
       </div>

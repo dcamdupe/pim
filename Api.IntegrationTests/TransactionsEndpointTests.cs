@@ -229,7 +229,13 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var descriptionsResponse = await client.GetAsync("/transactions/descriptions");
         Assert.Equal(HttpStatusCode.OK, descriptionsResponse.StatusCode);
         var body = await descriptionsResponse.Content.ReadFromJsonAsync<TransactionDescriptionsResponse>(JsonOptions);
-        Assert.Equal(["Coffee Shop", "Salary"], body!.Descriptions);
+        Assert.Equal(2, body!.Descriptions.Count);
+        var coffee = body.Descriptions.Single(d => d.Description == "Coffee Shop");
+        Assert.Equal(1, coffee.TransactionCount);
+        Assert.Equal(1, coffee.UnclassifiedCount);
+        var salary = body.Descriptions.Single(d => d.Description == "Salary");
+        Assert.Equal(1, salary.TransactionCount);
+        Assert.Equal(1, salary.UnclassifiedCount);
     }
 
     [Fact]

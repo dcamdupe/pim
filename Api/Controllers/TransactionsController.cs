@@ -97,4 +97,4 @@ public sealed class UploadTransactionsRequest
 
 public sealed record TransactionsResponse(List<Transaction> Transactions);
 
-public sealed record TransactionDescriptionsResponse(List<string> Descriptions);
+public sealed record TransactionDescriptionsResponse(List<TransactionDescriptionStat> Descriptions);

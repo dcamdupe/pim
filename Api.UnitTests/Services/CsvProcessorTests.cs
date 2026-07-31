@@ -238,13 +238,13 @@ public class CsvProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_AddsNewDescriptions_WhenNoTransactionDescriptionsExistYet()
+    public async Task ProcessAsync_CreatesDescriptionStats_ForNewTransactions()
     {
         var parser = new Mock<ICsvParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m },
-            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Salary", Category = "", Amount = 2500.00m },
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Salary", Category = "Income", Amount = 2500.00m },
         ]);
         var factory = CreateFactory(parser);
         var transactionDescriptions = new List<TransactionDescriptions>();
@@ -253,13 +253,23 @@ public class CsvProcessorTests
         await sut.ProcessAsync(Email, Account, CreateFile());
 
         var record = Assert.Single(transactionDescriptions);
-        Assert.Equal(["Coffee Shop", "Salary"], record.Descriptions);
+        Assert.Equal(2, record.Descriptions.Count);
+        var coffee = record.Descriptions.Single(d => d.Description == "Coffee Shop");
+        Assert.Equal(1, coffee.TransactionCount);
+        Assert.Equal(1, coffee.UnclassifiedCount);
+        var salary = record.Descriptions.Single(d => d.Description == "Salary");
+        Assert.Equal(1, salary.TransactionCount);
+        Assert.Equal(0, salary.UnclassifiedCount);
     }
 
     [Fact]
-    public async Task ProcessAsync_OnlyAddsGenuinelyNewDescriptions_ToAnExistingRecord()
+    public async Task ProcessAsync_IncrementsExistingDescriptionStat_ForARepeatDescription()
     {
-        var existing = new TransactionDescriptions { Email = Email, Descriptions = ["Coffee Shop"] };
+        var existing = new TransactionDescriptions
+        {
+            Email = Email,
+            Descriptions = [new TransactionDescriptionStat { Description = "Coffee Shop", TransactionCount = 1, UnclassifiedCount = 1 }],
+        };
         var parser = new Mock<ICsvParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
@@ -273,7 +283,69 @@ public class CsvProcessorTests
         await sut.ProcessAsync(Email, Account, CreateFile());
 
         var record = Assert.Single(transactionDescriptions);
-        Assert.Equal(["Coffee Shop", "Salary"], record.Descriptions);
+        Assert.Equal(2, record.Descriptions.Count);
+        var coffee = record.Descriptions.Single(d => d.Description == "Coffee Shop");
+        Assert.Equal(2, coffee.TransactionCount);
+        Assert.Equal(2, coffee.UnclassifiedCount);
+        var salary = record.Descriptions.Single(d => d.Description == "Salary");
+        Assert.Equal(1, salary.TransactionCount);
+        Assert.Equal(1, salary.UnclassifiedCount);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DoesNotInflateStats_WhenReUploadingADuplicateTransaction()
+    {
+        var existingMonth = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        };
+        var existingDescriptions = new TransactionDescriptions
+        {
+            Email = Email,
+            Descriptions = [new TransactionDescriptionStat { Description = "Coffee Shop", TransactionCount = 1, UnclassifiedCount = 1 }],
+        };
+        var months = new List<TransactionMonth> { existingMonth };
+        var transactionDescriptions = new List<TransactionDescriptions> { existingDescriptions };
+        var duplicate = new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns([duplicate]);
+        var factory = CreateFactory(parser);
+        var sut = CreateProcessor(factory, months, transactionDescriptions: transactionDescriptions);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var record = Assert.Single(transactionDescriptions);
+        var coffee = Assert.Single(record.Descriptions);
+        Assert.Equal(1, coffee.TransactionCount);
+        Assert.Equal(1, coffee.UnclassifiedCount);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_CountsAnAutoMappedTransaction_AsClassifiedNotUnclassified()
+    {
+        var mapping = new CreditDescriptionMapping
+        {
+            Email = Email,
+            Mappings = [new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
+        };
+        var parser = new Mock<ICsvParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
+        ]);
+        var factory = CreateFactory(parser);
+        var transactionDescriptions = new List<TransactionDescriptions>();
+        var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions, creditDescriptionMappings: [mapping]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var record = Assert.Single(transactionDescriptions);
+        var stat = Assert.Single(record.Descriptions);
+        Assert.Equal(1, stat.TransactionCount);
+        Assert.Equal(0, stat.UnclassifiedCount);
     }
 
     [Fact]

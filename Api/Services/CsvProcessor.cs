@@ -57,6 +57,7 @@ public sealed class CsvProcessor : ICsvProcessor
         await ApplyCreditDescriptionMappingAsync(email, transactions);
 
         var skippedDuplicates = 0;
+        var addedTransactions = new List<Transaction>();
 
         foreach (var group in transactions.GroupBy(t => (t.Date.Year, t.Date.Month)))
         {
@@ -68,6 +69,7 @@ public sealed class CsvProcessor : ICsvProcessor
             var newTransactions = group.Where(t => !month.Transactions.Any(existing => IsDuplicate(existing, t))).ToList();
             skippedDuplicates += group.Count() - newTransactions.Count;
             month.Transactions.AddRange(newTransactions);
+            addedTransactions.AddRange(newTransactions);
 
             if (isNewMonth)
             {
@@ -84,7 +86,7 @@ public sealed class CsvProcessor : ICsvProcessor
             await UpdateMinTransactionDateAsync(email, transactions.Min(t => t.Date));
         }
 
-        await AddNewTransactionDescriptionsAsync(email, transactions);
+        await UpdateTransactionDescriptionStatsAsync(email, addedTransactions);
 
         _logger.LogInformation(
             "Transaction upload response: email={Email} count={Count} skippedDuplicates={SkippedDuplicates}",
@@ -134,21 +136,36 @@ public sealed class CsvProcessor : ICsvProcessor
         }
     }
 
-    private async Task AddNewTransactionDescriptionsAsync(string email, List<Transaction> transactions)
+    // Only called with genuinely new (non-duplicate) transactions - counts would otherwise
+    // inflate if the same CSV (or an overlapping one) were uploaded more than once.
+    private async Task UpdateTransactionDescriptionStatsAsync(string email, List<Transaction> addedTransactions)
     {
-        var descriptions = await _transactionDescriptions.GetAsync(email);
-        var isNew = descriptions is null;
-        descriptions ??= new TransactionDescriptions { Email = email };
-
-        var existing = new HashSet<string>(descriptions.Descriptions);
-        var newDescriptions = transactions.Select(t => t.Description).Distinct().Where(d => !existing.Contains(d)).ToList();
-
-        if (newDescriptions.Count == 0)
+        if (addedTransactions.Count == 0)
         {
             return;
         }
 
-        descriptions.Descriptions.AddRange(newDescriptions);
+        var descriptions = await _transactionDescriptions.GetAsync(email);
+        var isNew = descriptions is null;
+        descriptions ??= new TransactionDescriptions { Email = email };
+
+        var statsByDescription = descriptions.Descriptions.ToDictionary(s => s.Description);
+
+        foreach (var transaction in addedTransactions)
+        {
+            if (!statsByDescription.TryGetValue(transaction.Description, out var stat))
+            {
+                stat = new TransactionDescriptionStat { Description = transaction.Description };
+                statsByDescription[transaction.Description] = stat;
+                descriptions.Descriptions.Add(stat);
+            }
+
+            stat.TransactionCount++;
+            if (string.IsNullOrEmpty(transaction.Category))
+            {
+                stat.UnclassifiedCount++;
+            }
+        }
 
         if (isNew)
         {

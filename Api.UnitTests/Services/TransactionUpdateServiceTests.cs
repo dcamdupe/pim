@@ -30,6 +30,55 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
+    public async Task UpdateTransactionsAsync_DecrementsUnclassifiedCount_WhenATransactionBecomesClassified()
+    {
+        var month = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "")],
+        };
+        var months = new List<TransactionMonth> { month };
+        var descriptions = new List<TransactionDescriptions>
+        {
+            new() { Email = Email, Descriptions = [new TransactionDescriptionStat { Description = "Coffee Shop", TransactionCount = 1, UnclassifiedCount = 1 }] },
+        };
+        var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
+        var sut = CreateService(months, transactionDescriptions: descriptions);
+
+        await sut.UpdateTransactionsAsync(Email, [updated]);
+
+        var stat = Assert.Single(Assert.Single(descriptions).Descriptions);
+        Assert.Equal(1, stat.TransactionCount);
+        Assert.Equal(0, stat.UnclassifiedCount);
+    }
+
+    [Fact]
+    public async Task UpdateTransactionsAsync_LeavesUnclassifiedCountUnchanged_WhenRecategorisingAnAlreadyClassifiedTransaction()
+    {
+        var month = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Shopping")],
+        };
+        var months = new List<TransactionMonth> { month };
+        var descriptions = new List<TransactionDescriptions>
+        {
+            new() { Email = Email, Descriptions = [new TransactionDescriptionStat { Description = "Coffee Shop", TransactionCount = 1, UnclassifiedCount = 0 }] },
+        };
+        var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
+        var sut = CreateService(months, transactionDescriptions: descriptions);
+
+        await sut.UpdateTransactionsAsync(Email, [updated]);
+
+        var stat = Assert.Single(Assert.Single(descriptions).Descriptions);
+        Assert.Equal(0, stat.UnclassifiedCount);
+    }
+
+    [Fact]
     public async Task UpdateTransactionsAsync_LeavesTheMonthUntouched_WhenNoTransactionMatches()
     {
         var month = new TransactionMonth
@@ -122,6 +171,68 @@ public class TransactionUpdateServiceTests
         Assert.Equal("Groceries", july.Transactions.Single().Category);
     }
 
+    [Fact]
+    public async Task ApplyCreditDescriptionMappingAsync_DecrementsUnclassifiedCount_ForEachTransactionItReclassifies()
+    {
+        var june = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions =
+            [
+                Transaction("COLES 0717 TURRAMURRA AUS", new DateOnly(2026, 6, 1), ""),
+                Transaction("COLES 0760 ASQUITH AUS", new DateOnly(2026, 6, 2), ""),
+                Transaction("Salary", new DateOnly(2026, 6, 3), ""),
+            ],
+        };
+        var months = new List<TransactionMonth> { june };
+        var descriptions = new List<TransactionDescriptions>
+        {
+            new()
+            {
+                Email = Email,
+                Descriptions =
+                [
+                    new TransactionDescriptionStat { Description = "COLES 0717 TURRAMURRA AUS", TransactionCount = 1, UnclassifiedCount = 1 },
+                    new TransactionDescriptionStat { Description = "COLES 0760 ASQUITH AUS", TransactionCount = 1, UnclassifiedCount = 1 },
+                    new TransactionDescriptionStat { Description = "Salary", TransactionCount = 1, UnclassifiedCount = 1 },
+                ],
+            },
+        };
+        var sut = CreateService(months, [], june.Transactions, descriptions);
+
+        await sut.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries");
+
+        var stats = Assert.Single(descriptions).Descriptions;
+        Assert.Equal(0, stats.Single(s => s.Description == "COLES 0717 TURRAMURRA AUS").UnclassifiedCount);
+        Assert.Equal(0, stats.Single(s => s.Description == "COLES 0760 ASQUITH AUS").UnclassifiedCount);
+        Assert.Equal(1, stats.Single(s => s.Description == "Salary").UnclassifiedCount);
+    }
+
+    [Fact]
+    public async Task ApplyCreditDescriptionMappingAsync_DoesNotDoubleAdjustUnclassifiedCount_ForAnAlreadyClassifiedTransaction()
+    {
+        var june = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("COLES 0717 TURRAMURRA AUS", new DateOnly(2026, 6, 1), "Groceries")],
+        };
+        var months = new List<TransactionMonth> { june };
+        var descriptions = new List<TransactionDescriptions>
+        {
+            new() { Email = Email, Descriptions = [new TransactionDescriptionStat { Description = "COLES 0717 TURRAMURRA AUS", TransactionCount = 1, UnclassifiedCount = 0 }] },
+        };
+        var sut = CreateService(months, [], june.Transactions, descriptions);
+
+        await sut.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries");
+
+        var stat = Assert.Single(Assert.Single(descriptions).Descriptions);
+        Assert.Equal(0, stat.UnclassifiedCount);
+    }
+
     private static Transaction Transaction(string description, DateOnly date, string category) => new()
     {
         Account = Account,
@@ -134,15 +245,17 @@ public class TransactionUpdateServiceTests
     private static TransactionUpdateService CreateService(
         List<TransactionMonth> months,
         List<CreditDescriptionMapping>? mappings = null,
-        List<Transaction>? allTransactionsForQuery = null)
+        List<Transaction>? allTransactionsForQuery = null,
+        List<TransactionDescriptions>? transactionDescriptions = null)
     {
         var transactionRepository = RepositoryMockFactory.Create(months);
         var mappingRepository = RepositoryMockFactory.Create(mappings ?? []);
+        var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
         var queryService = new Mock<ITransactionQueryService>();
         queryService
             .Setup(s => s.GetTransactionsAsync(Email, null, It.IsAny<DateOnly>()))
             .ReturnsAsync(allTransactionsForQuery ?? []);
 
-        return new TransactionUpdateService(transactionRepository.Object, mappingRepository.Object, queryService.Object);
+        return new TransactionUpdateService(transactionRepository.Object, mappingRepository.Object, transactionDescriptionsRepository.Object, queryService.Object);
     }
 }

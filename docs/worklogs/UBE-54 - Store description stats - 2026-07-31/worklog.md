@@ -1,6 +1,7 @@
 # UBE-54 — Store statistics in TransactionDescriptions Table
 
 Linear: https://linear.app/uberconcept/issue/UBE-54/store-statistics-in-transactiondescriptions-table
+PR: https://github.com/dcamdupe/pim/pull/31
 
 ## Description
 

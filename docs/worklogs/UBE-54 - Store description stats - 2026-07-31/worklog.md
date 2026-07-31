@@ -159,11 +159,27 @@ whether to show the modal.
 - [x] 11. FrontEnd unit tests (4 new `descriptionMatching.test.ts` cases for the exact-duplicate
       fix + count summation, 1 new `transactionDescriptionsService.test.ts` case for old-cache
       tolerance; 41/41 pass)
-- [ ] 12. Playwright scenario for identical-description matching
+- [x] 12. Playwright scenario for identical-description matching (new test in
+      `transactionCategorization.spec.ts`: two transactions with the literal same description,
+      confirms the modal now appears with an accurate "1 other transaction" count)
 - [x] 13. Verify: `dotnet build`/`dotnet test` - 50/50 unit + 29/29 integration pass
 - [x] 14. Verify: `FrontEnd.UnitTests` `npm run test` - 41/41 pass
-- [ ] 15. Verify: `FunctionalTests` `npm test`
-- [ ] 16. Verify: real local run via `scripts/run_local.sh`
+- [x] 15. Verify: `FunctionalTests` `npm test` - 9/10 pass (both `transactionCategorization.spec.ts`
+      scenarios pass, including the new one). `settings.spec.ts` failed on its pre-existing
+      stale-account accumulation (documented as unrelated in the UBE-48 worklog) - hit and fixed a
+      real problem first: a stale, already-running Api process from *before* this session (serving
+      pre-UBE-54 code) was what the FrontEnd's `.env` actually points to
+      (`VITE_API_BASE_URL=https://localhost:7010`), not the `:5037` instance I'd started per the
+      README - it was silently corrupting `TransactionDescriptions` back to the old shape on every
+      write, causing a 500 and the modal to never appear. Confirmed and resolved by clearing the
+      corrupted row and re-running against a fresh `scripts/run_local.sh`-managed instance (David
+      appears to have restarted his own local dev environment around the same time); also cleaned
+      up the two Settings accounts my failed first attempt left behind.
+- [x] 16. Verify: real local run via `scripts/run_local.sh` - confirmed via direct API calls
+      against the running `run_local.sh` instance (upload with a duplicate description ->
+      `GET /transactions/descriptions` returns the correct `transactionCount`/`unclassifiedCount`
+      shape) and the full Playwright suite above, which drives the real stack in a real browser.
+      David may still want to click through it by hand.
 
 ## Prompt Log
 
@@ -183,3 +199,5 @@ whether to show the modal.
    plan step 1 / checklist item 1.
 6. "just local, will clear AWS manually" — confirmed only the local DynamoDB Local row needs
    clearing as part of this work; David is handling the deployed AWS table himself.
+7. "start work" — implemented the full plan end to end (steps 1-16) without further check-ins,
+   including diagnosing and resolving the stale-server issue described in checklist item 15.

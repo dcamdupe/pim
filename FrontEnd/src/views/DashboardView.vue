@@ -2,8 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { getTransactions, type Transaction } from '../services/transactionsService'
 import { formatDateForApi } from '../utils/dateFormat'
-import { computeDashboardTiles, getCurrentMonthRange, getPreviousSixMonthsRange } from '../utils/dashboardMetrics'
+import {
+  computeDashboardTiles,
+  computeExpensesByCategory,
+  getCurrentMonthRange,
+  getPreviousSixMonthsRange,
+} from '../utils/dashboardMetrics'
 import DashboardTile from '../components/DashboardTile.vue'
+import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 
 const today = new Date()
 const transactions = ref<Transaction[]>([])
@@ -11,7 +17,9 @@ const loading = ref(true)
 const loadError = ref('')
 
 const tiles = computed(() => computeDashboardTiles(transactions.value, today))
+const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, today))
 const currentMonthLabel = today.toLocaleDateString(undefined, { month: 'long' })
+const currentMonthYearLabel = today.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 
 function formatCurrency(amount: number): string {
   const sign = amount < 0 ? '−' : ''
@@ -41,22 +49,35 @@ onMounted(async () => {
     <p v-if="loading" class="status">Loading dashboard…</p>
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
 
-    <div v-else class="kpi-row">
-      <DashboardTile
-        :label="`${currentMonthLabel} profit`"
-        :value="formatCurrency(tiles.currentMonthProfit)"
-        show-delta
-        :delta-pct="tiles.currentMonthProfitDeltaPct"
-      />
-      <DashboardTile label="previous 6 month profit" :value="formatCurrency(tiles.previousSixMonthsProfit)" />
-      <DashboardTile
-        :label="`${currentMonthLabel} Expenses`"
-        :value="formatCurrency(tiles.currentMonthExpenses)"
-        show-delta
-        :delta-pct="tiles.currentMonthExpensesDeltaPct"
-      />
-      <DashboardTile label="previous 6 month expenses" :value="formatCurrency(tiles.previousSixMonthsExpenses)" />
-    </div>
+    <template v-else>
+      <div class="kpi-row">
+        <DashboardTile
+          :label="`${currentMonthLabel} profit`"
+          :value="formatCurrency(tiles.currentMonthProfit)"
+          show-delta
+          :delta-pct="tiles.currentMonthProfitDeltaPct"
+        />
+        <DashboardTile label="previous 6 month profit" :value="formatCurrency(tiles.previousSixMonthsProfit)" />
+        <DashboardTile
+          :label="`${currentMonthLabel} Expenses`"
+          :value="formatCurrency(tiles.currentMonthExpenses)"
+          show-delta
+          :delta-pct="tiles.currentMonthExpensesDeltaPct"
+        />
+        <DashboardTile label="previous 6 month expenses" :value="formatCurrency(tiles.previousSixMonthsExpenses)" />
+      </div>
+
+      <div class="charts-row">
+        <div class="card">
+          <h2>Spending by category</h2>
+          <p class="card-sub">{{ currentMonthYearLabel }} · {{ formatCurrency(tiles.currentMonthExpenses) }} total</p>
+          <SpendingByCategoryChart
+            :expenses="expensesByCategory"
+            :center-value="formatCurrency(tiles.currentMonthExpenses)"
+          />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -100,5 +121,32 @@ onMounted(async () => {
   .kpi-row {
     grid-template-columns: 1fr;
   }
+}
+
+.charts-row {
+  margin-top: 16px;
+}
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 22px 18px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px -12px rgba(0, 0, 0, 0.1);
+  max-width: 360px;
+}
+
+.card h2 {
+  font-size: 15.5px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.card .card-sub {
+  font-size: 12px;
+  color: var(--text);
+  margin: 0 0 16px;
 }
 </style>

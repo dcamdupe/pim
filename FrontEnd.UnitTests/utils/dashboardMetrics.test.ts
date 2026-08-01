@@ -3,6 +3,7 @@ import {
   getCurrentMonthRange,
   getPreviousSixMonthsRange,
   computeDashboardTiles,
+  computeExpensesByCategory,
 } from '../../FrontEnd/src/utils/dashboardMetrics'
 import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
@@ -139,5 +140,84 @@ describe('computeDashboardTiles', () => {
     const tiles = computeDashboardTiles(transactions, today)
 
     expect(tiles.currentMonthProfit).toBe(3000 - 200)
+  })
+})
+
+describe('computeExpensesByCategory', () => {
+  it('sums expenses per category, sorted highest-spend first', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Groceries', amount: -100 }),
+      tx({ date: '2026-07-06', category: 'Groceries', amount: -50 }),
+      tx({ date: '2026-07-07', category: 'Dining', amount: -300 }),
+    ]
+
+    const result = computeExpensesByCategory(transactions, today)
+
+    expect(result.map(({ category, amount, color }) => ({ category, amount, color }))).toEqual([
+      { category: 'Dining', amount: 300, color: expect.any(String) },
+      { category: 'Groceries', amount: 150, color: expect.any(String) },
+    ])
+    expect(result[0].pct).toBeCloseTo(200 / 3)
+    expect(result[1].pct).toBeCloseTo(100 / 3)
+  })
+
+  it('excludes Income and Internal Transfer categories', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', amount: -500 }),
+      tx({ date: '2026-07-07', category: 'Groceries', amount: -200 }),
+    ]
+
+    const result = computeExpensesByCategory(transactions, today)
+
+    expect(result).toEqual([{ category: 'Groceries', amount: 200, pct: 100, color: expect.any(String) }])
+  })
+
+  it('excludes transactions where inactive is true, includes false and null', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Groceries', amount: -200, inactive: null }),
+      tx({ date: '2026-07-06', category: 'Groceries', amount: -100, inactive: false }),
+      tx({ date: '2026-07-07', category: 'Groceries', amount: -9999, inactive: true }),
+    ]
+
+    const result = computeExpensesByCategory(transactions, today)
+
+    expect(result).toEqual([{ category: 'Groceries', amount: 300, pct: 100, color: expect.any(String) }])
+  })
+
+  it('excludes transactions outside the current month', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Groceries', amount: -200 }),
+      tx({ date: '2026-06-05', category: 'Groceries', amount: -9999 }),
+    ]
+
+    const result = computeExpensesByCategory(transactions, today)
+
+    expect(result).toEqual([{ category: 'Groceries', amount: 200, pct: 100, color: expect.any(String) }])
+  })
+
+  it('nets a refund against a category rather than double-counting it', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Shopping', amount: -100 }),
+      tx({ date: '2026-07-06', category: 'Shopping', amount: 20 }), // partial refund
+    ]
+
+    const result = computeExpensesByCategory(transactions, today)
+
+    expect(result).toEqual([{ category: 'Shopping', amount: 80, pct: 100, color: expect.any(String) }])
+  })
+
+  it('returns an empty array when there are no expenses this month', () => {
+    const result = computeExpensesByCategory([], today)
+
+    expect(result).toEqual([])
+  })
+
+  it('looks up the display color from CATEGORY_COLORS', () => {
+    const transactions = [tx({ date: '2026-07-05', category: 'Groceries', amount: -100 })]
+
+    const result = computeExpensesByCategory(transactions, today)
+
+    expect(result[0].color).toBe('#eb6834')
   })
 })

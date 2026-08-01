@@ -6,6 +6,7 @@ import { getCachedTransactionDescriptions } from '../services/transactionDescrip
 import { getTransactions, updateTransactions, saveDescriptionMapping, type Transaction } from '../services/transactionsService'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions } from '../utils/transactionFilters'
+import { formatDateForApi } from '../utils/dateFormat'
 
 type RangeOption = 'week' | 'month' | 'threeMonths' | 'allTime'
 
@@ -49,13 +50,6 @@ const needsCategoryCount = computed(() => searchedAndCategorised.value.filter((t
 const filteredTransactions = computed(() =>
   needsCategoryOnly.value ? searchedAndCategorised.value.filter((t) => !t.category) : searchedAndCategorised.value,
 )
-
-function formatDateForApi(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 function computeRange(option: RangeOption): { startDate: string | undefined; endDate: string } {
   const end = new Date()

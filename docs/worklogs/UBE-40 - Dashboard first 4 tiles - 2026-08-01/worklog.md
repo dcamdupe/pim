@@ -119,15 +119,44 @@ Tiles:
 
 ## Checklist
 
-- [ ] 1. `dateFormat.ts` extracted, `TransactionsView.vue` switched to import it
-- [ ] 2. `dashboardMetrics.ts` (date ranges + tile computation)
-- [ ] 3. `dashboardMetrics.test.ts`
-- [ ] 4. `DashboardView.vue` - real 4-tile implementation
-- [ ] 5. Playwright: `dashboard.spec.ts`
-- [ ] 6. Verify: `FrontEnd.UnitTests` `npm run test`
-- [ ] 7. Verify: `FrontEnd` `npm run build` / `npm run lint`
-- [ ] 8. Verify: `FunctionalTests` `npm test`
-- [ ] 9. Verify: real local run via `scripts/run_local.sh`
+- [x] 1. `dateFormat.ts` extracted, `TransactionsView.vue` switched to import it - `npm run build`
+      clean
+- [x] 2. `dashboardMetrics.ts` (date ranges + tile computation)
+- [x] 3. `dashboardMetrics.test.ts` (9 cases: range boundaries incl. year-crossing, income/expense
+      split, uncategorized-as-expense, `Inactive` exclusion, month bucketing, delta-vs-average,
+      zero-baseline null, refund netting) - 58/58 pass
+- [x] 4. `DashboardView.vue` - real 4-tile implementation - tile labels use the ticket's exact
+      quoted strings verbatim (including its inconsistent capitalisation: "profit" lowercase on
+      tile 1, "Expenses" capitalised on tile 3, "6 month" singular on tiles 2/4) - `npm run
+      build`/`npm run lint` both clean
+- [x] 5. Playwright: `dashboard.spec.ts` - asserts the *delta* each upload+categorisation causes
+      (before/after tile parsing), not an absolute total, since the shared test dataset is never
+      cleaned up between specs; covers current-month profit/expenses, previous-6-months
+      profit/expenses, `Inactive` exclusion (the -999 expense is excluded), and that tiles 2/4
+      never render a `.delta-pill`
+- [x] 6. Verify: `FrontEnd.UnitTests` `npm run test` - 58/58 pass
+- [x] 7. Verify: `FrontEnd` `npm run build` / `npm run lint` - both clean
+- [x] 8. Verify: `FunctionalTests` `npm test` - 12/13 pass; the 1 failure is `settings.spec.ts`'s
+      pre-existing, already-documented stale-account flakiness, unrelated
+- [x] 9. Verify: real local run - restarted the stack via `scripts/run_local.sh`, ran the full
+      Playwright suite against it, and took a screenshot of the 4 tiles rendering with real data.
+      Observation (not a defect): the local "Expenses" tiles render negative against this
+      session's heavily-reused dataset, because several large positive-amount, never-categorised
+      transactions from earlier QIF-upload verification (UBE-50) count as Expenses per the agreed
+      definition and outweigh the genuine negative ones - `Profit = Income − Expenses` still holds
+      algebraically; the Playwright test's exact before/after delta assertions confirm the
+      arithmetic itself is correct
+- [x] 10. Fix: tiles without a delta (2 & 4) had their label/value sitting higher than tiles 1 & 3
+      - my first attempt (an empty `.kpi-top` div with a guessed `min-height`) didn't actually
+      match the real pill's rendered height. Fixed properly by extracting a reusable
+      `FrontEnd/src/components/DashboardTile.vue`: it always renders a same-sized `.delta-pill`
+      element (real content when `show-delta` is set, an invisible placeholder otherwise), so all
+      4 tiles are pixel-identical above the label/value regardless of whether a delta is shown -
+      guaranteed by literally being the same element, not a guessed spacer. `DashboardView.vue` now
+      just renders 4 `<DashboardTile>`s. Updated `dashboard.spec.ts`'s "no icon" assertion from
+      `.delta-pill` count 0 to `not.toBeVisible()`, since every tile now has one (hidden for
+      tiles 2/4). Re-verified: `npm run build`/`lint` clean, `FrontEnd.UnitTests` 58/58,
+      `FunctionalTests` 12/13 (same pre-existing unrelated flake), confirmed visually by David.
 
 ## Prompt Log
 
@@ -138,3 +167,10 @@ Tiles:
 2. Asked two definitional questions before planning: the delta-pill's comparison baseline
    (average vs. total of the previous 6 months), and whether uncategorized transactions count as
    Expenses - confirmed: average, and yes count them.
+3. "go" - implemented the full plan end to end (steps 1-9).
+4. "Tiles 2 & 4 with no icon show the title and amount in the wrong location compared to the
+   other tiles with icons." - first attempt (empty `.kpi-top` spacer div) didn't fully fix it.
+5. "They're still not right... Create a vue component for dashboard tiles, then use that for the
+   4 tiles" - extracted `DashboardTile.vue` with an always-present, visibility-toggled delta-pill
+   placeholder, guaranteeing identical height across all 4 tiles (step 10 above).
+6. "I've verified manually" - confirmed the fix visually; worklog closed out.

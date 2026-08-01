@@ -109,12 +109,12 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
-    public async Task ApplyCreditDescriptionMappingAsync_AddsANewMappingEntry_WhenNoneExisted()
+    public async Task ApplyDescriptionMappingAsync_AddsANewMappingEntry_WhenNoneExisted()
     {
-        var mappings = new List<CreditDescriptionMapping>();
+        var mappings = new List<DescriptionMapping>();
         var sut = CreateService([], mappings, []);
 
-        await sut.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
 
         var mapping = Assert.Single(mappings);
         var entry = Assert.Single(mapping.Mappings);
@@ -123,24 +123,24 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
-    public async Task ApplyCreditDescriptionMappingAsync_ReplacesTheCategory_ForAnExistingDescriptionStart()
+    public async Task ApplyDescriptionMappingAsync_ReplacesTheCategory_ForAnExistingDescriptionStart()
     {
-        var mapping = new CreditDescriptionMapping
+        var mapping = new DescriptionMapping
         {
             Email = Email,
-            Mappings = [new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Shopping" }],
+            Mappings = [new DescriptionMappingEntry { DescriptionStart = "COLES", Category = "Shopping" }],
         };
-        var mappings = new List<CreditDescriptionMapping> { mapping };
+        var mappings = new List<DescriptionMapping> { mapping };
         var sut = CreateService([], mappings, []);
 
-        await sut.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
 
         var entry = Assert.Single(Assert.Single(mappings).Mappings);
         Assert.Equal("Groceries", entry.Category);
     }
 
     [Fact]
-    public async Task ApplyCreditDescriptionMappingAsync_UpdatesAllMatchingTransactions_AcrossMonths()
+    public async Task ApplyDescriptionMappingAsync_UpdatesAllMatchingTransactions_AcrossMonths()
     {
         var june = new TransactionMonth
         {
@@ -164,7 +164,7 @@ public class TransactionUpdateServiceTests
         var allTransactions = june.Transactions.Concat(july.Transactions).ToList();
         var sut = CreateService(months, [], allTransactions);
 
-        await sut.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
 
         Assert.Equal("Groceries", june.Transactions.Single(t => t.Description == "COLES 0717 TURRAMURRA AUS").Category);
         Assert.Equal("", june.Transactions.Single(t => t.Description == "Salary").Category);
@@ -172,7 +172,7 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
-    public async Task ApplyCreditDescriptionMappingAsync_DecrementsUnclassifiedCount_ForEachTransactionItReclassifies()
+    public async Task ApplyDescriptionMappingAsync_DecrementsUnclassifiedCount_ForEachTransactionItReclassifies()
     {
         var june = new TransactionMonth
         {
@@ -202,7 +202,7 @@ public class TransactionUpdateServiceTests
         };
         var sut = CreateService(months, [], june.Transactions, descriptions);
 
-        await sut.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
 
         var stats = Assert.Single(descriptions).Descriptions;
         Assert.Equal(0, stats.Single(s => s.Description == "COLES 0717 TURRAMURRA AUS").UnclassifiedCount);
@@ -211,7 +211,7 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
-    public async Task ApplyCreditDescriptionMappingAsync_DoesNotDoubleAdjustUnclassifiedCount_ForAnAlreadyClassifiedTransaction()
+    public async Task ApplyDescriptionMappingAsync_DoesNotDoubleAdjustUnclassifiedCount_ForAnAlreadyClassifiedTransaction()
     {
         var june = new TransactionMonth
         {
@@ -227,7 +227,7 @@ public class TransactionUpdateServiceTests
         };
         var sut = CreateService(months, [], june.Transactions, descriptions);
 
-        await sut.ApplyCreditDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
 
         var stat = Assert.Single(Assert.Single(descriptions).Descriptions);
         Assert.Equal(0, stat.UnclassifiedCount);
@@ -244,7 +244,7 @@ public class TransactionUpdateServiceTests
 
     private static TransactionUpdateService CreateService(
         List<TransactionMonth> months,
-        List<CreditDescriptionMapping>? mappings = null,
+        List<DescriptionMapping>? mappings = null,
         List<Transaction>? allTransactionsForQuery = null,
         List<TransactionDescriptions>? transactionDescriptions = null)
     {

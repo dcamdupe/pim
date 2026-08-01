@@ -11,7 +11,7 @@ public sealed class FileProcessor : IFileProcessor
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<User> _users;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
-    private readonly IRepository<CreditDescriptionMapping> _creditDescriptionMappings;
+    private readonly IRepository<DescriptionMapping> _descriptionMappings;
     private readonly ILogger<FileProcessor> _logger;
 
     public FileProcessor(
@@ -19,14 +19,14 @@ public sealed class FileProcessor : IFileProcessor
         IRepository<TransactionMonth> transactionMonths,
         IRepository<User> users,
         IRepository<TransactionDescriptions> transactionDescriptions,
-        IRepository<CreditDescriptionMapping> creditDescriptionMappings,
+        IRepository<DescriptionMapping> descriptionMappings,
         ILogger<FileProcessor> logger)
     {
         _fileParserFactory = fileParserFactory;
         _transactionMonths = transactionMonths;
         _users = users;
         _transactionDescriptions = transactionDescriptions;
-        _creditDescriptionMappings = creditDescriptionMappings;
+        _descriptionMappings = descriptionMappings;
         _logger = logger;
     }
 
@@ -51,7 +51,7 @@ public sealed class FileProcessor : IFileProcessor
 
         _logger.LogInformation("Transaction upload request: email={Email} account={Account} count={Count}", email, account, transactions.Count);
 
-        await ApplyCreditDescriptionMappingAsync(email, transactions);
+        await ApplyDescriptionMappingAsync(email, transactions);
 
         var skippedDuplicates = 0;
         var addedTransactions = new List<Transaction>();
@@ -105,12 +105,12 @@ public sealed class FileProcessor : IFileProcessor
         }
     }
 
-    // Applies any rules the user has already saved (via POST /mapping/credit) to the
+    // Applies any rules the user has already saved (via POST /mapping/description) to the
     // newly-parsed rows, before they're persisted - so a re-categorised merchant stays categorised
     // on every future statement import, not just the transactions that existed at the time.
-    private async Task ApplyCreditDescriptionMappingAsync(string email, List<Transaction> transactions)
+    private async Task ApplyDescriptionMappingAsync(string email, List<Transaction> transactions)
     {
-        var mapping = await _creditDescriptionMappings.GetAsync(email);
+        var mapping = await _descriptionMappings.GetAsync(email);
         if (mapping is null || mapping.Mappings.Count == 0)
         {
             return;

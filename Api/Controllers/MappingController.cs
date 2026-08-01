@@ -16,8 +16,8 @@ public sealed class MappingController : ControllerBase
         _transactionUpdateService = transactionUpdateService;
     }
 
-    [HttpPost("mapping/credit")]
-    public async Task<IActionResult> SaveCreditDescriptionMapping(CreditDescriptionMappingRequest request)
+    [HttpPost("mapping/description")]
+    public async Task<IActionResult> SaveDescriptionMapping(DescriptionMappingRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.DescriptionStart) || string.IsNullOrWhiteSpace(request.Category))
         {
@@ -25,10 +25,10 @@ public sealed class MappingController : ControllerBase
         }
 
         var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        await _transactionUpdateService.ApplyCreditDescriptionMappingAsync(email, request.DescriptionStart, request.Category);
+        await _transactionUpdateService.ApplyDescriptionMappingAsync(email, request.DescriptionStart, request.Category);
 
         return NoContent();
     }
 }
 
-public sealed record CreditDescriptionMappingRequest(string DescriptionStart, string Category);
+public sealed record DescriptionMappingRequest(string DescriptionStart, string Category);

@@ -3,7 +3,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CATEGORIES, categoryColor } from '../constants/categories'
 import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
-import { getTransactions, updateTransactions, saveCreditDescriptionMapping, type Transaction } from '../services/transactionsService'
+import { getTransactions, updateTransactions, saveDescriptionMapping, type Transaction } from '../services/transactionsService'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions } from '../utils/transactionFilters'
 
@@ -135,7 +135,7 @@ async function confirmBulkApply() {
   categorySaveError.value = ''
   savingCategory.value = true
   try {
-    await saveCreditDescriptionMapping(pending.match.descriptionStart, pending.category)
+    await saveDescriptionMapping(pending.match.descriptionStart, pending.category)
     await fetchTransactions()
   } catch {
     categorySaveError.value = 'Could not save the category. Please try again.'

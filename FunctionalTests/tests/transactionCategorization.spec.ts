@@ -73,7 +73,7 @@ test.describe('Transaction categorization', () => {
     await expect(page.locator('tr', { hasText: other }).locator('.category-select')).toHaveValue('Shopping');
 
     // Uploading a new statement with another COLES-prefixed description is auto-categorised via
-    // the remembered CreditDescriptionMapping, with no further manual action.
+    // the remembered DescriptionMapping, with no further manual action.
     const colesC = `COLES${runId} 0999 NEWTOWN AUS`;
     const followUpCsv = `131150S1,,,,,\n${dateForUpload},,"${colesC}",,-10.00,602.57\n`;
     await page.getByRole('link', { name: 'Upload' }).click();

@@ -325,10 +325,10 @@ public class FileProcessorTests
     [Fact]
     public async Task ProcessAsync_CountsAnAutoMappedTransaction_AsClassifiedNotUnclassified()
     {
-        var mapping = new CreditDescriptionMapping
+        var mapping = new DescriptionMapping
         {
             Email = Email,
-            Mappings = [new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
+            Mappings = [new DescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
         };
         var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
@@ -337,7 +337,7 @@ public class FileProcessorTests
         ]);
         var factory = CreateFactory(parser);
         var transactionDescriptions = new List<TransactionDescriptions>();
-        var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions, creditDescriptionMappings: [mapping]);
+        var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions, descriptionMappings: [mapping]);
 
         await sut.ProcessAsync(Email, Account, CreateFile());
 
@@ -348,12 +348,12 @@ public class FileProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_AppliesExistingCreditDescriptionMapping_ToNewlyParsedTransactions()
+    public async Task ProcessAsync_AppliesExistingDescriptionMapping_ToNewlyParsedTransactions()
     {
-        var mapping = new CreditDescriptionMapping
+        var mapping = new DescriptionMapping
         {
             Email = Email,
-            Mappings = [new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
+            Mappings = [new DescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
         };
         var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
@@ -363,7 +363,7 @@ public class FileProcessorTests
         ]);
         var factory = CreateFactory(parser);
         var months = new List<TransactionMonth>();
-        var sut = CreateProcessor(factory, months, creditDescriptionMappings: [mapping]);
+        var sut = CreateProcessor(factory, months, descriptionMappings: [mapping]);
 
         await sut.ProcessAsync(Email, Account, CreateFile());
 
@@ -373,15 +373,15 @@ public class FileProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_PrefersTheMostPreciseCreditDescriptionMapping_WhenMoreThanOneMatches()
+    public async Task ProcessAsync_PrefersTheMostPreciseDescriptionMapping_WhenMoreThanOneMatches()
     {
-        var mapping = new CreditDescriptionMapping
+        var mapping = new DescriptionMapping
         {
             Email = Email,
             Mappings =
             [
-                new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" },
-                new CreditDescriptionMappingEntry { DescriptionStart = "COLES 0717", Category = "Specific Coles" },
+                new DescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" },
+                new DescriptionMappingEntry { DescriptionStart = "COLES 0717", Category = "Specific Coles" },
             ],
         };
         var parser = new Mock<IFileParser>();
@@ -391,7 +391,7 @@ public class FileProcessorTests
         ]);
         var factory = CreateFactory(parser);
         var months = new List<TransactionMonth>();
-        var sut = CreateProcessor(factory, months, creditDescriptionMappings: [mapping]);
+        var sut = CreateProcessor(factory, months, descriptionMappings: [mapping]);
 
         await sut.ProcessAsync(Email, Account, CreateFile());
 
@@ -413,12 +413,12 @@ public class FileProcessorTests
         List<TransactionMonth> months,
         List<User>? users = null,
         List<TransactionDescriptions>? transactionDescriptions = null,
-        List<CreditDescriptionMapping>? creditDescriptionMappings = null)
+        List<DescriptionMapping>? descriptionMappings = null)
     {
         var transactionRepository = RepositoryMockFactory.Create(months);
         var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
         var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
-        var creditDescriptionMappingRepository = RepositoryMockFactory.Create(creditDescriptionMappings ?? []);
+        var creditDescriptionMappingRepository = RepositoryMockFactory.Create(descriptionMappings ?? []);
         return new FileProcessor(
             factory.Object,
             transactionRepository.Object,

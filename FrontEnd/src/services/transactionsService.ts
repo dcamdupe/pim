@@ -28,9 +28,9 @@ export class TransactionsUpdateFailedError extends Error {
   }
 }
 
-export class CreditDescriptionMappingRequestFailedError extends Error {
+export class DescriptionMappingRequestFailedError extends Error {
   constructor() {
-    super('Credit description mapping request failed')
+    super('Description mapping request failed')
   }
 }
 
@@ -85,14 +85,14 @@ export async function updateTransactions(transactions: Transaction[]): Promise<v
   }
 }
 
-export async function saveCreditDescriptionMapping(descriptionStart: string, category: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/mapping/credit`, {
+export async function saveDescriptionMapping(descriptionStart: string, category: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/mapping/description`, {
     method: 'POST',
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ descriptionStart, category }),
   })
 
   if (!response.ok) {
-    throw new CreditDescriptionMappingRequestFailedError()
+    throw new DescriptionMappingRequestFailedError()
   }
 }

@@ -33,8 +33,8 @@ variable "transaction_descriptions_dynamodb_table_arn" {
   type        = string
 }
 
-variable "credit_description_mapping_dynamodb_table_arn" {
-  description = "ARN of the DynamoDB credit-description-mapping table the Lambda is allowed to access."
+variable "description_mapping_dynamodb_table_arn" {
+  description = "ARN of the DynamoDB description-mapping table the Lambda is allowed to access."
   type        = string
 }
 

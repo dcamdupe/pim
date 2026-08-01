@@ -59,7 +59,7 @@ data "aws_iam_policy_document" "dynamodb_access" {
       var.dynamodb_table_arn,
       var.transaction_dynamodb_table_arn,
       var.transaction_descriptions_dynamodb_table_arn,
-      var.credit_description_mapping_dynamodb_table_arn,
+      var.description_mapping_dynamodb_table_arn,
     ]
   }
 }

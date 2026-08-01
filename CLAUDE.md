@@ -48,8 +48,6 @@ unless you specifically only need one of the two running.
 - Test: `npm test` (Playwright). Auto-starts the FrontEnd dev server; requires the DynamoDB Local emulator + `Api` already running separately (see `FunctionalTests/README.md`).
 - New user-facing flows should have a corresponding scenario added here.
 
-Node's `nvm` default on this machine is a very old version (v11) — too old for Vite/Vue tooling. Run `nvm use 22` (or `nvm install 22`) before running any FrontEnd/FrontEnd.UnitTests/FunctionalTests npm command if you hit engine errors.
-
 **Terraform** (from `Terraform/`):
 - `terraform fmt -recursive` / `terraform validate` — safe to run anytime, no AWS credentials needed.
 - `terraform plan`/`apply` need real AWS credentials — **never use root account credentials** for this (a dedicated least-privilege IAM identity should be created first). Not run from this environment so far; see `Terraform/README.md`.

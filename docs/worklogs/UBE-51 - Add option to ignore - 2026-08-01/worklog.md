@@ -113,18 +113,31 @@ that's future scope, not this ticket).
 
 ## Checklist
 
-- [ ] 1. `Transaction.cs` - `Inactive (bool?)`
-- [ ] 2. `TransactionUpdateServiceTests.cs` - `Inactive` round-trip coverage
-- [ ] 3. `TransactionsEndpointTests.cs` - end-to-end `Inactive` coverage
-- [ ] 4. `transactionsService.ts` - `Transaction.inactive`
-- [ ] 5. `TransactionsView.vue` - state, `toggleInactive`, outside-click close, template
-- [ ] 6. Styling for the Actions column/menu/inactive-row indicator
-- [ ] 7. Playwright: `transactionIgnore.spec.ts`
-- [ ] 8. Verify: `dotnet build` / `dotnet test`
-- [ ] 9. Verify: `FrontEnd.UnitTests` `npm run test`
-- [ ] 10. Verify: `FrontEnd` `npm run build` / `npm run lint`
-- [ ] 11. Verify: `FunctionalTests` `npm test`
-- [ ] 12. Verify: real local run via `scripts/run_local.sh`
+- [x] 1. `Transaction.cs` - `Inactive (bool?)`
+- [x] 2. `TransactionUpdateServiceTests.cs` - `Inactive` round-trip coverage (2 new cases:
+      set/clear)
+- [x] 3. `TransactionsEndpointTests.cs` - end-to-end `Inactive` coverage (`PUT` → `GET` → `PUT`
+      back, confirms it round-trips through the real serialized response, not just the repository
+      mock) - `dotnet build`/`dotnet test`: 62/62 unit + 32/32 integration pass
+- [x] 4. `transactionsService.ts` - `Transaction.inactive` (also updated the two existing test
+      fixtures/files that construct typed `Transaction[]` literals - `transactionFilters.test.ts`,
+      `transactionsService.test.ts` - to include the new required field)
+- [x] 5. `TransactionsView.vue` - state, `toggleInactive`, outside-click close, template
+- [x] 6. Styling for the Actions column/menu/inactive-row indicator
+- [x] 7. Playwright: `transactionIgnore.spec.ts` - covers toggling inactive→active, the
+      "Inactive" indicator, an unrelated row staying untouched, and the outside-click-closes-menu
+      behaviour
+- [x] 8. Verify: `dotnet build` / `dotnet test` - 62/62 unit + 32/32 integration pass
+- [x] 9. Verify: `FrontEnd.UnitTests` `npm run test` - 49/49 pass
+- [x] 10. Verify: `FrontEnd` `npm run build` / `npm run lint` - both clean (note: this session's
+      shell had a stale `PATH` pinned to node v11 from before `nvm`'s default alias was updated to
+      22 - fixed by chaining `source ~/.nvm/nvm.sh && nvm use default` into the same command as
+      each FrontEnd npm invocation, since shell state doesn't persist across separate tool calls)
+- [x] 11. Verify: `FunctionalTests` `npm test` - 11/12 pass; the 1 failure is `settings.spec.ts`'s
+      pre-existing, already-documented stale-account flakiness, unrelated
+- [x] 12. Verify: real local run - restarted the stack via `scripts/run_local.sh` (picks up the
+      new code), ran the full Playwright suite against it, and took a screenshot confirming the
+      dimmed row + "Inactive" chip + Actions button all render correctly end to end
 
 ## Prompt Log
 
@@ -132,3 +145,9 @@ that's future scope, not this ticket).
    `TransactionsView.vue`, `NavBar.vue` (for the existing menu pattern) and
    `TransactionQueryService`/`TransactionUpdateService` to confirm the PUT path already generically
    carries a new field with no service-layer changes needed.
+2. "start work" - implemented steps 1-4 (backend + `Transaction.inactive`), then "why are you
+   running nvm.sh?" interrupted a `FrontEnd` build - this session's shell had `node` pinned to v11
+   from before `nvm`'s default alias was updated to 22, and (per the harness) shell state doesn't
+   persist between separate tool calls, so a one-off `nvm use` doesn't stick; resolved by chaining
+   `source ~/.nvm/nvm.sh && nvm use default` into the same command as each FrontEnd npm call for
+   the rest of this worklog. Continued through steps 5-12 to completion.

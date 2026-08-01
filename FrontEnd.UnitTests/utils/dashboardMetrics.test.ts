@@ -5,6 +5,7 @@ import {
   computeDashboardTiles,
   computeExpensesByCategory,
   computeMonthlyIncomeExpenses,
+  computeRecentTransactions,
 } from '../../FrontEnd/src/utils/dashboardMetrics'
 import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
@@ -303,5 +304,65 @@ describe('computeMonthlyIncomeExpenses', () => {
     expect(result).toEqual(
       result.map((m) => ({ ...m, income: 0, expense: 0 })),
     )
+  })
+})
+
+describe('computeRecentTransactions', () => {
+  it('sorts by date descending, most recent first', () => {
+    const transactions = [
+      tx({ date: '2026-07-01', description: 'Oldest' }),
+      tx({ date: '2026-07-15', description: 'Newest' }),
+      tx({ date: '2026-07-08', description: 'Middle' }),
+    ]
+
+    const result = computeRecentTransactions(transactions)
+
+    expect(result.map((t) => t.description)).toEqual(['Newest', 'Middle', 'Oldest'])
+  })
+
+  it('caps to the given limit', () => {
+    const transactions = Array.from({ length: 25 }, (_, i) =>
+      tx({ date: `2026-07-${String(i + 1).padStart(2, '0')}`, description: `Tx${i}` }),
+    )
+
+    const result = computeRecentTransactions(transactions, 20)
+
+    expect(result).toHaveLength(20)
+    expect(result[0].description).toBe('Tx24')
+  })
+
+  it('defaults the limit to 20', () => {
+    const transactions = Array.from({ length: 25 }, (_, i) =>
+      tx({ date: `2026-07-${String(i + 1).padStart(2, '0')}` }),
+    )
+
+    const result = computeRecentTransactions(transactions)
+
+    expect(result).toHaveLength(20)
+  })
+
+  it('preserves original order for same-day transactions (stable sort)', () => {
+    const transactions = [
+      tx({ date: '2026-07-01', description: 'First' }),
+      tx({ date: '2026-07-01', description: 'Second' }),
+      tx({ date: '2026-07-01', description: 'Third' }),
+    ]
+
+    const result = computeRecentTransactions(transactions)
+
+    expect(result.map((t) => t.description)).toEqual(['First', 'Second', 'Third'])
+  })
+
+  it('returns an empty array for no transactions', () => {
+    expect(computeRecentTransactions([])).toEqual([])
+  })
+
+  it('does not mutate the input array', () => {
+    const transactions = [tx({ date: '2026-07-01' }), tx({ date: '2026-07-15' })]
+    const original = [...transactions]
+
+    computeRecentTransactions(transactions)
+
+    expect(transactions).toEqual(original)
   })
 })

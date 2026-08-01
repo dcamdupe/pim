@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { getTransactions, type Transaction } from '../services/transactionsService'
 import { getSettings } from '../services/settingsService'
 import { formatDateForApi } from '../utils/dateFormat'
@@ -11,12 +12,14 @@ import {
   formatMonthYear,
   formatSixMonthRangeLabel,
   parseMonthKey,
+  computeRecentTransactions,
   getCurrentMonthRange,
   getPreviousSixMonthsRange,
 } from '../utils/dashboardMetrics'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
+import RecentTransactionsList from '../components/RecentTransactionsList.vue'
 
 // The real "today", used as the upper bound for the month filter - distinct from `selectedMonth`,
 // which the user can wind back via the filter.
@@ -34,6 +37,7 @@ const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
 const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
 const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, selectedMonth.value))
 const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value))
+const recentTransactions = computed(() => computeRecentTransactions(transactions.value))
 const selectedMonthLabel = computed(() => formatMonthYear(selectedMonth.value))
 const sixMonthRangeLabel = computed(() => formatSixMonthRangeLabel(selectedMonth.value))
 
@@ -118,6 +122,14 @@ onMounted(async () => {
           <p class="card-sub">{{ sixMonthRangeLabel }}</p>
           <IncomeVsExpensesChart :data="monthlyIncomeExpenses" />
         </div>
+      </div>
+
+      <div class="card recent-card">
+        <div class="recent-head">
+          <h2>Recent transactions</h2>
+          <RouterLink to="/transactions" class="view-all">View all →</RouterLink>
+        </div>
+        <RecentTransactionsList :transactions="recentTransactions" />
       </div>
     </template>
   </div>
@@ -215,5 +227,33 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text);
   margin: 0 0 16px;
+}
+
+.recent-card {
+  margin-top: 16px;
+}
+
+.recent-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.recent-head h2 {
+  margin: 0;
+}
+
+.view-all {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-h);
+  text-decoration: none;
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.view-all:hover {
+  text-decoration: underline;
 }
 </style>

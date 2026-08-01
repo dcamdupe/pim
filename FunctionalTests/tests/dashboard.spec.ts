@@ -218,3 +218,62 @@ test.describe('Month filter', () => {
     await expect(page.getByText('Saved.')).toBeVisible();
   });
 });
+
+test.describe('Recent transactions', () => {
+  test('shows an uploaded, categorised transaction in the list, read-only', async ({ page }) => {
+    const runId = Date.now();
+    const today = new Date();
+    const description = `RecentTxn${runId}`;
+
+    const csv = '131150S1,,,,,\n' + `${formatForUpload(today)},,"${description}",,-45.67,637.57\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill(`RecentAccount${runId}`);
+    await newRow.locator('input').nth(1).fill('333778');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(`RecentAccount${runId}`);
+    await page.locator('#file-input').setInputFiles({ name: 'recent.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await page.getByLabel('Date range').selectOption('allTime');
+
+    const row = page.locator('tr', { hasText: description });
+    await row.locator('.category-select').selectOption('Dining');
+
+    await page.getByRole('link', { name: 'Dashboard' }).click();
+    const card = page.locator('.card.recent-card');
+    await expect(card.getByText('Recent transactions')).toBeVisible();
+
+    // Same-date transactions from other specs in this shared, never-cleaned-up test dataset make
+    // list *position* unreliable - find the row by its unique description instead of assuming
+    // it's first.
+    const ownRow = card.locator('.recent-row', { hasText: description });
+    await expect(ownRow).toContainText('Dining');
+    await expect(ownRow).toContainText('−$45.67');
+
+    // Read-only: no category (or any other) form control in the recent-transactions card.
+    await expect(card.locator('select')).toHaveCount(0);
+
+    await card.getByRole('link', { name: 'View all →' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    // clean up the Settings account added for this test.
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+  });
+});

@@ -184,6 +184,13 @@ export function computeMonthlyIncomeExpenses(transactions: Transaction[], today:
   return months
 }
 
+// Most recent first, capped to `limit`. Dates are ISO "YYYY-MM-DD" strings, so a plain string
+// comparison sorts chronologically; the sort is stable, so same-day transactions keep their
+// original (API-returned) order rather than shuffling.
+export function computeRecentTransactions(transactions: Transaction[], limit = 20): Transaction[] {
+  return [...transactions].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, limit)
+}
+
 function computeProfit(transactions: Transaction[]): number {
   return sumIncome(transactions) - sumExpenses(transactions)
 }

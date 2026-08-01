@@ -22,6 +22,13 @@ export interface CategoryExpense {
   color: string | undefined
 }
 
+export interface MonthlyFlow {
+  month: string
+  year: number
+  income: number
+  expense: number
+}
+
 export function getCurrentMonthRange(today: Date): DateRange {
   const start = new Date(today.getFullYear(), today.getMonth(), 1)
   const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
@@ -57,7 +64,7 @@ function sumExpenses(transactions: Transaction[]): number {
   const total = transactions
     .filter((t) => isCounted(t) && t.category !== 'Income' && t.category !== 'Internal Transfer')
     .reduce((sum, t) => sum + t.amount, 0)
-  return -total
+  return total === 0 ? 0 : -total
 }
 
 // Per-category expense breakdown for the current month, excluding Income and Internal Transfer
@@ -83,6 +90,27 @@ export function computeExpensesByCategory(transactions: Transaction[], today: Da
       color: categoryColor(category),
     }))
     .sort((a, b) => b.amount - a.amount)
+}
+
+// The 6 calendar months ending with the current month (unlike getPreviousSixMonthsRange, which
+// excludes the current month) - matches the "last 6 months" income vs. expenses bar chart.
+export function computeMonthlyIncomeExpenses(transactions: Transaction[], today: Date): MonthlyFlow[] {
+  const months: MonthlyFlow[] = []
+
+  for (let i = 5; i >= 0; i--) {
+    const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
+    const monthTransactions = transactions.filter((t) => isWithinRange(t, { start: monthStart, end: monthEnd }))
+
+    months.push({
+      month: monthStart.toLocaleDateString(undefined, { month: 'short' }),
+      year: monthStart.getFullYear(),
+      income: sumIncome(monthTransactions),
+      expense: sumExpenses(monthTransactions),
+    })
+  }
+
+  return months
 }
 
 function computeProfit(transactions: Transaction[]): number {

@@ -5,11 +5,13 @@ import { formatDateForApi } from '../utils/dateFormat'
 import {
   computeDashboardTiles,
   computeExpensesByCategory,
+  computeMonthlyIncomeExpenses,
   getCurrentMonthRange,
   getPreviousSixMonthsRange,
 } from '../utils/dashboardMetrics'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
+import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
 
 const today = new Date()
 const transactions = ref<Transaction[]>([])
@@ -18,6 +20,7 @@ const loadError = ref('')
 
 const tiles = computed(() => computeDashboardTiles(transactions.value, today))
 const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, today))
+const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, today))
 const currentMonthLabel = today.toLocaleDateString(undefined, { month: 'long' })
 const currentMonthYearLabel = today.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 
@@ -76,6 +79,12 @@ onMounted(async () => {
             :center-value="formatCurrency(tiles.currentMonthExpenses)"
           />
         </div>
+
+        <div class="card">
+          <h2>Income vs. expenses</h2>
+          <p class="card-sub">Last 6 months</p>
+          <IncomeVsExpensesChart :data="monthlyIncomeExpenses" />
+        </div>
       </div>
     </template>
   </div>
@@ -125,6 +134,15 @@ onMounted(async () => {
 
 .charts-row {
   margin-top: 16px;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card {
@@ -135,7 +153,6 @@ onMounted(async () => {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.04),
     0 8px 24px -12px rgba(0, 0, 0, 0.1);
-  max-width: 360px;
 }
 
 .card h2 {

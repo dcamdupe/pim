@@ -4,6 +4,7 @@ import {
   getPreviousSixMonthsRange,
   computeDashboardTiles,
   computeExpensesByCategory,
+  computeMonthlyIncomeExpenses,
 } from '../../FrontEnd/src/utils/dashboardMetrics'
 import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
@@ -219,5 +220,75 @@ describe('computeExpensesByCategory', () => {
     const result = computeExpensesByCategory(transactions, today)
 
     expect(result[0].color).toBe('#eb6834')
+  })
+})
+
+describe('computeMonthlyIncomeExpenses', () => {
+  it('returns 6 months ending with the current month, in order', () => {
+    const result = computeMonthlyIncomeExpenses([], today)
+
+    expect(result.map((m) => `${m.month} ${m.year}`)).toEqual([
+      'Feb 2026',
+      'Mar 2026',
+      'Apr 2026',
+      'May 2026',
+      'Jun 2026',
+      'Jul 2026',
+    ])
+  })
+
+  it('crosses a year boundary correctly', () => {
+    const result = computeMonthlyIncomeExpenses([], new Date(2026, 1, 15)) // 15 Feb 2026
+
+    expect(result.map((m) => `${m.month} ${m.year}`)).toEqual([
+      'Sept 2025',
+      'Oct 2025',
+      'Nov 2025',
+      'Dec 2025',
+      'Jan 2026',
+      'Feb 2026',
+    ])
+  })
+
+  it('sums income and expenses into the matching month bucket', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Groceries', amount: -200 }),
+      tx({ date: '2026-06-10', category: 'Income', amount: 1000 }),
+      tx({ date: '2026-06-11', category: 'Dining', amount: -300 }),
+    ]
+
+    const result = computeMonthlyIncomeExpenses(transactions, today)
+
+    expect(result.find((m) => m.month === 'Jul')).toMatchObject({ income: 3000, expense: 200 })
+    expect(result.find((m) => m.month === 'Jun')).toMatchObject({ income: 1000, expense: 300 })
+  })
+
+  it('excludes Internal Transfer and inactive transactions', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', amount: -500 }),
+      tx({ date: '2026-07-07', category: 'Groceries', amount: -200, inactive: true }),
+    ]
+
+    const result = computeMonthlyIncomeExpenses(transactions, today)
+
+    expect(result.find((m) => m.month === 'Jul')).toMatchObject({ income: 3000, expense: 0 })
+  })
+
+  it('excludes transactions outside the 6-month window', () => {
+    const transactions = [tx({ date: '2026-01-15', category: 'Income', amount: 9999 })]
+
+    const result = computeMonthlyIncomeExpenses(transactions, today)
+
+    expect(result.reduce((sum, m) => sum + m.income, 0)).toBe(0)
+  })
+
+  it('returns zero for months with no matching transactions', () => {
+    const result = computeMonthlyIncomeExpenses([], today)
+
+    expect(result).toEqual(
+      result.map((m) => ({ ...m, income: 0, expense: 0 })),
+    )
   })
 })

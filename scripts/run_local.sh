@@ -35,15 +35,6 @@ trap cleanup EXIT
 kill_port "$API_HTTPS_PORT"
 kill_port "$FRONTEND_PORT"
 
-# This machine's nvm defaults to a very old Node (v11) - too old for Vite.
-# Switch to 22 if nvm is available; harmless no-op otherwise (e.g. node is
-# already on PATH at a suitable version some other way).
-if [ -s "$HOME/.nvm/nvm.sh" ]; then
-  # shellcheck disable=SC1091
-  source "$HOME/.nvm/nvm.sh"
-  nvm use 22
-fi
-
 echo "Building Api..."
 dotnet build "$REPO_ROOT/Api/Pim.Api.csproj"
 

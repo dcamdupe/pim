@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CATEGORIES, categoryColor } from '../constants/categories'
 import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
 import { getTransactions, updateTransactions, saveCreditDescriptionMapping, type Transaction } from '../services/transactionsService'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
+import { filterTransactions } from '../utils/transactionFilters'
 
 type RangeOption = 'week' | 'month' | 'threeMonths' | 'allTime'
 
@@ -21,6 +22,29 @@ const selectedRange = ref<RangeOption>('month')
 const pendingCategoryChange = ref<PendingCategoryChange | null>(null)
 const savingCategory = ref(false)
 const categorySaveError = ref('')
+
+const searchQuery = ref('')
+const selectedAccount = ref('')
+const selectedCategory = ref('')
+const needsCategoryOnly = ref(false)
+
+const accountOptions = computed(() => [...new Set(transactions.value.map((t) => t.account))].sort())
+
+// Search/account/category applied, but not the needs-category toggle - this is what the
+// toggle's own count badge reflects, so it updates live as you type/pick a filter rather than
+// only ever showing the count for the unfiltered range.
+const searchedAndCategorised = computed(() =>
+  filterTransactions(transactions.value, {
+    search: searchQuery.value,
+    account: selectedAccount.value,
+    category: selectedCategory.value,
+    needsCategoryOnly: false,
+  }),
+)
+const needsCategoryCount = computed(() => searchedAndCategorised.value.filter((t) => !t.category).length)
+const filteredTransactions = computed(() =>
+  needsCategoryOnly.value ? searchedAndCategorised.value.filter((t) => !t.category) : searchedAndCategorised.value,
+)
 
 function formatDateForApi(date: Date): string {
   const year = date.getFullYear()
@@ -147,6 +171,23 @@ watch(selectedRange, fetchTransactions)
         <option value="threeMonths">Last 3 months</option>
         <option value="allTime">All time</option>
       </select>
+      <input v-model="searchQuery" type="search" placeholder="Search description…" aria-label="Search description" class="search-input" />
+      <select v-model="selectedAccount" aria-label="Account filter">
+        <option value="">All accounts</option>
+        <option v-for="a in accountOptions" :key="a" :value="a">{{ a }}</option>
+      </select>
+      <select v-model="selectedCategory" aria-label="Category filter">
+        <option value="">All categories</option>
+        <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+      </select>
+      <button
+        type="button"
+        class="chip-toggle"
+        :class="{ active: needsCategoryOnly }"
+        @click="needsCategoryOnly = !needsCategoryOnly"
+      >
+        <span class="chip-toggle-count">{{ needsCategoryCount }}</span> need a category
+      </button>
       <RouterLink to="/transactions/upload" class="upload-button">Upload</RouterLink>
     </div>
 
@@ -154,6 +195,7 @@ watch(selectedRange, fetchTransactions)
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
     <p v-else-if="categorySaveError" class="status status-error">{{ categorySaveError }}</p>
     <p v-else-if="transactions.length === 0" class="status">No transactions in this range.</p>
+    <p v-else-if="filteredTransactions.length === 0" class="status">No transactions match your filters.</p>
 
     <div v-else class="table-card">
       <table class="tx">
@@ -167,7 +209,7 @@ watch(selectedRange, fetchTransactions)
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(t, index) in transactions" :key="index">
+          <tr v-for="(t, index) in filteredTransactions" :key="index">
             <td class="date">{{ formatDisplayDate(t.date) }}</td>
             <td class="desc">{{ t.description }}</td>
             <td><span class="acct-badge">{{ t.account }}</span></td>
@@ -241,6 +283,44 @@ watch(selectedRange, fetchTransactions)
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  min-width: 200px;
+  flex: 1 1 200px;
+}
+
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--field-bg);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.chip-toggle-count {
+  background: var(--text-h);
+  color: var(--bg);
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-size: 11px;
+}
+
+.chip-toggle.active {
+  background: var(--text-h);
+  color: var(--bg);
+  border-color: var(--text-h);
+}
+
+.chip-toggle.active .chip-toggle-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--bg);
 }
 
 .upload-button {

@@ -92,6 +92,24 @@ export function computeExpensesByCategory(transactions: Transaction[], today: Da
     .sort((a, b) => b.amount - a.amount)
 }
 
+// Fixed English abbreviations rather than toLocaleDateString(undefined, { month: 'short' }) -
+// that depends on the runtime's ICU data, which varies by environment (e.g. "Sep" vs "Sept" for
+// September between local dev and CI) and would make the chart's month labels non-deterministic.
+const MONTH_ABBREVIATIONS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
+
 // The 6 calendar months ending with the current month (unlike getPreviousSixMonthsRange, which
 // excludes the current month) - matches the "last 6 months" income vs. expenses bar chart.
 export function computeMonthlyIncomeExpenses(transactions: Transaction[], today: Date): MonthlyFlow[] {
@@ -103,7 +121,7 @@ export function computeMonthlyIncomeExpenses(transactions: Transaction[], today:
     const monthTransactions = transactions.filter((t) => isWithinRange(t, { start: monthStart, end: monthEnd }))
 
     months.push({
-      month: monthStart.toLocaleDateString(undefined, { month: 'short' }),
+      month: MONTH_ABBREVIATIONS[monthStart.getMonth()],
       year: monthStart.getFullYear(),
       income: sumIncome(monthTransactions),
       expense: sumExpenses(monthTransactions),

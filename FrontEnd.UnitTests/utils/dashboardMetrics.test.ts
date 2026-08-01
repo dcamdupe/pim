@@ -241,7 +241,7 @@ describe('computeMonthlyIncomeExpenses', () => {
     const result = computeMonthlyIncomeExpenses([], new Date(2026, 1, 15)) // 15 Feb 2026
 
     expect(result.map((m) => `${m.month} ${m.year}`)).toEqual([
-      'Sept 2025',
+      'Sep 2025',
       'Oct 2025',
       'Nov 2025',
       'Dec 2025',

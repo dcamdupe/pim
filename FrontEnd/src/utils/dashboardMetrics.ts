@@ -46,7 +46,9 @@ function sumIncome(transactions: Transaction[]): number {
 // gives a positive dollar figure to display, and keeps Profit = Income - Expenses correct when
 // both are displayed as positive magnitudes.
 function sumExpenses(transactions: Transaction[]): number {
-  const total = transactions.filter((t) => isCounted(t) && t.category !== 'Income').reduce((sum, t) => sum + t.amount, 0)
+  const total = transactions
+    .filter((t) => isCounted(t) && t.category !== 'Income' && t.category !== 'Internal Transfer')
+    .reduce((sum, t) => sum + t.amount, 0)
   return -total
 }
 

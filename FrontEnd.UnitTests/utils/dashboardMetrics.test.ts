@@ -116,4 +116,28 @@ describe('computeDashboardTiles', () => {
 
     expect(tiles.currentMonthExpenses).toBe(80)
   })
+
+  it('excludes Internal Transfer transactions from expenses', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Groceries', amount: -200 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', amount: -500 }),
+    ]
+
+    const tiles = computeDashboardTiles(transactions, today)
+
+    expect(tiles.currentMonthExpenses).toBe(200)
+  })
+
+  it('excludes Internal Transfer transactions from profit, on both the income and expense side', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Groceries', amount: -200 }),
+      tx({ date: '2026-07-07', category: 'Internal Transfer', amount: -500 }),
+      tx({ date: '2026-07-08', category: 'Internal Transfer', amount: 500 }),
+    ]
+
+    const tiles = computeDashboardTiles(transactions, today)
+
+    expect(tiles.currentMonthProfit).toBe(3000 - 200)
+  })
 })

@@ -350,6 +350,37 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
+    public async Task Post_FlagsBothTransactions_AsInternalTransfer_WhenAnInvertedAmountArrivesInAnotherAccountWithinFiveDays_AcrossSeparateUploads()
+    {
+        var client = AuthenticatedClient();
+        const string everydayCsv =
+            "131150S1,,,,,\n" +
+            "01 JUN 2026,,\"Transfer to Savings\",,-100.00,637.57\n";
+        const string savingsCsv =
+            "131150S2,,,,,\n" +
+            "03 JUN 2026,,\"Transfer from Everyday\",,100.00,1100.00\n";
+
+        using (var everydayUpload = BuildMultipartContent("Everyday", everydayCsv))
+        {
+            var everydayResponse = await client.PostAsync("/transactions/file", everydayUpload);
+            Assert.Equal(HttpStatusCode.NoContent, everydayResponse.StatusCode);
+        }
+        using (var savingsUpload = BuildMultipartContent("Savings", savingsCsv))
+        {
+            var savingsResponse = await client.PostAsync("/transactions/file", savingsUpload);
+            Assert.Equal(HttpStatusCode.NoContent, savingsResponse.StatusCode);
+        }
+        _seededMonthIds.Add(TransactionMonth.BuildId(_email, 2026, 6));
+
+        var response = await client.GetAsync("/transactions?startDate=2026-06-01&endDate=2026-06-30");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
+        Assert.Equal(2, body!.Transactions.Count);
+        Assert.All(body.Transactions, t => Assert.Equal("Internal Transfer", t.Category));
+    }
+
+    [Fact]
     public async Task Put_ReturnsBadRequest_WhenListIsEmpty()
     {
         var client = AuthenticatedClient();

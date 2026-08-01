@@ -149,21 +149,21 @@ Ticket text (verbatim):
 
 ## Checklist
 
-- [ ] 1. `TransactionDescriptionStatsHelper` extracted
-- [ ] 2. `InternalTransferMatcher` implemented
-- [ ] 3. `FileProcessor.ProcessAsync` reordered to call it
-- [ ] 4. DI registration
-- [ ] 5. Backend unit tests
-- [ ] 6. Backend integration test
-- [ ] 7. `CATEGORIES`/`CATEGORY_COLORS` - "Internal Transfer"
-- [ ] 8. `dashboardMetrics.ts` - exclude Internal Transfer from Expenses
-- [ ] 9. `dashboardMetrics.test.ts` - new cases
-- [ ] 10. Playwright scenario
-- [ ] 11. Verify: `dotnet build` / `dotnet test`
-- [ ] 12. Verify: `FrontEnd.UnitTests` `npm run test`
-- [ ] 13. Verify: `FrontEnd` `npm run build` / `npm run lint`
-- [ ] 14. Verify: `FunctionalTests` `npm test`
-- [ ] 15. Verify: real local run via `scripts/run_local.sh`
+- [x] 1. `TransactionDescriptionStatsHelper` extracted
+- [x] 2. `InternalTransferMatcher` implemented
+- [x] 3. `FileProcessor.ProcessAsync` reordered to call it
+- [x] 4. DI registration
+- [x] 5. Backend unit tests
+- [x] 6. Backend integration test
+- [x] 7. `CATEGORIES`/`CATEGORY_COLORS` - "Internal Transfer"
+- [x] 8. `dashboardMetrics.ts` - exclude Internal Transfer from Expenses
+- [x] 9. `dashboardMetrics.test.ts` - new cases
+- [x] 10. Playwright scenario
+- [x] 11. Verify: `dotnet build` / `dotnet test`
+- [x] 12. Verify: `FrontEnd.UnitTests` `npm run test`
+- [x] 13. Verify: `FrontEnd` `npm run build` / `npm run lint`
+- [x] 14. Verify: `FunctionalTests` `npm test`
+- [x] 15. Verify: real local run via `scripts/run_local.sh`
 
 ## Prompt Log
 
@@ -176,3 +176,85 @@ Ticket text (verbatim):
    accounts, and what "manually categorised... from the dashboard" concretely means given the
    Dashboard route has no per-transaction UI - confirmed: different accounts required, and it
    means the existing Transactions page category-select.
+3. Interruption: "FE unit tests are failing... likely a bad merge" - unrelated to this ticket.
+   Traced to the `UBE-60` merge into `main` (PR #37) dropping the import of
+   `loadStoredTransactionFilters`/`saveTransactionFilters`/`RangeOption` from
+   `transactionFilterStorage.ts` in `TransactionsView.vue` while leaving the code that calls them.
+   Fixed directly on `main` (commit `e1c1be5`), verified with `npm run build` and
+   `FrontEnd.UnitTests` (64/64 passing), and pushed.
+4. "switch to UBE-52" / "pull from main" - merged the now-fixed `main` into this branch (clean,
+   no conflicts - only touched frontend filter-storage files, nothing overlapping this ticket's
+   plan).
+5. "resume worklog for UBE-52" / "start" - confirmed the merge didn't touch any files in this
+   ticket's plan, then implemented checklist item 1: moved `AdjustUnclassifiedCount` out of
+   `TransactionUpdateService` into a new static `TransactionDescriptionStatsHelper`, added direct
+   unit tests for it (`TransactionDescriptionStatsHelperTests.cs`), and confirmed the existing
+   `TransactionUpdateServiceTests` still pass unchanged (16/16) plus a clean `dotnet build`.
+6. "yes go ahead" - implemented checklist item 2: `IInternalTransferMatcher`/
+   `InternalTransferMatcher` (cross-bucket window lookup, first-unmatched-candidate matching by
+   inverted amount + different account + <=5 day gap, external-bucket persistence, stats
+   adjustment for already-stored matches via the shared helper), registered it in
+   `ServiceMapping` (item 4), and added `InternalTransferMatcherTests.cs` covering cross-account
+   matching, same-account exclusion, >5-day exclusion, non-inverted-amount exclusion, category
+   override, matching against an already-stored transaction from a past import (verifying the
+   external bucket's `UpdateAsync` is called), stats adjustment for that external match, and
+   no-double-matching. Full `Api.UnitTests` suite: 74/74 passing, clean `dotnet build`.
+7. "yes go ahead" - implemented checklist item 3: reordered `FileProcessor.ProcessAsync` to build
+   month buckets + `addedTransactions` without saving, update min transaction date, call
+   `InternalTransferMatcher.MatchAsync` (mutates categories in place), then save the buckets, then
+   update description stats (now sees final, possibly-overridden categories). Updated
+   `FileProcessorTests`'s `CreateProcessor` helper to build a real `InternalTransferMatcher` from
+   the same mocked repositories (matching production wiring) and added one new test confirming
+   two inverted-amount, different-account transactions in the same upload both get flagged
+   "Internal Transfer" in the saved bucket. Verified the existing test data has no accidental
+   same-account/inverted-amount coincidences that would flip other tests' expected categories.
+   Full `Api.UnitTests` suite: 75/75 passing, clean `dotnet build`.
+8. "go" - implemented checklist item 6: added
+   `Post_FlagsBothTransactions_AsInternalTransfer_WhenAnInvertedAmountArrivesInAnotherAccountWithinFiveDays_AcrossSeparateUploads`
+   to `TransactionsEndpointTests.cs` - uploads to "Everyday" and "Savings" in two separate
+   `POST /transactions/file` calls (proving the cross-import match, not just same-file), then
+   `GET /transactions` confirms both rows show `category: "Internal Transfer"`. Full solution
+   test run (real DynamoDB Local, already running): 75/75 unit + 33/33 integration passing.
+9. "go" - implemented checklist item 7: added `'Internal Transfer'` to `CATEGORIES` and its
+   colour (`#6b7280`, neutral slate grey) to `CATEGORY_COLORS` in `categories.ts`. Clean
+   `npm run build`.
+10. "go" - implemented checklist items 8-9: `sumExpenses` in `dashboardMetrics.ts` now also
+    excludes `category === 'Internal Transfer'`; added two new `dashboardMetrics.test.ts` cases
+    (excluded from expenses; excluded from profit on both sides). `FrontEnd.UnitTests`: 66/66
+    passing; `FrontEnd`: clean `npm run build` and `npm run lint`.
+11. "go ahead" - implemented checklist item 10: added `FunctionalTests/tests/internalTransfer.spec.ts`
+    - uploads a transfer-out to one account then, in a separate later upload, the inverted-amount
+      transfer-in to a second account; confirms both auto-show "Internal Transfer"; confirms a
+      same-account inverted-amount "control" pair does NOT auto-match (proving the
+      different-accounts constraint); confirms the current-month Expenses dashboard tile nets to
+      zero once matched (it briefly counted the still-uncategorized out-transfer as an expense
+      right after the first upload, then dropped back out once matched).
+    - Hit real Api staleness first (the running `dotnet run --project Api` process predated these
+      code changes) - restarted via `scripts/run_local.sh`.
+    - Then hit self-inflicted test flakiness from re-running the same scenario repeatedly during
+      debugging: the app has no delete-transaction UI, so every failed run's uploaded transactions
+      stayed in the shared month bucket forever, and a narrow modulo range for the test's derived
+      dollar amounts let a later run's pair collide with an earlier run's still-unmatched leftover
+      (proving the matcher works correctly - it was matching across truly-separate "runs" it had
+      no way to distinguish). Fixed by widening the two amount ranges to non-overlapping, near-
+      collision-free bands, and cleaned up the ~8 leftover "IT Account" Settings entries my failed
+      debug runs left behind via direct API calls (Settings has no bulk-delete UI either).
+    - Full suite: 13/14 passing. The one failure (`settings.spec.ts`) is a pre-existing race
+      condition unrelated to this change - it reads `.account-row`'s count synchronously before
+      the page's async account-list fetch resolves, and passes in isolation; it only surfaces
+      under full-suite timing pressure combined with this shared user's already-large (~18,
+      predating this session) accumulated account list. Flagged to David rather than fixed, as
+      out of scope for this ticket.
+12. "run all of them in a final run" - ran checklist items 11-15 as a consolidated final pass:
+    - `dotnet build`/`dotnet test`: clean, 75 unit + 33 integration passing.
+    - `FrontEnd.UnitTests`: 72/73 passing. The 1 failure (`computeExpensesByCategory`'s pct math)
+      is in an unrelated, concurrently-in-progress dashboard feature (not written by me this
+      session - flagged by the harness as an external edit to `dashboardMetrics.ts`/its test file
+      partway through this worklog) - out of scope for UBE-52, left untouched.
+    - `FrontEnd`: clean `npm run build` and `npm run lint`.
+    - `FunctionalTests`: 13/14 passing - the 1 failure is the pre-existing `settings.spec.ts`
+      race condition noted above.
+    - Real local stack (`scripts/run_local.sh`, already running): confirmed both Api (400 on a
+      deliberately-bad login, proving it's alive and handling requests) and FrontEnd (200) are up
+      and serving - and had already been exercised heavily all session via the Playwright runs.
+    - All 15 checklist items now complete.

@@ -48,7 +48,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
                     if (previousCategory != updated.Category)
                     {
                         descriptionsContext ??= await LoadDescriptionsAsync(email);
-                        AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, updated.Description, previousCategory, updated.Category);
+                        TransactionDescriptionStatsHelper.AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, updated.Description, previousCategory, updated.Category);
                     }
                 }
             }
@@ -97,7 +97,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
                 }
 
                 descriptionsContext ??= await LoadDescriptionsAsync(email);
-                AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, transaction.Description, transaction.Category, category);
+                TransactionDescriptionStatsHelper.AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, transaction.Description, transaction.Category, category);
 
                 transaction.Category = category;
                 changed = true;
@@ -133,28 +133,6 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
         {
             await _transactionDescriptions.UpdateAsync(email, descriptions);
         }
-    }
-
-    // Every stat mutation here goes through this one place, since the same description can be
-    // reached from either the single-edit (PUT /transactions) or bulk-apply (POST
-    // /mapping/description) path - both just move a description between classified/unclassified.
-    private static void AdjustUnclassifiedCount(TransactionDescriptions descriptions, string description, string previousCategory, string newCategory)
-    {
-        var wasUnclassified = string.IsNullOrEmpty(previousCategory);
-        var isUnclassified = string.IsNullOrEmpty(newCategory);
-        if (wasUnclassified == isUnclassified)
-        {
-            return;
-        }
-
-        var stat = descriptions.Descriptions.FirstOrDefault(s => s.Description == description);
-        if (stat is null)
-        {
-            stat = new TransactionDescriptionStat { Description = description };
-            descriptions.Descriptions.Add(stat);
-        }
-
-        stat.UnclassifiedCount += wasUnclassified ? -1 : 1;
     }
 
     private async Task UpsertMappingAsync(string email, string descriptionStart, string category)

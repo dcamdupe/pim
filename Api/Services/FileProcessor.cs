@@ -12,6 +12,7 @@ public sealed class FileProcessor : IFileProcessor
     private readonly IRepository<User> _users;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
     private readonly IRepository<DescriptionMapping> _descriptionMappings;
+    private readonly IInternalTransferMatcher _internalTransferMatcher;
     private readonly ILogger<FileProcessor> _logger;
 
     public FileProcessor(
@@ -20,6 +21,7 @@ public sealed class FileProcessor : IFileProcessor
         IRepository<User> users,
         IRepository<TransactionDescriptions> transactionDescriptions,
         IRepository<DescriptionMapping> descriptionMappings,
+        IInternalTransferMatcher internalTransferMatcher,
         ILogger<FileProcessor> logger)
     {
         _fileParserFactory = fileParserFactory;
@@ -27,6 +29,7 @@ public sealed class FileProcessor : IFileProcessor
         _users = users;
         _transactionDescriptions = transactionDescriptions;
         _descriptionMappings = descriptionMappings;
+        _internalTransferMatcher = internalTransferMatcher;
         _logger = logger;
     }
 
@@ -55,6 +58,7 @@ public sealed class FileProcessor : IFileProcessor
 
         var skippedDuplicates = 0;
         var addedTransactions = new List<Transaction>();
+        var buckets = new List<(string Id, TransactionMonth Month, bool IsNew)>();
 
         foreach (var group in transactions.GroupBy(t => (t.Date.Year, t.Date.Month)))
         {
@@ -67,7 +71,18 @@ public sealed class FileProcessor : IFileProcessor
             skippedDuplicates += group.Count() - newTransactions.Count;
             month.Transactions.AddRange(newTransactions);
             addedTransactions.AddRange(newTransactions);
+            buckets.Add((id, month, isNewMonth));
+        }
 
+        if (transactions.Count > 0)
+        {
+            await UpdateMinTransactionDateAsync(email, transactions.Min(t => t.Date));
+        }
+
+        await _internalTransferMatcher.MatchAsync(email, addedTransactions, buckets.Select(b => b.Month).ToList());
+
+        foreach (var (id, month, isNewMonth) in buckets)
+        {
             if (isNewMonth)
             {
                 await _transactionMonths.AddAsync(month);
@@ -76,11 +91,6 @@ public sealed class FileProcessor : IFileProcessor
             {
                 await _transactionMonths.UpdateAsync(id, month);
             }
-        }
-
-        if (transactions.Count > 0)
-        {
-            await UpdateMinTransactionDateAsync(email, transactions.Min(t => t.Date));
         }
 
         await UpdateTransactionDescriptionStatsAsync(email, addedTransactions);

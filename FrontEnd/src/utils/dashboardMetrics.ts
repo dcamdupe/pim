@@ -1,4 +1,5 @@
 import type { Transaction } from '../services/transactionsService'
+import { categoryColor } from '../constants/categories'
 
 export interface DateRange {
   start: Date
@@ -12,6 +13,13 @@ export interface DashboardTiles {
   currentMonthExpenses: number
   currentMonthExpensesDeltaPct: number | null
   previousSixMonthsExpenses: number
+}
+
+export interface CategoryExpense {
+  category: string
+  amount: number
+  pct: number
+  color: string | undefined
 }
 
 export function getCurrentMonthRange(today: Date): DateRange {
@@ -50,6 +58,31 @@ function sumExpenses(transactions: Transaction[]): number {
     .filter((t) => isCounted(t) && t.category !== 'Income' && t.category !== 'Internal Transfer')
     .reduce((sum, t) => sum + t.amount, 0)
   return -total
+}
+
+// Per-category expense breakdown for the current month, excluding Income and Internal Transfer
+// (not expense categories) and inactive transactions, sorted highest-spend first.
+export function computeExpensesByCategory(transactions: Transaction[], today: Date): CategoryExpense[] {
+  const currentMonthTransactions = transactions.filter((t) => isWithinRange(t, getCurrentMonthRange(today)))
+  const totals = new Map<string, number>()
+
+  for (const t of currentMonthTransactions) {
+    if (!isCounted(t) || t.category === 'Income' || t.category === 'Internal Transfer') {
+      continue
+    }
+    totals.set(t.category, (totals.get(t.category) ?? 0) - t.amount)
+  }
+
+  const total = [...totals.values()].reduce((sum, amount) => sum + amount, 0)
+
+  return [...totals.entries()]
+    .map(([category, amount]) => ({
+      category,
+      amount,
+      pct: total === 0 ? 0 : (amount / total) * 100,
+      color: categoryColor(category),
+    }))
+    .sort((a, b) => b.amount - a.amount)
 }
 
 function computeProfit(transactions: Transaction[]): number {

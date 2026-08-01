@@ -18,7 +18,7 @@ const saveError = ref('')
 
 onMounted(async () => {
   try {
-    accounts.value = await getSettings()
+    accounts.value = (await getSettings()).accounts
     selectedAccount.value = accounts.value[0]?.name ?? ''
   } catch {
     loadError.value = 'Could not load your accounts. Please try again later.'

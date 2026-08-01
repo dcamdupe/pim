@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { getTransactions, type Transaction } from '../services/transactionsService'
+import { getSettings } from '../services/settingsService'
 import { formatDateForApi } from '../utils/dateFormat'
 import {
   computeDashboardTiles,
   computeExpensesByCategory,
   computeMonthlyIncomeExpenses,
+  computeAvailableMonths,
+  formatMonthYear,
+  formatSixMonthRangeLabel,
+  parseMonthKey,
   getCurrentMonthRange,
   getPreviousSixMonthsRange,
 } from '../utils/dashboardMetrics'
@@ -13,41 +18,69 @@ import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
 
-const today = new Date()
+// The real "today", used as the upper bound for the month filter - distinct from `selectedMonth`,
+// which the user can wind back via the filter.
+const realToday = new Date()
+
 const transactions = ref<Transaction[]>([])
 const loading = ref(true)
 const loadError = ref('')
+const minTransactionDate = ref<Date | null>(null)
+const selectedMonthKey = ref(computeAvailableMonths(null, realToday)[0].value)
 
-const tiles = computed(() => computeDashboardTiles(transactions.value, today))
-const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, today))
-const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, today))
-const currentMonthLabel = today.toLocaleDateString(undefined, { month: 'long' })
-const currentMonthYearLabel = today.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
+const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
+
+const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
+const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, selectedMonth.value))
+const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value))
+const selectedMonthLabel = computed(() => formatMonthYear(selectedMonth.value))
+const sixMonthRangeLabel = computed(() => formatSixMonthRangeLabel(selectedMonth.value))
 
 function formatCurrency(amount: number): string {
   const sign = amount < 0 ? '−' : ''
   return `${sign}$${Math.abs(amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 }
 
-onMounted(async () => {
+async function fetchTransactionsForSelectedMonth() {
   loading.value = true
   loadError.value = ''
   try {
-    const { start } = getPreviousSixMonthsRange(today)
-    const { end } = getCurrentMonthRange(today)
+    const { start } = getPreviousSixMonthsRange(selectedMonth.value)
+    const { end } = getCurrentMonthRange(selectedMonth.value)
     transactions.value = await getTransactions(formatDateForApi(start), formatDateForApi(end))
   } catch {
     loadError.value = 'Could not load your dashboard. Please try again later.'
   } finally {
     loading.value = false
   }
+}
+
+watch(selectedMonthKey, fetchTransactionsForSelectedMonth)
+
+onMounted(async () => {
+  // Non-fatal if this fails - the month filter just falls back to only the current month.
+  getSettings()
+    .then((settings) => {
+      minTransactionDate.value = settings.minTransactionDate ? new Date(`${settings.minTransactionDate}T00:00:00`) : null
+    })
+    .catch(() => {})
+
+  await fetchTransactionsForSelectedMonth()
 })
 </script>
 
 <template>
   <div class="dashboard-page">
-    <h1>Dashboard</h1>
-    <p class="subtitle">Your financial overview.</p>
+    <div class="page-head">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="subtitle">Your financial overview.</p>
+      </div>
+      <select v-model="selectedMonthKey" aria-label="Month filter" class="month-select">
+        <option v-for="m in availableMonths" :key="m.value" :value="m.value">{{ m.label }}</option>
+      </select>
+    </div>
 
     <p v-if="loading" class="status">Loading dashboard…</p>
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
@@ -55,25 +88,25 @@ onMounted(async () => {
     <template v-else>
       <div class="kpi-row">
         <DashboardTile
-          :label="`${currentMonthLabel} profit`"
+          :label="`${selectedMonthLabel} profit`"
           :value="formatCurrency(tiles.currentMonthProfit)"
           show-delta
           :delta-pct="tiles.currentMonthProfitDeltaPct"
         />
-        <DashboardTile label="previous 6 month profit" :value="formatCurrency(tiles.previousSixMonthsProfit)" />
+        <DashboardTile :label="sixMonthRangeLabel" :value="formatCurrency(tiles.previousSixMonthsProfit)" />
         <DashboardTile
-          :label="`${currentMonthLabel} Expenses`"
+          :label="`${selectedMonthLabel} Expenses`"
           :value="formatCurrency(tiles.currentMonthExpenses)"
           show-delta
           :delta-pct="tiles.currentMonthExpensesDeltaPct"
         />
-        <DashboardTile label="previous 6 month expenses" :value="formatCurrency(tiles.previousSixMonthsExpenses)" />
+        <DashboardTile :label="sixMonthRangeLabel" :value="formatCurrency(tiles.previousSixMonthsExpenses)" />
       </div>
 
       <div class="charts-row">
         <div class="card">
           <h2>Spending by category</h2>
-          <p class="card-sub">{{ currentMonthYearLabel }} · {{ formatCurrency(tiles.currentMonthExpenses) }} total</p>
+          <p class="card-sub">{{ selectedMonthLabel }} · {{ formatCurrency(tiles.currentMonthExpenses) }} total</p>
           <SpendingByCategoryChart
             :expenses="expensesByCategory"
             :center-value="formatCurrency(tiles.currentMonthExpenses)"
@@ -82,7 +115,7 @@ onMounted(async () => {
 
         <div class="card">
           <h2>Income vs. expenses</h2>
-          <p class="card-sub">Last 6 months</p>
+          <p class="card-sub">{{ sixMonthRangeLabel }}</p>
           <IncomeVsExpensesChart :data="monthlyIncomeExpenses" />
         </div>
       </div>
@@ -104,6 +137,23 @@ onMounted(async () => {
 .subtitle {
   margin: 0 0 24px;
   color: var(--text);
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.month-select {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 420px) {
+  .page-head {
+    flex-direction: column;
+  }
 }
 
 .status {

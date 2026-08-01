@@ -28,7 +28,7 @@ public sealed class SettingsController : ControllerBase
             return NotFound();
         }
 
-        return Ok(new SettingsResponse(user.Accounts));
+        return Ok(new SettingsResponse(user.Accounts, user.MinTransactionDate));
     }
 
     [HttpPut("settings")]
@@ -59,6 +59,6 @@ public sealed class SettingsController : ControllerBase
     }
 }
 
-public sealed record SettingsResponse(List<Account> Accounts);
+public sealed record SettingsResponse(List<Account> Accounts, DateOnly? MinTransactionDate);
 
 public sealed record SettingsRequest(List<Account> Accounts);

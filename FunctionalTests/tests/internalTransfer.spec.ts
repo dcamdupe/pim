@@ -15,8 +15,9 @@ function parseCurrency(text: string): number {
   return negative ? -value : value;
 }
 
-async function tileValue(page: import('@playwright/test').Page, label: string): Promise<number> {
-  const kpi = page.locator('.kpi', { has: page.locator('.label', { hasText: label }) });
+// Tile 2 = current month expenses (see dashboard.spec.ts - tiles are positional since UBE-70).
+async function currentMonthExpensesTileValue(page: import('@playwright/test').Page): Promise<number> {
+  const kpi = page.locator('.kpi-row .kpi').nth(2);
   const text = await kpi.locator('.value').innerText();
   return parseCurrency(text);
 }
@@ -26,7 +27,6 @@ test.describe('Internal transfer matching', () => {
     page,
   }) => {
     const runId = Date.now();
-    const monthName = new Date().toLocaleDateString(undefined, { month: 'long' });
     const today = formatForUpload(new Date());
 
     const transferOut = `IT Out ${runId}`;
@@ -58,7 +58,7 @@ test.describe('Internal transfer matching', () => {
 
     // Only the delta this test causes is asserted - the shared test dataset from other specs
     // accumulates across runs, same convention as dashboard.spec.ts.
-    const before = await tileValue(page, `${monthName} Expenses`);
+    const before = await currentMonthExpensesTileValue(page);
 
     await page.getByRole('link', { name: 'Settings' }).click();
     for (const account of [accountA, accountB]) {
@@ -82,8 +82,8 @@ test.describe('Internal transfer matching', () => {
     await expect(page.locator('tr', { hasText: transferOut }).locator('.category-select')).toHaveValue('');
 
     await page.getByRole('link', { name: 'Dashboard' }).click();
-    await expect(page.getByText(`${monthName} profit`)).toBeVisible();
-    const afterFirstUpload = await tileValue(page, `${monthName} Expenses`);
+    await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
+    const afterFirstUpload = await currentMonthExpensesTileValue(page);
     // Only the still-uncategorized transferOut counts as an expense here - the control pair
     // already nets to zero regardless of category.
     expect(afterFirstUpload - before).toBe(transferAmount);
@@ -107,8 +107,8 @@ test.describe('Internal transfer matching', () => {
     await expect(page.locator('tr', { hasText: controlIn }).locator('.category-select')).toHaveValue('');
 
     await page.getByRole('link', { name: 'Dashboard' }).click();
-    await expect(page.getByText(`${monthName} profit`)).toBeVisible();
-    const afterSecondUpload = await tileValue(page, `${monthName} Expenses`);
+    await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
+    const afterSecondUpload = await currentMonthExpensesTileValue(page);
     // The out-transfer is no longer counted (now Internal Transfer) and the in-transfer was never
     // counted either - net zero change from the transfer pair. The control pair nets to zero
     // regardless of category, so it doesn't move this figure either.

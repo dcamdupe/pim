@@ -5,6 +5,10 @@ import {
   computeDashboardTiles,
   computeExpensesByCategory,
   computeMonthlyIncomeExpenses,
+  formatMonthYear,
+  formatSixMonthRangeLabel,
+  computeAvailableMonths,
+  parseMonthKey,
 } from '../../FrontEnd/src/utils/dashboardMetrics'
 import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
@@ -303,5 +307,59 @@ describe('computeMonthlyIncomeExpenses', () => {
     expect(result).toEqual(
       result.map((m) => ({ ...m, income: 0, expense: 0 })),
     )
+  })
+})
+
+describe('formatMonthYear', () => {
+  it('formats as "<full month name> <year>"', () => {
+    expect(formatMonthYear(new Date(2026, 7, 1))).toBe('August 2026')
+    expect(formatMonthYear(new Date(2026, 8, 15))).toBe('September 2026')
+  })
+})
+
+describe('formatSixMonthRangeLabel', () => {
+  it('formats the previous-6-months range, per the ticket example', () => {
+    // Selected month August 2026 -> previous 6 months = February 2026 - July 2026.
+    expect(formatSixMonthRangeLabel(new Date(2026, 7, 1))).toBe('February 2026 - July 2026')
+  })
+
+  it('crosses a year boundary correctly', () => {
+    expect(formatSixMonthRangeLabel(new Date(2026, 1, 15))).toBe('August 2025 - January 2026')
+  })
+})
+
+describe('computeAvailableMonths', () => {
+  it('lists every month from minTransactionDate through today, newest first', () => {
+    const result = computeAvailableMonths(new Date(2026, 4, 10), new Date(2026, 6, 3))
+
+    expect(result).toEqual([
+      { value: '2026-07', label: 'July 2026' },
+      { value: '2026-06', label: 'June 2026' },
+      { value: '2026-05', label: 'May 2026' },
+    ])
+  })
+
+  it('crosses a year boundary correctly', () => {
+    const result = computeAvailableMonths(new Date(2025, 10, 1), new Date(2026, 0, 15))
+
+    expect(result.map((m) => m.value)).toEqual(['2026-01', '2025-12', '2025-11'])
+  })
+
+  it('falls back to just the current month when there is no transaction history', () => {
+    const result = computeAvailableMonths(null, new Date(2026, 6, 3))
+
+    expect(result).toEqual([{ value: '2026-07', label: 'July 2026' }])
+  })
+
+  it('returns a single month when minTransactionDate is in the current month', () => {
+    const result = computeAvailableMonths(new Date(2026, 6, 20), new Date(2026, 6, 3))
+
+    expect(result).toEqual([{ value: '2026-07', label: 'July 2026' }])
+  })
+})
+
+describe('parseMonthKey', () => {
+  it('parses a "YYYY-MM" key back to the 1st of that month', () => {
+    expect(parseMonthKey('2026-08')).toEqual(new Date(2026, 7, 1))
   })
 })

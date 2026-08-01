@@ -38,6 +38,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
             Email = _email,
             PasswordHash = "unused-in-these-tests",
             Accounts = [new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction }],
+            MinTransactionDate = new DateOnly(2026, 6, 10),
         };
         await users.AddAsync(user);
     }
@@ -61,6 +62,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         Assert.Single(body!.Accounts);
         Assert.Equal("Everyday", body.Accounts[0].Name);
         Assert.Equal(Account.AccountType.Transaction, body.Accounts[0].Type);
+        Assert.Equal(new DateOnly(2026, 6, 10), body.MinTransactionDate);
     }
 
     [Fact]

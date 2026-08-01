@@ -20,7 +20,12 @@ function authHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${useAuthStore().token}` }
 }
 
-export async function getSettings(): Promise<Account[]> {
+export interface Settings {
+  accounts: Account[]
+  minTransactionDate: string | null
+}
+
+export async function getSettings(): Promise<Settings> {
   const response = await fetch(`${API_BASE_URL}/settings`, {
     headers: authHeaders(),
   })
@@ -29,8 +34,7 @@ export async function getSettings(): Promise<Account[]> {
     throw new SettingsRequestFailedError()
   }
 
-  const data = (await response.json()) as { accounts: Account[] }
-  return data.accounts
+  return (await response.json()) as Settings
 }
 
 export async function saveSettings(accounts: Account[]): Promise<void> {

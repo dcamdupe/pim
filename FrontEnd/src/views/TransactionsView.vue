@@ -16,18 +16,20 @@ interface PendingCategoryChange {
   match: ApproximateMatch
 }
 
+const storedFilters = loadStoredTransactionFilters()
+
 const transactions = ref<Transaction[]>([])
 const loading = ref(true)
 const loadError = ref('')
-const selectedRange = ref<RangeOption>('month')
+const selectedRange = ref<RangeOption>(storedFilters?.range ?? 'month')
 const pendingCategoryChange = ref<PendingCategoryChange | null>(null)
 const savingCategory = ref(false)
 const categorySaveError = ref('')
 
-const searchQuery = ref('')
-const selectedAccount = ref('')
-const selectedCategory = ref('')
-const needsCategoryOnly = ref(false)
+const searchQuery = ref(storedFilters?.search ?? '')
+const selectedAccount = ref(storedFilters?.account ?? '')
+const selectedCategory = ref(storedFilters?.category ?? '')
+const needsCategoryOnly = ref(storedFilters?.needsCategoryOnly ?? false)
 
 const openMenuIndex = ref<number | null>(null)
 const togglingInactive = ref(false)
@@ -177,6 +179,15 @@ onUnmounted(() => {
   document.removeEventListener('click', closeRowMenu)
 })
 watch(selectedRange, fetchTransactions)
+watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCategoryOnly], () => {
+  saveTransactionFilters({
+    range: selectedRange.value,
+    search: searchQuery.value,
+    account: selectedAccount.value,
+    category: selectedCategory.value,
+    needsCategoryOnly: needsCategoryOnly.value,
+  })
+})
 </script>
 
 <template>

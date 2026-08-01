@@ -1,4 +1,3 @@
-using CsvHelper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -9,7 +8,7 @@ using Pim.Api.UnitTests.Helpers;
 
 namespace Pim.Api.UnitTests.Services;
 
-public class CsvProcessorTests
+public class FileProcessorTests
 {
     private const string Email = "dave@example.com";
     private const string Account = "Everyday";
@@ -17,7 +16,7 @@ public class CsvProcessorTests
     [Fact]
     public async Task ProcessAsync_ThrowsCsvParseException_WhenParserThrows()
     {
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Throws(new FormatException());
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, []);
@@ -33,7 +32,7 @@ public class CsvProcessorTests
             new() { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m },
             new() { Account = Account, Date = new DateOnly(2026, 6, 15), Description = "Salary", Category = "", Amount = 2500.00m },
         ];
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(transactions);
         var factory = CreateFactory(parser);
         var months = new List<TransactionMonth>();
@@ -57,7 +56,7 @@ public class CsvProcessorTests
             Transactions = [new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Existing", Category = "", Amount = -1m }],
         };
         var months = new List<TransactionMonth> { existing };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "New", Category = "", Amount = -2m },
@@ -74,7 +73,7 @@ public class CsvProcessorTests
     [Fact]
     public async Task ProcessAsync_GroupsTransactionsAcrossMonths_IntoSeparateBuckets()
     {
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "June Row", Category = "", Amount = -1m },
@@ -103,7 +102,7 @@ public class CsvProcessorTests
         };
         var months = new List<TransactionMonth> { existing };
         var duplicate = new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns([duplicate]);
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months);
@@ -126,7 +125,7 @@ public class CsvProcessorTests
         };
         var months = new List<TransactionMonth> { existing };
         var candidate = new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns([candidate]);
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months);
@@ -160,7 +159,7 @@ public class CsvProcessorTests
             Category = "",
             Amount = differingField == "amount" ? -9.99m : -4.50m,
         };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns([candidate]);
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months);
@@ -175,7 +174,7 @@ public class CsvProcessorTests
     public async Task ProcessAsync_SetsMinTransactionDate_WhenNoneWasSetBefore()
     {
         var user = new User { Email = Email, PasswordHash = "hash" };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 15), Description = "Later", Category = "", Amount = -1m },
@@ -193,7 +192,7 @@ public class CsvProcessorTests
     public async Task ProcessAsync_LowersMinTransactionDate_WhenNewBatchHasAnEarlierDate()
     {
         var user = new User { Email = Email, PasswordHash = "hash", MinTransactionDate = new DateOnly(2026, 6, 1) };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 5, 1), Description = "Earlier", Category = "", Amount = -1m },
@@ -210,7 +209,7 @@ public class CsvProcessorTests
     public async Task ProcessAsync_DoesNotRaiseMinTransactionDate_WhenNewBatchIsAllLater()
     {
         var user = new User { Email = Email, PasswordHash = "hash", MinTransactionDate = new DateOnly(2026, 5, 1) };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 15), Description = "Later", Category = "", Amount = -1m },
@@ -227,7 +226,7 @@ public class CsvProcessorTests
     public async Task ProcessAsync_DoesNotThrow_WhenParsedFileHasNoRows()
     {
         var user = new User { Email = Email, PasswordHash = "hash" };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns([]);
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, [], [user]);
@@ -240,7 +239,7 @@ public class CsvProcessorTests
     [Fact]
     public async Task ProcessAsync_CreatesDescriptionStats_ForNewTransactions()
     {
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m },
@@ -270,7 +269,7 @@ public class CsvProcessorTests
             Email = Email,
             Descriptions = [new TransactionDescriptionStat { Description = "Coffee Shop", TransactionCount = 1, UnclassifiedCount = 1 }],
         };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m },
@@ -310,7 +309,7 @@ public class CsvProcessorTests
         var months = new List<TransactionMonth> { existingMonth };
         var transactionDescriptions = new List<TransactionDescriptions> { existingDescriptions };
         var duplicate = new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Coffee Shop", Category = "", Amount = -4.50m };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns([duplicate]);
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months, transactionDescriptions: transactionDescriptions);
@@ -331,7 +330,7 @@ public class CsvProcessorTests
             Email = Email,
             Mappings = [new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
         };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
@@ -356,7 +355,7 @@ public class CsvProcessorTests
             Email = Email,
             Mappings = [new CreditDescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
         };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
@@ -385,7 +384,7 @@ public class CsvProcessorTests
                 new CreditDescriptionMappingEntry { DescriptionStart = "COLES 0717", Category = "Specific Coles" },
             ],
         };
-        var parser = new Mock<ICsvParser>();
+        var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(
         [
             new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
@@ -402,15 +401,15 @@ public class CsvProcessorTests
 
     private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.csv");
 
-    private static Mock<ICSVParserFactory> CreateFactory(Mock<ICsvParser> parser)
+    private static Mock<IFileParserFactory> CreateFactory(Mock<IFileParser> parser)
     {
-        var factory = new Mock<ICSVParserFactory>();
-        factory.Setup(f => f.Create(It.IsAny<CsvReader>())).Returns(parser.Object);
+        var factory = new Mock<IFileParserFactory>();
+        factory.Setup(f => f.Create(It.IsAny<Stream>(), It.IsAny<string>())).Returns(parser.Object);
         return factory;
     }
 
-    private static CsvProcessor CreateProcessor(
-        Mock<ICSVParserFactory> factory,
+    private static FileProcessor CreateProcessor(
+        Mock<IFileParserFactory> factory,
         List<TransactionMonth> months,
         List<User>? users = null,
         List<TransactionDescriptions>? transactionDescriptions = null,
@@ -420,12 +419,12 @@ public class CsvProcessorTests
         var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
         var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
         var creditDescriptionMappingRepository = RepositoryMockFactory.Create(creditDescriptionMappings ?? []);
-        return new CsvProcessor(
+        return new FileProcessor(
             factory.Object,
             transactionRepository.Object,
             userRepository.Object,
             transactionDescriptionsRepository.Object,
             creditDescriptionMappingRepository.Object,
-            NullLogger<CsvProcessor>.Instance);
+            NullLogger<FileProcessor>.Instance);
     }
 }

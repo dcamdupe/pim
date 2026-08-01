@@ -4,7 +4,7 @@ using Pim.Api.Data;
 
 namespace Pim.Api.Services.CSVParsers;
 
-public sealed class TmBankCsvParser : ICsvParser
+public sealed class TmBankCsvParser : IFileParser
 {
     private const string DateFormat = "dd MMM yyyy";
 

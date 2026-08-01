@@ -11,18 +11,18 @@ namespace Pim.Api.Controllers;
 [Authorize]
 public sealed class TransactionsController : ControllerBase
 {
-    private readonly ICsvProcessor _csvProcessor;
+    private readonly IFileProcessor _fileProcessor;
     private readonly ITransactionQueryService _transactionQueryService;
     private readonly ITransactionUpdateService _transactionUpdateService;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
 
     public TransactionsController(
-        ICsvProcessor csvProcessor,
+        IFileProcessor fileProcessor,
         ITransactionQueryService transactionQueryService,
         ITransactionUpdateService transactionUpdateService,
         IRepository<TransactionDescriptions> transactionDescriptions)
     {
-        _csvProcessor = csvProcessor;
+        _fileProcessor = fileProcessor;
         _transactionQueryService = transactionQueryService;
         _transactionUpdateService = transactionUpdateService;
         _transactionDescriptions = transactionDescriptions;
@@ -40,7 +40,7 @@ public sealed class TransactionsController : ControllerBase
 
         try
         {
-            await _csvProcessor.ProcessAsync(email, request.Account, request.File);
+            await _fileProcessor.ProcessAsync(email, request.Account, request.File);
         }
         catch (CsvParseException)
         {

@@ -108,10 +108,53 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
+    public async Task Post_SavesParsedTransactions_ForAQifFile()
+    {
+        var qif =
+            "!Type:Bank\n" +
+            "D01/06/26\n" +
+            "MCoffee Shop\n" +
+            "T-4.50\n" +
+            "^\n" +
+            "D15/06/26\n" +
+            "MSalary\n" +
+            "T2500.00\n" +
+            "^\n";
+        var client = AuthenticatedClient();
+        using var content = BuildMultipartContent("Everyday", qif, "transactions.qif");
+
+        var response = await client.PostAsync("/transactions/file", content);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        var month = await repository.GetAsync(monthId);
+
+        Assert.NotNull(month);
+        Assert.Equal(2, month.Transactions.Count);
+        Assert.Contains(month.Transactions, t => t.Description == "Coffee Shop" && t.Amount == -4.50m && t.Category == "" && t.Account == "Everyday");
+        Assert.Contains(month.Transactions, t => t.Description == "Salary" && t.Amount == 2500.00m);
+    }
+
+    [Fact]
     public async Task Post_ReturnsBadRequest_WhenFileCannotBeParsed()
     {
         var client = AuthenticatedClient();
         using var content = BuildMultipartContent("Everyday", "131150S1,,,,,\nnot-a-date,,\"Coffee\",,-4.50,637.57\n");
+
+        var response = await client.PostAsync("/transactions/file", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_ReturnsBadRequest_ForAnUnrecognisedFileExtension()
+    {
+        var client = AuthenticatedClient();
+        using var content = BuildMultipartContent("Everyday", ValidCsv, "transactions.pdf");
 
         var response = await client.PostAsync("/transactions/file", content);
 
@@ -284,15 +327,15 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    private static MultipartFormDataContent BuildMultipartContent(string account, string csv)
+    private static MultipartFormDataContent BuildMultipartContent(string account, string fileText, string fileName = "transactions.csv")
     {
         var content = new MultipartFormDataContent
         {
             { new StringContent(account), "account" },
         };
-        var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes(csv));
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
-        content.Add(fileContent, "file", "transactions.csv");
+        var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes(fileText));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(fileName.EndsWith(".qif", StringComparison.OrdinalIgnoreCase) ? "text/plain" : "text/csv");
+        content.Add(fileContent, "file", fileName);
         return content;
     }
 

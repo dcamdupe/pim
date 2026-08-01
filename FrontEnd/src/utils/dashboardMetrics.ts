@@ -29,6 +29,66 @@ export interface MonthlyFlow {
   expense: number
 }
 
+export interface MonthOption {
+  value: string
+  label: string
+}
+
+// Fixed English names rather than toLocaleDateString(undefined, { month: ... }) - that depends on
+// the runtime's ICU data, which varies by environment (e.g. "Sep" vs "Sept" for September between
+// local dev and CI) and would make dashboard labels non-deterministic.
+export const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+export const MONTH_ABBREVIATIONS = MONTH_NAMES.map((name) => name.slice(0, 3))
+
+export function formatMonthYear(date: Date): string {
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`
+}
+
+// "YYYY-MM" - a stable, sortable <select> option value for a given calendar month.
+function monthKey(year: number, month: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}`
+}
+
+export function parseMonthKey(key: string): Date {
+  const [year, month] = key.split('-').map(Number)
+  return new Date(year, month - 1, 1)
+}
+
+// Every calendar month from `minTransactionDate` through the real current month, newest first.
+// Falls back to just the current month when there's no transaction history yet.
+export function computeAvailableMonths(minTransactionDate: Date | null, today: Date): MonthOption[] {
+  const oldest = minTransactionDate ?? today
+  const options: MonthOption[] = []
+
+  let year = today.getFullYear()
+  let month = today.getMonth()
+
+  while (year > oldest.getFullYear() || (year === oldest.getFullYear() && month >= oldest.getMonth())) {
+    options.push({ value: monthKey(year, month), label: `${MONTH_NAMES[month]} ${year}` })
+    month -= 1
+    if (month < 0) {
+      month = 11
+      year -= 1
+    }
+  }
+
+  return options
+}
+
 export function getCurrentMonthRange(today: Date): DateRange {
   const start = new Date(today.getFullYear(), today.getMonth(), 1)
   const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
@@ -40,6 +100,12 @@ export function getPreviousSixMonthsRange(today: Date): DateRange {
   const end = new Date(today.getFullYear(), today.getMonth(), 0)
   const start = new Date(end.getFullYear(), end.getMonth() - 5, 1)
   return { start, end }
+}
+
+// "February 2026 - July 2026" - the label for the previous-6-months tiles/chart.
+export function formatSixMonthRangeLabel(selectedMonth: Date): string {
+  const { start, end } = getPreviousSixMonthsRange(selectedMonth)
+  return `${formatMonthYear(start)} - ${formatMonthYear(end)}`
 }
 
 function isCounted(transaction: Transaction): boolean {
@@ -96,24 +162,6 @@ export function computeExpensesByCategory(transactions: Transaction[], today: Da
     }))
     .sort((a, b) => b.amount - a.amount)
 }
-
-// Fixed English abbreviations rather than toLocaleDateString(undefined, { month: 'short' }) -
-// that depends on the runtime's ICU data, which varies by environment (e.g. "Sep" vs "Sept" for
-// September between local dev and CI) and would make the chart's month labels non-deterministic.
-export const MONTH_ABBREVIATIONS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-]
 
 // The 6 calendar months ending with the current month (unlike getPreviousSixMonthsRange, which
 // excludes the current month) - matches the "last 6 months" income vs. expenses bar chart.

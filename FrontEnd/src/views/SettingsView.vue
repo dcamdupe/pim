@@ -13,7 +13,7 @@ const saved = ref(false)
 
 onMounted(async () => {
   try {
-    accounts.value = await getSettings()
+    accounts.value = (await getSettings()).accounts
   } catch {
     loadError.value = 'Could not load your accounts. Please try again later.'
   } finally {

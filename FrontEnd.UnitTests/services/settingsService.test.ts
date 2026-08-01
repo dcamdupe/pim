@@ -14,17 +14,17 @@ describe('settingsService', () => {
   })
 
   describe('getSettings', () => {
-    it('fetches /settings with the bearer token and returns the accounts', async () => {
+    it('fetches /settings with the bearer token and returns the accounts and minTransactionDate', async () => {
       const accounts = [{ name: 'Everyday', number: '123456', type: 'Transaction' }]
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ accounts }),
+        json: () => Promise.resolve({ accounts, minTransactionDate: '2026-06-10' }),
       })
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await getSettings()
 
-      expect(result).toEqual(accounts)
+      expect(result).toEqual({ accounts, minTransactionDate: '2026-06-10' })
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringMatching(/\/settings$/),
         expect.objectContaining({ headers: { Authorization: 'Bearer a-jwt' } }),

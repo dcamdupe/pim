@@ -90,15 +90,31 @@ box), not copying working JS from it.
 
 ## Checklist
 
-- [ ] 1. `transactionFilters.ts` utility
-- [ ] 2. `transactionFilters.test.ts` unit tests
-- [ ] 3. `TransactionsView.vue` reactive state + computeds + template controls
-- [ ] 4. Styling for the new filter-bar controls
-- [ ] 5. Playwright coverage for all four filters
-- [ ] 6. Verify: `FrontEnd.UnitTests` `npm run test`
-- [ ] 7. Verify: `FrontEnd` `npm run build` / `npm run lint`
-- [ ] 8. Verify: `FunctionalTests` `npm test`
-- [ ] 9. Verify: real local run, exercised by hand
+- [x] 1. `transactionFilters.ts` utility
+- [x] 2. `transactionFilters.test.ts` unit tests (7 cases) - 49/49 pass
+- [x] 3. `TransactionsView.vue` reactive state + computeds + template controls
+- [x] 4. Styling for the new filter-bar controls (adapted from the mockup's `.chip-toggle` using
+      this app's own CSS variables; global `input`/`select` styling in `style.css` already covers
+      the search box and the two new selects)
+- [x] 5. Playwright coverage for all four filters (new scenario in `transactionListing.spec.ts`:
+      search/account/category/needs-toggle, using distinct per-row description tokens so
+      categorising doesn't trigger UBE-48's bulk-apply modal, and scoping the needs-category count
+      assertion via a runId search since other tests' uploaded rows are never cleaned up and would
+      otherwise pollute the count. Hit two issues along the way: `getByLabel('Account')` collided
+      with the topbar's "Account menu" button - renamed the new selects' aria-labels to "Account
+      filter"/"Category filter"; and `.account-row` cleanup by `hasText` doesn't work since the
+      account name lives in an `<input value>`, not text content - switched to removing `.last()`
+      twice, matching the single-account cleanup pattern already used elsewhere in this file)
+- [x] 6. Verify: `FrontEnd.UnitTests` `npm run test` - 49/49 pass
+- [x] 7. Verify: `FrontEnd` `npm run build` / `npm run lint` - both clean
+- [x] 8. Verify: `FunctionalTests` `npm test` - 10/11 pass; the 1 failure is `settings.spec.ts`'s
+      pre-existing stale-account accumulation flakiness, already documented as unrelated in the
+      UBE-45/UBE-48/UBE-54 worklogs
+- [x] 9. Verify: real local run - restarted the stack via `scripts/run_local.sh` (picks up the
+      new code), ran the full Playwright suite against it (real browser, real Api, real DynamoDB
+      Local), and took a screenshot of the "All time" transactions view to confirm the filter bar
+      renders correctly end to end (search box, account/category selects, "N need a category"
+      chip badge, Upload button still pinned right)
 
 ## Prompt Log
 
@@ -109,3 +125,4 @@ box), not copying working JS from it.
    and confirmed no Vue component tests exist anywhere in `FrontEnd.UnitTests` today (checked
    `@vue/test-utils` is installed but unused, and Playwright is the only thing exercising
    `TransactionsView.vue` today).
+2. "go" — implemented the full plan end to end (steps 1-9).

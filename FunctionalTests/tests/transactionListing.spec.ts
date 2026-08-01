@@ -87,4 +87,119 @@ test.describe('Transaction listing', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Saved.')).toBeVisible();
   });
+
+  test('filters by search, account, category, and needs-a-category', async ({ page }) => {
+    // Each description uses a distinct leading token (not just a distinct runId suffix on a
+    // shared word) so none of them approximately-match each other via UBE-48's word-boundary
+    // rule - categorising one must never pop up the "apply to similar transactions?" modal here.
+    const runId = Date.now();
+    const coffeeDesc = `FilterCoffee${runId} Shop`;
+    const rentDesc = `FilterRent${runId} Payment`;
+    const groceriesDesc = `FilterGroceries${runId} Store`;
+    const salaryDesc = `FilterSalary${runId} Payroll`;
+    const accountA = `Filter Test A ${runId}`;
+    const accountB = `Filter Test B ${runId}`;
+
+    const today = new Date();
+    const dateForUpload = formatForUpload(today);
+    const csvA =
+      '131150S1,,,,,\n' +
+      `${dateForUpload},,"${coffeeDesc}",,-4.50,637.57\n` +
+      `${dateForUpload},,"${rentDesc}",,-1200.00,637.57\n`;
+    const csvB =
+      '131150S1,,,,,\n' +
+      `${dateForUpload},,"${groceriesDesc}",,-6.00,637.57\n` +
+      `${dateForUpload},,"${salaryDesc}",,2500.00,637.57\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    let newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill(accountA);
+    await newRow.locator('input').nth(1).fill('555777');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill(accountB);
+    await newRow.locator('input').nth(1).fill('555888');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(accountA);
+    await page.locator('#file-input').setInputFiles({ name: 'a.csv', mimeType: 'text/csv', buffer: Buffer.from(csvA) });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(accountB);
+    await page.locator('#file-input').setInputFiles({ name: 'b.csv', mimeType: 'text/csv', buffer: Buffer.from(csvB) });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    // All four rows visible before any filter is applied.
+    await expect(page.getByText(coffeeDesc)).toBeVisible();
+    await expect(page.getByText(rentDesc)).toBeVisible();
+    await expect(page.getByText(groceriesDesc)).toBeVisible();
+    await expect(page.getByText(salaryDesc)).toBeVisible();
+
+    // Categorise two of the four, leaving the other two "needs a category" - each description's
+    // token is unique, so neither triggers the bulk-apply modal.
+    await page.locator('tr', { hasText: coffeeDesc }).locator('.category-select').selectOption('Dining');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.locator('tr', { hasText: rentDesc }).locator('.category-select').selectOption('Housing');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // Search filters by description.
+    await page.getByLabel('Search description').fill(coffeeDesc);
+    await expect(page.getByText(coffeeDesc)).toBeVisible();
+    await expect(page.getByText(rentDesc)).not.toBeVisible();
+    await expect(page.getByText(groceriesDesc)).not.toBeVisible();
+    await page.getByLabel('Search description').fill('');
+
+    // Account filter narrows to the selected account.
+    await page.getByLabel('Account filter').selectOption(accountB);
+    await expect(page.getByText(groceriesDesc)).toBeVisible();
+    await expect(page.getByText(salaryDesc)).toBeVisible();
+    await expect(page.getByText(coffeeDesc)).not.toBeVisible();
+    await page.getByLabel('Account filter').selectOption('');
+
+    // Category filter narrows to the selected category.
+    await page.getByLabel('Category filter').selectOption('Housing');
+    await expect(page.getByText(rentDesc)).toBeVisible();
+    await expect(page.getByText(coffeeDesc)).not.toBeVisible();
+    await expect(page.getByText(groceriesDesc)).not.toBeVisible();
+    await page.getByLabel('Category filter').selectOption('');
+
+    // Needs-a-category toggle shows only the still-uncategorised rows, with an accurate count -
+    // scoped to this test's own rows via the runId search, since other tests' leftover
+    // (never-cleaned-up) transactions also contribute to the count otherwise.
+    await page.getByLabel('Search description').fill(String(runId));
+    const needsToggle = page.locator('.chip-toggle');
+    await expect(needsToggle.locator('.chip-toggle-count')).toHaveText('2');
+    await needsToggle.click();
+    await expect(page.getByText(groceriesDesc)).toBeVisible();
+    await expect(page.getByText(salaryDesc)).toBeVisible();
+    await expect(page.getByText(coffeeDesc)).not.toBeVisible();
+    await expect(page.getByText(rentDesc)).not.toBeVisible();
+    await needsToggle.click();
+    await expect(page.getByText(coffeeDesc)).toBeVisible();
+    await page.getByLabel('Search description').fill('');
+
+    // clean up the two Settings accounts added for this test - both were appended at the end
+    // (in order), so removing "last" twice removes exactly these two, matching the single-account
+    // cleanup pattern used elsewhere in this file.
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+  });
 });

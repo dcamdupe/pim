@@ -214,6 +214,19 @@ describe('computeExpensesByCategory', () => {
     expect(result).toEqual([])
   })
 
+  it('excludes a category that nets a refund/credit for the month, without dragging other percentages negative', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Housing', amount: -400 }),
+      // A big refund exceeding this month's Uncategorized spend - nets to a credit, not an expense.
+      tx({ date: '2026-07-06', category: '', amount: -100 }),
+      tx({ date: '2026-07-07', category: '', amount: 900 }),
+    ]
+
+    const result = computeExpensesByCategory(transactions, today)
+
+    expect(result).toEqual([{ category: 'Housing', amount: 400, pct: 100, color: expect.any(String) }])
+  })
+
   it('looks up the display color from CATEGORY_COLORS', () => {
     const transactions = [tx({ date: '2026-07-05', category: 'Groceries', amount: -100 })]
 

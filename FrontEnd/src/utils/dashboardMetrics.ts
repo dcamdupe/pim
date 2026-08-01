@@ -80,9 +80,14 @@ export function computeExpensesByCategory(transactions: Transaction[], today: Da
     totals.set(t.category, (totals.get(t.category) ?? 0) - t.amount)
   }
 
-  const total = [...totals.values()].reduce((sum, amount) => sum + amount, 0)
+  // A category that nets a refund/credit for the month (inflow exceeds outflow) has no real net
+  // spend to show as a slice - excluding it (rather than letting it drag the total negative) keeps
+  // every other category's percentage positive and summing to 100%, and the doughnut's arc math
+  // (sweep = pct * 3.6) sane.
+  const positiveTotals = [...totals.entries()].filter(([, amount]) => amount > 0)
+  const total = positiveTotals.reduce((sum, [, amount]) => sum + amount, 0)
 
-  return [...totals.entries()]
+  return positiveTotals
     .map(([category, amount]) => ({
       category,
       amount,

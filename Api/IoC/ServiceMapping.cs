@@ -44,6 +44,7 @@ public static class ServiceMapping
         builder.Services.AddScoped<IFileProcessor, FileProcessor>();
         builder.Services.AddScoped<ITransactionQueryService, TransactionQueryService>();
         builder.Services.AddScoped<ITransactionUpdateService, TransactionUpdateService>();
+        builder.Services.AddScoped<IInternalTransferMatcher, InternalTransferMatcher>();
 
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
         builder.Services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();

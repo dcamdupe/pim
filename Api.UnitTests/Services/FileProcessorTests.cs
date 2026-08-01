@@ -399,6 +399,25 @@ public class FileProcessorTests
         Assert.Equal("Specific Coles", month.Transactions.Single().Category);
     }
 
+    [Fact]
+    public async Task ProcessAsync_FlagsBothTransactions_AsInternalTransfer_WhenAnInvertedAmountMatchesInAnotherAccountWithinFiveDays()
+    {
+        var parser = new Mock<IFileParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "Transfer to Savings", Category = "", Amount = -100m },
+            new Transaction { Account = "Savings", Date = new DateOnly(2026, 6, 3), Description = "Transfer from Everyday", Category = "", Amount = 100m },
+        ]);
+        var factory = CreateFactory(parser);
+        var months = new List<TransactionMonth>();
+        var sut = CreateProcessor(factory, months);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var month = Assert.Single(months);
+        Assert.All(month.Transactions, t => Assert.Equal(InternalTransferMatcher.CategoryName, t.Category));
+    }
+
     private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.csv");
 
     private static Mock<IFileParserFactory> CreateFactory(Mock<IFileParser> parser)
@@ -419,12 +438,14 @@ public class FileProcessorTests
         var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
         var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
         var creditDescriptionMappingRepository = RepositoryMockFactory.Create(descriptionMappings ?? []);
+        var internalTransferMatcher = new InternalTransferMatcher(transactionRepository.Object, transactionDescriptionsRepository.Object);
         return new FileProcessor(
             factory.Object,
             transactionRepository.Object,
             userRepository.Object,
             transactionDescriptionsRepository.Object,
             creditDescriptionMappingRepository.Object,
+            internalTransferMatcher,
             NullLogger<FileProcessor>.Instance);
     }
 }

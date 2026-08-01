@@ -44,12 +44,12 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
         var transactionDescriptions = scope.ServiceProvider.GetRequiredService<IRepository<TransactionDescriptions>>();
         await transactionDescriptions.DeleteAsync(_email);
 
-        var creditDescriptionMappings = scope.ServiceProvider.GetRequiredService<IRepository<CreditDescriptionMapping>>();
-        await creditDescriptionMappings.DeleteAsync(_email);
+        var descriptionMappings = scope.ServiceProvider.GetRequiredService<IRepository<DescriptionMapping>>();
+        await descriptionMappings.DeleteAsync(_email);
     }
 
     [Fact]
-    public async Task Post_CreditDescriptionMapping_UpdatesAllMatchingExistingTransactions()
+    public async Task Post_DescriptionMapping_UpdatesAllMatchingExistingTransactions()
     {
         var client = AuthenticatedClient();
         using (var upload = BuildMultipartContent(
@@ -66,8 +66,8 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
         _seededMonthIds.Add(monthId);
 
         var mappingResponse = await client.PostAsJsonAsync(
-            "/mapping/credit",
-            new CreditDescriptionMappingRequest("COLES", "Groceries"));
+            "/mapping/description",
+            new DescriptionMappingRequest("COLES", "Groceries"));
 
         Assert.Equal(HttpStatusCode.NoContent, mappingResponse.StatusCode);
         using var scope = _factory.Services.CreateScope();
@@ -79,12 +79,12 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
     }
 
     [Fact]
-    public async Task Post_CreditDescriptionMapping_IsAppliedAutomatically_ToATransactionUploadedAfterwards()
+    public async Task Post_DescriptionMapping_IsAppliedAutomatically_ToATransactionUploadedAfterwards()
     {
         var client = AuthenticatedClient();
         var mappingResponse = await client.PostAsJsonAsync(
-            "/mapping/credit",
-            new CreditDescriptionMappingRequest("COLES", "Groceries"));
+            "/mapping/description",
+            new DescriptionMappingRequest("COLES", "Groceries"));
         Assert.Equal(HttpStatusCode.NoContent, mappingResponse.StatusCode);
 
         using var content = BuildMultipartContent(
@@ -105,13 +105,13 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
     [Theory]
     [InlineData(" ", "Groceries")]
     [InlineData("COLES", " ")]
-    public async Task Post_CreditDescriptionMapping_ReturnsBadRequest_WhenFieldsAreBlank(string descriptionStart, string category)
+    public async Task Post_DescriptionMapping_ReturnsBadRequest_WhenFieldsAreBlank(string descriptionStart, string category)
     {
         var client = AuthenticatedClient();
 
         var response = await client.PostAsJsonAsync(
-            "/mapping/credit",
-            new CreditDescriptionMappingRequest(descriptionStart, category));
+            "/mapping/description",
+            new DescriptionMappingRequest(descriptionStart, category));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

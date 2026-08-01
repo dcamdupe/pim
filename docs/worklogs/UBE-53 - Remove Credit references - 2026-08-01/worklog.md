@@ -95,24 +95,36 @@ nothing to do with the description-mapping feature and stays as-is.
 
 ## Checklist
 
-- [ ] 1. `CreditDescriptionMapping.cs` → `DescriptionMapping.cs`
-- [ ] 2. `MappingController.cs` renamed (route, action, request record)
-- [ ] 3. `ITransactionUpdateService`/`TransactionUpdateService` renamed
-- [ ] 4. `FileProcessor.cs` renamed
-- [ ] 5. `ServiceMapping.cs` checked/updated
-- [ ] 6. `scripts/setup_local.sh` new table name
-- [ ] 7. `AuthorizationTests.cs` route updated
-- [ ] 8. Backend tests renamed (`MappingEndpointTests`, `FileProcessorTests`,
-      `TransactionUpdateServiceTests`)
-- [ ] 9. `transactionsService.ts` renamed
-- [ ] 10. `TransactionsView.vue` updated
-- [ ] 11. `transactionsService.test.ts` renamed
-- [ ] 12. `transactionCategorization.spec.ts` comment updated
-- [ ] 13. Verify: `dotnet build` / `dotnet test`
-- [ ] 14. Verify: `FrontEnd.UnitTests` `npm run test`
-- [ ] 15. Verify: `FrontEnd` `npm run build` / `npm run lint`
-- [ ] 16. Verify: `FunctionalTests` `npm test`
-- [ ] 17. Verify: real local run via `scripts/run_local.sh`
+- [x] 1. `CreditDescriptionMapping.cs` → `DescriptionMapping.cs`
+- [x] 2. `MappingController.cs` renamed (route, action, request record)
+- [x] 3. `ITransactionUpdateService`/`TransactionUpdateService` renamed
+- [x] 4. `FileProcessor.cs` renamed (its own private `ApplyDescriptionMappingAsync` auto-apply
+      method too - separate from `TransactionUpdateService`'s method of the same new name, same
+      as before the rename)
+- [x] 5. `ServiceMapping.cs` checked - no change needed, `IRepository<>` is registered generically
+- [x] 6. `scripts/setup_local.sh` new table name - ran it locally, confirmed the new
+      `DescriptionMapping` table was created (old `CreditDescriptionMapping` table left as-is,
+      orphaned, per the earlier confirmation)
+- [x] 7. `AuthorizationTests.cs` route updated
+- [x] 8. Backend tests renamed (`MappingEndpointTests`, `FileProcessorTests`,
+      `TransactionUpdateServiceTests`) - `dotnet build`/`dotnet test`: 60/60 unit + 31/31
+      integration pass
+- [x] 9. `transactionsService.ts` renamed
+- [x] 10. `TransactionsView.vue` updated
+- [x] 11. `transactionsService.test.ts` renamed (including the `/mapping/credit$` URL regex)
+- [x] 12. `transactionCategorization.spec.ts` comment updated
+- [x] 13. Verify: `dotnet build` / `dotnet test` - 60/60 unit + 31/31 integration pass (confirmed
+      full repo sweep for "Credit" afterwards - only `Account.Type.Credit`, the unrelated
+      concept, and incidental "Credit Card" test-fixture account names remain)
+- [x] 14. Verify: `FrontEnd.UnitTests` `npm run test` - 49/49 pass
+- [x] 15. Verify: `FrontEnd` `npm run build` / `npm run lint` - both clean
+- [x] 16. Verify: `FunctionalTests` `npm test` - 10/11 pass; both `transactionCategorization.spec.ts`
+      scenarios pass, exercising the renamed `/mapping/description` endpoint end to end; the 1
+      failure is `settings.spec.ts`'s pre-existing, already-documented stale-account flakiness
+- [x] 17. Verify: real local run - restarted the stack via `scripts/run_local.sh` (picks up the
+      renamed code) and ran the full Playwright suite against it; also called
+      `POST /mapping/description` directly (`204`) and confirmed the row landed correctly in the
+      new local `DescriptionMapping` DynamoDB table
 
 ## Prompt Log
 
@@ -125,3 +137,4 @@ nothing to do with the description-mapping feature and stays as-is.
 3. Asked how to handle the DynamoDB table-name change from the `CreditDescriptionMapping` →
    `DescriptionMapping` rename (same class of decision as UBE-54's schema change) - confirmed: new
    local table, David handles the deployed AWS table himself.
+4. "start" - implemented the full plan end to end (steps 1-17).

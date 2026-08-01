@@ -2,15 +2,15 @@ using Pim.Api.Repository;
 
 namespace Pim.Api.Data;
 
-public sealed class CreditDescriptionMapping
+public sealed class DescriptionMapping
 {
     [Id]
     public required string Email { get; set; }
 
-    public List<CreditDescriptionMappingEntry> Mappings { get; set; } = [];
+    public List<DescriptionMappingEntry> Mappings { get; set; } = [];
 }
 
-public sealed class CreditDescriptionMappingEntry
+public sealed class DescriptionMappingEntry
 {
     public required string DescriptionStart { get; set; }
 

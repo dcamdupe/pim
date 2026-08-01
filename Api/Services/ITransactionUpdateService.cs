@@ -6,5 +6,5 @@ public interface ITransactionUpdateService
 {
     Task UpdateTransactionsAsync(string email, List<Transaction> transactions);
 
-    Task ApplyCreditDescriptionMappingAsync(string email, string descriptionStart, string category);
+    Task ApplyDescriptionMappingAsync(string email, string descriptionStart, string category);
 }

@@ -6,18 +6,18 @@ namespace Pim.Api.Services;
 public sealed class TransactionUpdateService : ITransactionUpdateService
 {
     private readonly IRepository<TransactionMonth> _transactionMonths;
-    private readonly IRepository<CreditDescriptionMapping> _creditDescriptionMappings;
+    private readonly IRepository<DescriptionMapping> _descriptionMappings;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
     private readonly ITransactionQueryService _transactionQueryService;
 
     public TransactionUpdateService(
         IRepository<TransactionMonth> transactionMonths,
-        IRepository<CreditDescriptionMapping> creditDescriptionMappings,
+        IRepository<DescriptionMapping> descriptionMappings,
         IRepository<TransactionDescriptions> transactionDescriptions,
         ITransactionQueryService transactionQueryService)
     {
         _transactionMonths = transactionMonths;
-        _creditDescriptionMappings = creditDescriptionMappings;
+        _descriptionMappings = descriptionMappings;
         _transactionDescriptions = transactionDescriptions;
         _transactionQueryService = transactionQueryService;
     }
@@ -65,7 +65,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
         }
     }
 
-    public async Task ApplyCreditDescriptionMappingAsync(string email, string descriptionStart, string category)
+    public async Task ApplyDescriptionMappingAsync(string email, string descriptionStart, string category)
     {
         await UpsertMappingAsync(email, descriptionStart, category);
 
@@ -137,7 +137,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
 
     // Every stat mutation here goes through this one place, since the same description can be
     // reached from either the single-edit (PUT /transactions) or bulk-apply (POST
-    // /mapping/credit) path - both just move a description between classified/unclassified.
+    // /mapping/description) path - both just move a description between classified/unclassified.
     private static void AdjustUnclassifiedCount(TransactionDescriptions descriptions, string description, string previousCategory, string newCategory)
     {
         var wasUnclassified = string.IsNullOrEmpty(previousCategory);
@@ -159,9 +159,9 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
 
     private async Task UpsertMappingAsync(string email, string descriptionStart, string category)
     {
-        var mapping = await _creditDescriptionMappings.GetAsync(email);
+        var mapping = await _descriptionMappings.GetAsync(email);
         var isNew = mapping is null;
-        mapping ??= new CreditDescriptionMapping { Email = email };
+        mapping ??= new DescriptionMapping { Email = email };
 
         var entry = mapping.Mappings.FirstOrDefault(m => m.DescriptionStart == descriptionStart);
         if (entry is not null)
@@ -170,16 +170,16 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
         }
         else
         {
-            mapping.Mappings.Add(new CreditDescriptionMappingEntry { DescriptionStart = descriptionStart, Category = category });
+            mapping.Mappings.Add(new DescriptionMappingEntry { DescriptionStart = descriptionStart, Category = category });
         }
 
         if (isNew)
         {
-            await _creditDescriptionMappings.AddAsync(mapping);
+            await _descriptionMappings.AddAsync(mapping);
         }
         else
         {
-            await _creditDescriptionMappings.UpdateAsync(email, mapping);
+            await _descriptionMappings.UpdateAsync(email, mapping);
         }
     }
 }

@@ -7,8 +7,8 @@ import {
   TransactionsRequestFailedError,
   updateTransactions,
   TransactionsUpdateFailedError,
-  saveCreditDescriptionMapping,
-  CreditDescriptionMappingRequestFailedError,
+  saveDescriptionMapping,
+  DescriptionMappingRequestFailedError,
   type Transaction,
 } from '../../FrontEnd/src/services/transactionsService'
 import { useAuthStore } from '../../FrontEnd/src/stores/auth'
@@ -121,15 +121,15 @@ describe('transactionsService', () => {
     })
   })
 
-  describe('saveCreditDescriptionMapping', () => {
+  describe('saveDescriptionMapping', () => {
     it('POSTs the descriptionStart and category as JSON with the bearer token', async () => {
       const fetchMock = vi.fn().mockResolvedValue({ ok: true })
       vi.stubGlobal('fetch', fetchMock)
 
-      await saveCreditDescriptionMapping('COLES', 'Groceries')
+      await saveDescriptionMapping('COLES', 'Groceries')
 
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringMatching(/\/mapping\/credit$/),
+        expect.stringMatching(/\/mapping\/description$/),
         expect.objectContaining({
           method: 'POST',
           headers: { Authorization: 'Bearer a-jwt', 'Content-Type': 'application/json' },
@@ -138,11 +138,11 @@ describe('transactionsService', () => {
       )
     })
 
-    it('throws CreditDescriptionMappingRequestFailedError when the response is not ok', async () => {
+    it('throws DescriptionMappingRequestFailedError when the response is not ok', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
-      await expect(saveCreditDescriptionMapping('COLES', 'Groceries')).rejects.toBeInstanceOf(
-        CreditDescriptionMappingRequestFailedError,
+      await expect(saveDescriptionMapping('COLES', 'Groceries')).rejects.toBeInstanceOf(
+        DescriptionMappingRequestFailedError,
       )
     })
   })

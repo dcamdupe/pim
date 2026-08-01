@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import { getTransactions, type Transaction } from '../services/transactionsService'
 import { formatDateForApi } from '../utils/dateFormat'
 import {
   computeDashboardTiles,
   computeExpensesByCategory,
   computeMonthlyIncomeExpenses,
+  computeRecentTransactions,
   getCurrentMonthRange,
   getPreviousSixMonthsRange,
 } from '../utils/dashboardMetrics'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
+import RecentTransactionsList from '../components/RecentTransactionsList.vue'
 
 const today = new Date()
 const transactions = ref<Transaction[]>([])
@@ -21,6 +24,7 @@ const loadError = ref('')
 const tiles = computed(() => computeDashboardTiles(transactions.value, today))
 const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, today))
 const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, today))
+const recentTransactions = computed(() => computeRecentTransactions(transactions.value))
 const currentMonthLabel = today.toLocaleDateString(undefined, { month: 'long' })
 const currentMonthYearLabel = today.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 
@@ -85,6 +89,14 @@ onMounted(async () => {
           <p class="card-sub">Last 6 months</p>
           <IncomeVsExpensesChart :data="monthlyIncomeExpenses" />
         </div>
+      </div>
+
+      <div class="card recent-card">
+        <div class="recent-head">
+          <h2>Recent transactions</h2>
+          <RouterLink to="/transactions" class="view-all">View all →</RouterLink>
+        </div>
+        <RecentTransactionsList :transactions="recentTransactions" />
       </div>
     </template>
   </div>
@@ -165,5 +177,33 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text);
   margin: 0 0 16px;
+}
+
+.recent-card {
+  margin-top: 16px;
+}
+
+.recent-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.recent-head h2 {
+  margin: 0;
+}
+
+.view-all {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-h);
+  text-decoration: none;
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.view-all:hover {
+  text-decoration: underline;
 }
 </style>

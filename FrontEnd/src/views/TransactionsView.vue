@@ -7,8 +7,7 @@ import { getTransactions, updateTransactions, saveDescriptionMapping, type Trans
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions } from '../utils/transactionFilters'
 import { formatDateForApi } from '../utils/dateFormat'
-
-type RangeOption = 'week' | 'month' | 'threeMonths' | 'allTime'
+import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
 
 interface PendingCategoryChange {
   transaction: Transaction

@@ -30,6 +30,37 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
+    public async Task UpdateTransactionsAsync_SetsInactive_OnTheMatchingTransaction()
+    {
+        var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
+        var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
+        var months = new List<TransactionMonth> { month };
+        var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
+        updated.Inactive = true;
+        var sut = CreateService(months);
+
+        await sut.UpdateTransactionsAsync(Email, [updated]);
+
+        Assert.True(Assert.Single(months).Transactions.Single().Inactive);
+    }
+
+    [Fact]
+    public async Task UpdateTransactionsAsync_ClearsInactive_OnTheMatchingTransaction()
+    {
+        var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
+        existing.Inactive = true;
+        var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
+        var months = new List<TransactionMonth> { month };
+        var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
+        updated.Inactive = false;
+        var sut = CreateService(months);
+
+        await sut.UpdateTransactionsAsync(Email, [updated]);
+
+        Assert.False(Assert.Single(months).Transactions.Single().Inactive);
+    }
+
+    [Fact]
     public async Task UpdateTransactionsAsync_DecrementsUnclassifiedCount_WhenATransactionBecomesClassified()
     {
         var month = new TransactionMonth

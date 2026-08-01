@@ -318,6 +318,38 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
+    public async Task Put_UpdatesInactive_OnTheMatchingStoredTransaction_AndItRoundTripsThroughGet()
+    {
+        var client = AuthenticatedClient();
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        await repository.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        });
+
+        var setInactive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Inactive = true };
+        var setInactiveResponse = await client.PutAsJsonAsync("/transactions", new List<Transaction> { setInactive });
+        Assert.Equal(HttpStatusCode.NoContent, setInactiveResponse.StatusCode);
+
+        var getResponse = await client.GetAsync("/transactions?startDate=2026-06-01&endDate=2026-06-30");
+        var body = await getResponse.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
+        Assert.True(body!.Transactions.Single().Inactive);
+
+        var setActive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Inactive = false };
+        var setActiveResponse = await client.PutAsJsonAsync("/transactions", new List<Transaction> { setActive });
+        Assert.Equal(HttpStatusCode.NoContent, setActiveResponse.StatusCode);
+
+        var month = await repository.GetAsync(monthId);
+        Assert.False(month!.Transactions.Single().Inactive);
+    }
+
+    [Fact]
     public async Task Put_ReturnsBadRequest_WhenListIsEmpty()
     {
         var client = AuthenticatedClient();

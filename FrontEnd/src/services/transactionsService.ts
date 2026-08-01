@@ -8,6 +8,7 @@ export interface Transaction {
   description: string
   category: string
   amount: number
+  inactive: boolean | null
 }
 
 export class TransactionsUploadFailedError extends Error {

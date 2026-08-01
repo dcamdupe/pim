@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { CATEGORIES, categoryColor } from '../constants/categories'
 import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
@@ -27,6 +27,10 @@ const searchQuery = ref('')
 const selectedAccount = ref('')
 const selectedCategory = ref('')
 const needsCategoryOnly = ref(false)
+
+const openMenuIndex = ref<number | null>(null)
+const togglingInactive = ref(false)
+const toggleInactiveError = ref('')
 
 const accountOptions = computed(() => [...new Set(transactions.value.map((t) => t.account))].sort())
 
@@ -153,7 +157,31 @@ function declineBulkApply() {
   void applySingleCategory(pending.transaction, pending.category)
 }
 
-onMounted(fetchTransactions)
+function closeRowMenu() {
+  openMenuIndex.value = null
+}
+
+async function toggleInactive(transaction: Transaction) {
+  openMenuIndex.value = null
+  toggleInactiveError.value = ''
+  togglingInactive.value = true
+  try {
+    await updateTransactions([{ ...transaction, inactive: !transaction.inactive }])
+    await fetchTransactions()
+  } catch {
+    toggleInactiveError.value = 'Could not update the transaction. Please try again.'
+  } finally {
+    togglingInactive.value = false
+  }
+}
+
+onMounted(() => {
+  void fetchTransactions()
+  document.addEventListener('click', closeRowMenu)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', closeRowMenu)
+})
 watch(selectedRange, fetchTransactions)
 </script>
 
@@ -194,6 +222,7 @@ watch(selectedRange, fetchTransactions)
     <p v-if="loading" class="status">Loading transactions…</p>
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
     <p v-else-if="categorySaveError" class="status status-error">{{ categorySaveError }}</p>
+    <p v-else-if="toggleInactiveError" class="status status-error">{{ toggleInactiveError }}</p>
     <p v-else-if="transactions.length === 0" class="status">No transactions in this range.</p>
     <p v-else-if="filteredTransactions.length === 0" class="status">No transactions match your filters.</p>
 
@@ -206,12 +235,16 @@ watch(selectedRange, fetchTransactions)
             <th>Account</th>
             <th class="num">Amount</th>
             <th>Category</th>
+            <th class="actions-header"></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(t, index) in filteredTransactions" :key="index">
+          <tr v-for="(t, index) in filteredTransactions" :key="index" :class="{ 'row-inactive': t.inactive }">
             <td class="date">{{ formatDisplayDate(t.date) }}</td>
-            <td class="desc">{{ t.description }}</td>
+            <td class="desc">
+              {{ t.description }}
+              <span v-if="t.inactive" class="chip chip-muted">Inactive</span>
+            </td>
             <td><span class="acct-badge">{{ t.account }}</span></td>
             <td :class="['amount', { pos: t.amount > 0 }]">{{ formatAmount(t.amount) }}</td>
             <td>
@@ -227,6 +260,34 @@ watch(selectedRange, fetchTransactions)
                   <option value="" disabled>+ Add category</option>
                   <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
                 </select>
+              </div>
+            </td>
+            <td class="actions">
+              <div class="row-menu" @click.stop>
+                <button
+                  type="button"
+                  class="row-menu-button"
+                  aria-haspopup="menu"
+                  :aria-label="`Actions for ${t.description}`"
+                  @click="openMenuIndex = openMenuIndex === index ? null : index"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <circle cx="5" cy="12" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="19" cy="12" r="2" />
+                  </svg>
+                </button>
+                <div v-if="openMenuIndex === index" class="row-menu-popover" role="menu">
+                  <button
+                    type="button"
+                    class="row-menu-item"
+                    role="menuitem"
+                    :disabled="togglingInactive"
+                    @click="toggleInactive(t)"
+                  >
+                    {{ t.inactive ? 'Set active' : 'Set inactive' }}
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
@@ -424,6 +485,72 @@ th.num {
   border: 1px dashed var(--text);
   color: var(--text);
   background: none;
+}
+
+table.tx tbody tr.row-inactive {
+  opacity: 0.55;
+}
+
+td.actions,
+th.actions-header {
+  width: 1%;
+  text-align: right;
+}
+
+.row-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.row-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+}
+
+.row-menu-button:hover,
+.row-menu-button:focus-visible {
+  background: var(--field-bg);
+  color: var(--text-h);
+  filter: none;
+}
+
+.row-menu-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 130px;
+  padding: 6px;
+  margin-top: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  z-index: 20;
+}
+
+.row-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-h);
+  font-size: 13px;
+}
+
+.row-menu-item:hover,
+.row-menu-item:focus-visible {
+  background: var(--field-bg);
+  filter: none;
 }
 
 .category-cell {

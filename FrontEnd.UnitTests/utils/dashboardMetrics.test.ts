@@ -89,7 +89,7 @@ describe('computeDashboardTiles', () => {
     const tiles = computeDashboardTiles(transactions, today)
 
     expect(tiles.currentMonthProfit).toBe(100)
-    expect(tiles.previousSixMonthsProfit).toBe(500)
+    expect(tiles.previousSixMonthsProfitAverage).toBeCloseTo(500 / 6)
   })
 
   it('computes the delta percentage against the average of the previous 6 months, not the total', () => {

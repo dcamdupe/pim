@@ -1,6 +1,7 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
+    kicker: string
     label: string
     value: string
     showDelta?: boolean
@@ -30,6 +31,7 @@ function deltaClass(pct: number | null): string {
 <template>
   <div class="kpi">
     <div class="kpi-top">
+      <span class="kicker">{{ kicker }}</span>
       <!-- Always renders a same-sized .delta-pill, visible or not, so tiles with and without a
            real delta stay pixel-identical above the label/value - a reserved-but-empty div can't
            guarantee that since its height isn't tied to the pill's actual font/padding. -->
@@ -58,7 +60,17 @@ function deltaClass(pct: number | null): string {
 
 .kpi-top {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kicker {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text);
 }
 
 .delta-pill {

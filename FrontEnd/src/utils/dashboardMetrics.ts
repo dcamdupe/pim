@@ -9,10 +9,10 @@ export interface DateRange {
 export interface DashboardTiles {
   currentMonthProfit: number
   currentMonthProfitDeltaPct: number | null
-  previousSixMonthsProfit: number
+  previousSixMonthsProfitAverage: number
   currentMonthExpenses: number
   currentMonthExpensesDeltaPct: number | null
-  previousSixMonthsExpenses: number
+  previousSixMonthsExpensesAverage: number
 }
 
 export interface CategoryExpense {
@@ -195,11 +195,9 @@ function computeProfit(transactions: Transaction[]): number {
   return sumIncome(transactions) - sumExpenses(transactions)
 }
 
-// Compares `current` to the average of `baselineTotal` over `months` - null when that average is
-// zero (e.g. no historical data yet), since a percentage change against a zero baseline is
-// undefined.
-function percentChangeVsAverage(current: number, baselineTotal: number, months: number): number | null {
-  const baselineAverage = baselineTotal / months
+// Compares `current` to `baselineAverage` - null when the average is zero (e.g. no historical
+// data yet), since a percentage change against a zero baseline is undefined.
+function percentChangeVsAverage(current: number, baselineAverage: number): number | null {
   if (baselineAverage === 0) {
     return null
   }
@@ -211,16 +209,16 @@ export function computeDashboardTiles(transactions: Transaction[], today: Date):
   const previousSixMonthsTransactions = transactions.filter((t) => isWithinRange(t, getPreviousSixMonthsRange(today)))
 
   const currentMonthProfit = computeProfit(currentMonthTransactions)
-  const previousSixMonthsProfit = computeProfit(previousSixMonthsTransactions)
+  const previousSixMonthsProfitAverage = computeProfit(previousSixMonthsTransactions) / 6
   const currentMonthExpenses = sumExpenses(currentMonthTransactions)
-  const previousSixMonthsExpenses = sumExpenses(previousSixMonthsTransactions)
+  const previousSixMonthsExpensesAverage = sumExpenses(previousSixMonthsTransactions) / 6
 
   return {
     currentMonthProfit,
-    currentMonthProfitDeltaPct: percentChangeVsAverage(currentMonthProfit, previousSixMonthsProfit, 6),
-    previousSixMonthsProfit,
+    currentMonthProfitDeltaPct: percentChangeVsAverage(currentMonthProfit, previousSixMonthsProfitAverage),
+    previousSixMonthsProfitAverage,
     currentMonthExpenses,
-    currentMonthExpensesDeltaPct: percentChangeVsAverage(currentMonthExpenses, previousSixMonthsExpenses, 6),
-    previousSixMonthsExpenses,
+    currentMonthExpensesDeltaPct: percentChangeVsAverage(currentMonthExpenses, previousSixMonthsExpensesAverage),
+    previousSixMonthsExpensesAverage,
   }
 }

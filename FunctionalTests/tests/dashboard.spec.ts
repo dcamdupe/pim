@@ -138,9 +138,12 @@ test.describe('Dashboard tiles', () => {
     expect(after.currentProfit - before.currentProfit).toBe(2800);
     expect(after.currentExpenses - before.currentExpenses).toBe(200);
     // Previous 6 months: income 1000, active expense 300 (the -999 inactive one excluded)
-    // -> profit +700, expenses +300.
-    expect(after.priorProfit - before.priorProfit).toBe(700);
-    expect(after.priorExpenses - before.priorExpenses).toBe(300);
+    // -> profit +700, expenses +300, shown on the tile as an average over 6 months (UBE-73).
+    // The tile displays whole dollars (no cents), and "before"/"after" are each independently
+    // rounded before this delta is taken, so up to ~$1 of combined rounding error is expected -
+    // tighter than that would mean the average math itself is wrong.
+    expect(Math.abs(after.priorProfit - before.priorProfit - 700 / 6)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.priorExpenses - before.priorExpenses - 300 / 6)).toBeLessThanOrEqual(1);
 
     // Tiles 1 & 3 (previous 6 months) never show a delta icon - the tile still renders a
     // same-sized placeholder pill (kept invisible) so all 4 tiles line up regardless of whether
@@ -173,7 +176,9 @@ test.describe('Month filter', () => {
     // Capture the target month's "before" tile 0 value ahead of the upload below, so the
     // assertion is a delta - robust to the shared, never-cleaned-up test dataset.
     await selectMonth(page, targetMonth);
-    await expect(page.getByText(`${monthYearLabel(targetMonth)} profit`)).toBeVisible();
+    // Tile 0's label is just "<Month> <Year>" now (UBE-73 dropped the "profit" suffix - the tile's
+    // "Profit" kicker carries that instead), so wait for it specifically rather than by full text.
+    await expect(page.locator('.kpi-row .kpi').nth(0).locator('.label')).toHaveText(monthYearLabel(targetMonth));
     const before = await tileValue(page, 0);
 
     await page.getByRole('link', { name: 'Settings' }).click();
@@ -199,7 +204,9 @@ test.describe('Month filter', () => {
     await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
     // The filter resets to the current month on navigation - re-select the target month.
     await selectMonth(page, targetMonth);
-    await expect(page.getByText(`${monthYearLabel(targetMonth)} profit`)).toBeVisible();
+    // Tile 0's label is just "<Month> <Year>" now (UBE-73 dropped the "profit" suffix - the tile's
+    // "Profit" kicker carries that instead), so wait for it specifically rather than by full text.
+    await expect(page.locator('.kpi-row .kpi').nth(0).locator('.label')).toHaveText(monthYearLabel(targetMonth));
 
     const after = await tileValue(page, 0);
     expect(after - before).toBe(1500);

@@ -81,7 +81,7 @@ Each step below will be confirmed with the user before implementing.
       (during FunctionalTests runs) and cleaned up a pile of stale, never-cleaned-up Settings
       accounts accumulated in the local DynamoDB instance from many earlier test/dev sessions -
       pre-existing environmental noise, not caused by this change.
-- [ ] Open PR
+- [x] Open PR: https://github.com/dcamdupe/pim/pull/49
 
 ## Prompt log
 
@@ -100,3 +100,9 @@ Each step below will be confirmed with the user before implementing.
 - "fix it now" (chose to fix the unrelated pre-existing `transactionCategorization.spec.ts`
   cleanup-pattern bug discovered while verifying FunctionalTests, rather than leave it as a known
   issue)
+- "commit and raise PR" (committed, pushed, opened PR #49. Caught and fixed a staging mistake of my
+  own: content edits made after a `git mv` rename were never re-staged, so the first push didn't
+  actually build - found via `gh pr create`'s "7 uncommitted changes" warning, confirmed by
+  stashing and rebuilding against the bare committed tree, fixed with a follow-up commit and
+  re-pushed. Verified `dotnet build`/`dotnet test` green against the final committed state before
+  finishing.)

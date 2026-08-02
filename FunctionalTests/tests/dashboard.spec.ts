@@ -2,9 +2,13 @@ import { test, expect } from '@playwright/test';
 
 function formatForUpload(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
-  const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `${day}/${month}/${year}`;
+}
+
+function qifRecord(date: Date, description: string, amount: string): string {
+  return `D${formatForUpload(date)}\nM${description}\nT${amount}\n^\n`;
 }
 
 function monthYearLabel(date: Date): string {
@@ -62,13 +66,13 @@ test.describe('Dashboard tiles', () => {
     const expensePriorActive = `DashExpensePriorActive${runId}`;
     const expensePriorInactive = `DashExpensePriorInactive${runId}`;
 
-    const csv =
-      '131150S1,,,,,\n' +
-      `${formatForUpload(today)},,"${incomeThisMonth}",,3000.00,637.57\n` +
-      `${formatForUpload(today)},,"${expenseThisMonth}",,-200.00,637.57\n` +
-      `${formatForUpload(twoMonthsAgo)},,"${incomePrior}",,1000.00,637.57\n` +
-      `${formatForUpload(twoMonthsAgo)},,"${expensePriorActive}",,-300.00,637.57\n` +
-      `${formatForUpload(twoMonthsAgo)},,"${expensePriorInactive}",,-999.00,637.57\n`;
+    const qif =
+      '!Type:Bank\n' +
+      qifRecord(today, incomeThisMonth, '3000.00') +
+      qifRecord(today, expenseThisMonth, '-200.00') +
+      qifRecord(twoMonthsAgo, incomePrior, '1000.00') +
+      qifRecord(twoMonthsAgo, expensePriorActive, '-300.00') +
+      qifRecord(twoMonthsAgo, expensePriorInactive, '-999.00');
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -98,7 +102,7 @@ test.describe('Dashboard tiles', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(`DashAccount${runId}`);
-    await page.locator('#file-input').setInputFiles({ name: 'dash.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.locator('#file-input').setInputFiles({ name: 'dash.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
     await page.getByLabel('Date range').selectOption('allTime');
@@ -194,8 +198,8 @@ test.describe('Month filter', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(`MonthFilterAccount${runId}`);
-    const csv = '131150S1,,,,,\n' + `${formatForUpload(targetMonth)},,"${income}",,1500.00,637.57\n`;
-    await page.locator('#file-input').setInputFiles({ name: 'monthfilter.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    const qif = '!Type:Bank\n' + qifRecord(targetMonth, income, '1500.00');
+    await page.locator('#file-input').setInputFiles({ name: 'monthfilter.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
     await page.getByLabel('Date range').selectOption('allTime');
@@ -234,7 +238,7 @@ test.describe('Recent transactions', () => {
     const today = new Date();
     const description = `RecentTxn${runId}`;
 
-    const csv = '131150S1,,,,,\n' + `${formatForUpload(today)},,"${description}",,-45.67,637.57\n`;
+    const qif = '!Type:Bank\n' + qifRecord(today, description, '-45.67');
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -254,7 +258,7 @@ test.describe('Recent transactions', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(`RecentAccount${runId}`);
-    await page.locator('#file-input').setInputFiles({ name: 'recent.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.locator('#file-input').setInputFiles({ name: 'recent.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
     await page.getByLabel('Date range').selectOption('allTime');

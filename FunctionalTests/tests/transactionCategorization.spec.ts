@@ -15,16 +15,15 @@ test.describe('Transaction categorization', () => {
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
-    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    const dateForUpload = `${day} ${month} ${year}`;
+    const dateForUpload = `${day}/${month}/${year}`;
 
-    // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running Balance.
-    const csv =
-      '131150S1,,,,,\n' +
-      `${dateForUpload},,"${colesA}",,-20.00,637.57\n` +
-      `${dateForUpload},,"${colesB}",,-15.00,617.57\n` +
-      `${dateForUpload},,"${other}",,-5.00,612.57\n`;
+    const qif =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${colesA}\nT-20.00\n^\n` +
+      `D${dateForUpload}\nM${colesB}\nT-15.00\n^\n` +
+      `D${dateForUpload}\nM${other}\nT-5.00\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -47,9 +46,9 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption('Playwright Categorization Account');
     await page.locator('#file-input').setInputFiles({
-      name: 'transactions.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
     });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
@@ -75,13 +74,13 @@ test.describe('Transaction categorization', () => {
     // Uploading a new statement with another COLES-prefixed description is auto-categorised via
     // the remembered DescriptionMapping, with no further manual action.
     const colesC = `COLES${runId} 0999 NEWTOWN AUS`;
-    const followUpCsv = `131150S1,,,,,\n${dateForUpload},,"${colesC}",,-10.00,602.57\n`;
+    const followUpQif = `!Type:Bank\nD${dateForUpload}\nM${colesC}\nT-10.00\n^\n`;
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption('Playwright Categorization Account');
     await page.locator('#file-input').setInputFiles({
-      name: 'transactions2.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(followUpCsv),
+      name: 'transactions2.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(followUpQif),
     });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
@@ -107,14 +106,14 @@ test.describe('Transaction categorization', () => {
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
-    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    const dateForUpload = `${day} ${month} ${year}`;
+    const dateForUpload = `${day}/${month}/${year}`;
 
-    const csv =
-      '131150S1,,,,,\n' +
-      `${dateForUpload},,"${netflix}",,-15.99,637.57\n` +
-      `${dateForUpload},,"${netflix}",,-15.99,621.58\n`;
+    const qif =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${netflix}\nT-15.99\n^\n` +
+      `D${dateForUpload}\nM${netflix}\nT-15.99\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -135,9 +134,9 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption('Playwright Duplicate Desc Account');
     await page.locator('#file-input').setInputFiles({
-      name: 'transactions.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
     });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
@@ -171,14 +170,14 @@ test.describe('Transaction categorization', () => {
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
-    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    const dateForUpload = `${day} ${month} ${year}`;
+    const dateForUpload = `${day}/${month}/${year}`;
 
-    const csv =
-      '131150S1,,,,,\n' +
-      `${dateForUpload},,"${colesA}",,-20.00,637.57\n` +
-      `${dateForUpload},,"${colesB}",,-15.00,617.57\n`;
+    const qif =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${colesA}\nT-20.00\n^\n` +
+      `D${dateForUpload}\nM${colesB}\nT-15.00\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -199,9 +198,9 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption('Playwright Cancel Account');
     await page.locator('#file-input').setInputFiles({
-      name: 'transactions.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
     });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
@@ -222,7 +221,7 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('link', { name: 'Settings' }).click();
     const addedRow = page.locator('.account-row').last();
     await addedRow.getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

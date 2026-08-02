@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 function formatForUpload(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
-  const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `${day}/${month}/${year}`;
 }
 
 test.describe('Transaction listing', () => {
@@ -21,12 +21,11 @@ test.describe('Transaction listing', () => {
     // if it's genuinely resolved from the real stored MinTransactionDate (UBE-47), not a guess.
     const veryOld = new Date(2010, 0, 1);
 
-    // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running Balance.
-    const csv =
-      '131150S1,,,,,\n' +
-      `${formatForUpload(today)},,"${todayDesc}",,-4.50,637.57\n` +
-      `${formatForUpload(sixWeeksAgo)},,"${oldDesc}",,-9.00,637.57\n` +
-      `${formatForUpload(veryOld)},,"${veryOldDesc}",,-1.00,637.57\n`;
+    const qif =
+      '!Type:Bank\n' +
+      `D${formatForUpload(today)}\nM${todayDesc}\nT-4.50\n^\n` +
+      `D${formatForUpload(sixWeeksAgo)}\nM${oldDesc}\nT-9.00\n^\n` +
+      `D${formatForUpload(veryOld)}\nM${veryOldDesc}\nT-1.00\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -49,9 +48,9 @@ test.describe('Transaction listing', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption('Playwright Listing Account');
     await page.locator('#file-input').setInputFiles({
-      name: 'transactions.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
     });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
@@ -102,14 +101,14 @@ test.describe('Transaction listing', () => {
 
     const today = new Date();
     const dateForUpload = formatForUpload(today);
-    const csvA =
-      '131150S1,,,,,\n' +
-      `${dateForUpload},,"${coffeeDesc}",,-4.50,637.57\n` +
-      `${dateForUpload},,"${rentDesc}",,-1200.00,637.57\n`;
-    const csvB =
-      '131150S1,,,,,\n' +
-      `${dateForUpload},,"${groceriesDesc}",,-6.00,637.57\n` +
-      `${dateForUpload},,"${salaryDesc}",,2500.00,637.57\n`;
+    const qifA =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${coffeeDesc}\nT-4.50\n^\n` +
+      `D${dateForUpload}\nM${rentDesc}\nT-1200.00\n^\n`;
+    const qifB =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${groceriesDesc}\nT-6.00\n^\n` +
+      `D${dateForUpload}\nM${salaryDesc}\nT2500.00\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -134,13 +133,13 @@ test.describe('Transaction listing', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountA);
-    await page.locator('#file-input').setInputFiles({ name: 'a.csv', mimeType: 'text/csv', buffer: Buffer.from(csvA) });
+    await page.locator('#file-input').setInputFiles({ name: 'a.qif', mimeType: 'text/plain', buffer: Buffer.from(qifA) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountB);
-    await page.locator('#file-input').setInputFiles({ name: 'b.csv', mimeType: 'text/csv', buffer: Buffer.from(csvB) });
+    await page.locator('#file-input').setInputFiles({ name: 'b.qif', mimeType: 'text/plain', buffer: Buffer.from(qifB) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 

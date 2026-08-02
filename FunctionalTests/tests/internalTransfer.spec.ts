@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 function formatForUpload(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
-  const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `${day}/${month}/${year}`;
 }
 
 // Tile values are plain "$1,234" / "−$1,234" text, not test ids - parse them back to numbers.
@@ -47,10 +47,12 @@ test.describe('Internal transfer matching', () => {
 
     // The control pair is deliberately both legs in Account A's own file - an inverted-amount
     // match within one account must NOT auto-flag, proving the different-accounts constraint.
-    const outCsv =
-      `131150S1,,,,,\n${today},,"${transferOut}",,-${transferAmount}.00,637.57\n` +
-      `${today},,"${controlOut}",,-${controlAmount}.00,637.57\n${today},,"${controlIn}",,${controlAmount}.00,637.57\n`;
-    const inCsv = `131150S2,,,,,\n${today},,"${transferIn}",,${transferAmount}.00,1100.00\n`;
+    const outQif =
+      '!Type:Bank\n' +
+      `D${today}\nM${transferOut}\nT-${transferAmount}.00\n^\n` +
+      `D${today}\nM${controlOut}\nT-${controlAmount}.00\n^\n` +
+      `D${today}\nM${controlIn}\nT${controlAmount}.00\n^\n`;
+    const inQif = '!Type:Bank\n' + `D${today}\nM${transferIn}\nT${transferAmount}.00\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -78,7 +80,7 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountA);
-    await page.locator('#file-input').setInputFiles({ name: 'out.csv', mimeType: 'text/csv', buffer: Buffer.from(outCsv) });
+    await page.locator('#file-input').setInputFiles({ name: 'out.qif', mimeType: 'text/plain', buffer: Buffer.from(outQif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.locator('tr', { hasText: transferOut }).locator('.category-select')).toHaveValue('');
@@ -95,7 +97,7 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountB);
-    await page.locator('#file-input').setInputFiles({ name: 'in.csv', mimeType: 'text/csv', buffer: Buffer.from(inCsv) });
+    await page.locator('#file-input').setInputFiles({ name: 'in.qif', mimeType: 'text/plain', buffer: Buffer.from(inQif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 
@@ -137,8 +139,8 @@ test.describe('Internal transfer matching', () => {
     const accountB = `IT NoMatch B ${runId}`;
     const amount = 1000 + (runId % 8000);
 
-    const outCsv = `131150S1,,,,,\n${today},,"${outDesc}",,-${amount}.00,637.57\n`;
-    const inCsv = `131150S2,,,,,\n${today},,"${inDesc}",,${amount}.00,1100.00\n`;
+    const outQif = '!Type:Bank\n' + `D${today}\nM${outDesc}\nT-${amount}.00\n^\n`;
+    const inQif = '!Type:Bank\n' + `D${today}\nM${inDesc}\nT${amount}.00\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -160,14 +162,14 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountA);
-    await page.locator('#file-input').setInputFiles({ name: 'out.csv', mimeType: 'text/csv', buffer: Buffer.from(outCsv) });
+    await page.locator('#file-input').setInputFiles({ name: 'out.qif', mimeType: 'text/plain', buffer: Buffer.from(outQif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountB);
-    await page.locator('#file-input').setInputFiles({ name: 'in.csv', mimeType: 'text/csv', buffer: Buffer.from(inCsv) });
+    await page.locator('#file-input').setInputFiles({ name: 'in.qif', mimeType: 'text/plain', buffer: Buffer.from(inQif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 

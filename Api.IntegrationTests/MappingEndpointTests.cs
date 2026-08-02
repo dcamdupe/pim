@@ -54,10 +54,19 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
         var client = AuthenticatedClient();
         using (var upload = BuildMultipartContent(
             "Everyday",
-            "131150S1,,,,,\n" +
-            "01 JUN 2026,,\"COLES 0717 TURRAMURRA AUS\",,-20.00,637.57\n" +
-            "02 JUN 2026,,\"COLES 0760 ASQUITH AUS\",,-15.00,617.57\n" +
-            "03 JUN 2026,,\"Salary\",,2500.00,3117.57\n"))
+            "!Type:Bank\n" +
+            "D01/06/26\n" +
+            "MCOLES 0717 TURRAMURRA AUS\n" +
+            "T-20.00\n" +
+            "^\n" +
+            "D02/06/26\n" +
+            "MCOLES 0760 ASQUITH AUS\n" +
+            "T-15.00\n" +
+            "^\n" +
+            "D03/06/26\n" +
+            "MSalary\n" +
+            "T2500.00\n" +
+            "^\n"))
         {
             var uploadResponse = await client.PostAsync("/transactions/file", upload);
             Assert.Equal(HttpStatusCode.NoContent, uploadResponse.StatusCode);
@@ -89,8 +98,11 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
 
         using var content = BuildMultipartContent(
             "Everyday",
-            "131150S1,,,,,\n" +
-            "01 JUN 2026,,\"COLES 0717 TURRAMURRA AUS\",,-20.00,637.57\n");
+            "!Type:Bank\n" +
+            "D01/06/26\n" +
+            "MCOLES 0717 TURRAMURRA AUS\n" +
+            "T-20.00\n" +
+            "^\n");
         var response = await client.PostAsync("/transactions/file", content);
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var monthId = TransactionMonth.BuildId(_email, 2026, 6);
@@ -116,15 +128,15 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    private static MultipartFormDataContent BuildMultipartContent(string account, string csv)
+    private static MultipartFormDataContent BuildMultipartContent(string account, string qif)
     {
         var content = new MultipartFormDataContent
         {
             { new StringContent(account), "account" },
         };
-        var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes(csv));
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
-        content.Add(fileContent, "file", "transactions.csv");
+        var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes(qif));
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        content.Add(fileContent, "file", "transactions.qif");
         return content;
     }
 

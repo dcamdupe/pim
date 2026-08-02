@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 function formatForUpload(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
-  const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `${day}/${month}/${year}`;
 }
 
 test.describe('Ignoring transactions', () => {
@@ -17,10 +17,10 @@ test.describe('Ignoring transactions', () => {
     const accountName = `Ignore Test Account ${runId}`;
 
     const dateForUpload = formatForUpload(new Date());
-    const csv =
-      '131150S1,,,,,\n' +
-      `${dateForUpload},,"${desc}",,-4.50,637.57\n` +
-      `${dateForUpload},,"${otherDesc}",,-9.00,637.57\n`;
+    const qif =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${desc}\nT-4.50\n^\n` +
+      `D${dateForUpload}\nM${otherDesc}\nT-9.00\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -40,7 +40,7 @@ test.describe('Ignoring transactions', () => {
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountName);
-    await page.locator('#file-input').setInputFiles({ name: 'transactions.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.locator('#file-input').setInputFiles({ name: 'transactions.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 

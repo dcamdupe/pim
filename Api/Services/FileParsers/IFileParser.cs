@@ -1,6 +1,6 @@
 using Pim.Api.Data;
 
-namespace Pim.Api.Services.CSVParsers;
+namespace Pim.Api.Services.FileParsers;
 
 public interface IFileParser
 {

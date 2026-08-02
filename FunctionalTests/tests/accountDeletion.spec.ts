@@ -46,14 +46,14 @@ test.describe('Account deletion', () => {
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
-    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    const csv = `131150S1,,,,,\n${day} ${month} ${year},,"${description}",,-10.00,637.57\n`;
+    const qif = `!Type:Bank\nD${day}/${month}/${year}\nM${description}\nT-10.00\n^\n`;
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountName);
-    await page.locator('#file-input').setInputFiles({ name: 'txn.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.locator('#file-input').setInputFiles({ name: 'txn.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(description)).toBeVisible();
@@ -96,21 +96,21 @@ test.describe('Account deletion', () => {
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
-    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    const csv = `131150S1,,,,,\n${day} ${month} ${year},,"${description}",,-10.00,637.57\n`;
-    const otherCsv = `131150S1,,,,,\n${day} ${month} ${year},,"${otherDescription}",,-20.00,637.57\n`;
+    const qif = `!Type:Bank\nD${day}/${month}/${year}\nM${description}\nT-10.00\n^\n`;
+    const otherQif = `!Type:Bank\nD${day}/${month}/${year}\nM${otherDescription}\nT-20.00\n^\n`;
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountName);
-    await page.locator('#file-input').setInputFiles({ name: 'txn.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+    await page.locator('#file-input').setInputFiles({ name: 'txn.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(otherAccountName);
-    await page.locator('#file-input').setInputFiles({ name: 'other.csv', mimeType: 'text/csv', buffer: Buffer.from(otherCsv) });
+    await page.locator('#file-input').setInputFiles({ name: 'other.qif', mimeType: 'text/plain', buffer: Buffer.from(otherQif) });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(description)).toBeVisible();

@@ -1,7 +1,7 @@
 using System.Text;
-using Pim.Api.Services.CSVParsers;
+using Pim.Api.Services.FileParsers;
 
-namespace Pim.Api.UnitTests.Services.CSVParsers;
+namespace Pim.Api.UnitTests.Services.FileParsers;
 
 // Fixture shapes are drawn from the four real example exports attached to UBE-50 (TMBank.qif,
 // amex.qif, Macquarie Offset.qif, Westpac Card.qif) - see this ticket's worklog for the field

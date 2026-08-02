@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Pim.Api.Data;
 using Pim.Api.Repository;
-using Pim.Api.Services.CSVParsers;
+using Pim.Api.Services.FileParsers;
 
 namespace Pim.Api.Services;
 
@@ -45,11 +45,11 @@ public sealed class FileProcessor : IFileProcessor
         catch (Exception ex)
         {
             // Broad catch deliberately: this is parsing an untrusted, user-uploaded file, where
-            // many different exception types (CsvHelper's own, FormatException, an unsupported
-            // file extension, etc.) can legitimately arise from malformed data - all of them
-            // become one CsvParseException.
+            // many different exception types (FormatException, an unsupported file extension,
+            // etc.) can legitimately arise from malformed data - all of them become one
+            // FileParseException.
             _logger.LogWarning(ex, "Transaction upload: could not parse file: email={Email} account={Account}", email, account);
-            throw new CsvParseException("Could not parse the uploaded file.", ex);
+            throw new FileParseException("Could not parse the uploaded file.", ex);
         }
 
         _logger.LogInformation("Transaction upload request: email={Email} account={Account} count={Count}", email, account, transactions.Count);
@@ -144,7 +144,7 @@ public sealed class FileProcessor : IFileProcessor
     }
 
     // Only called with genuinely new (non-duplicate) transactions - counts would otherwise
-    // inflate if the same CSV (or an overlapping one) were uploaded more than once.
+    // inflate if the same file (or an overlapping one) were uploaded more than once.
     private async Task UpdateTransactionDescriptionStatsAsync(string email, List<Transaction> addedTransactions)
     {
         if (addedTransactions.Count == 0)

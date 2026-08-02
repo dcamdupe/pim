@@ -72,7 +72,7 @@ async function onSave() {
 <template>
   <div class="upload-page">
     <h1>Upload transactions</h1>
-    <p class="subtitle">Select an account and upload a CSV bank statement.</p>
+    <p class="subtitle">Select an account and upload a QIF bank statement.</p>
 
     <p v-if="loading" class="status">Loading accounts…</p>
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
@@ -95,9 +95,9 @@ async function onSave() {
         @drop.prevent="onDrop"
       >
         <span v-if="file">{{ file.name }}</span>
-        <span v-else>Drag a CSV or QIF file here, or click to browse</span>
+        <span v-else>Drag a QIF file here, or click to browse</span>
       </label>
-      <input id="file-input" type="file" accept=".csv,.qif" class="file-input" @change="onFileSelected" />
+      <input id="file-input" type="file" accept=".qif" class="file-input" @change="onFileSelected" />
 
       <div class="save-row">
         <button type="button" class="save-button" :disabled="saving || !selectedAccount || !file" @click="onSave">

@@ -123,21 +123,21 @@ resource "aws_security_group" "lambda" {
   vpc_id      = aws_vpc.main.id
 
   # AWS auto-creates an "allow all outbound" rule for every new security
-  # group. Rules are managed as separate aws_vpc_security_group_egress_rule
-  # resources below, so this must be set to strip that default - otherwise
-  # it lingers alongside the explicit HTTPS-only rules.
-  egress = []
+  # group. Declaring the egress rule inline (rather than as a separate
+  # aws_vpc_security_group_egress_rule resource) both strips that default and
+  # avoids a provider conflict: an inline egress block - even an empty one -
+  # makes this resource authoritative over the SG's egress rules, so on every
+  # apply it silently revokes any rule managed by a separate resource,
+  # forcing that resource to be recreated on the next plan.
+  egress {
+    description     = "HTTPS to the DynamoDB gateway endpoint"
+    protocol        = "tcp"
+    from_port       = 443
+    to_port         = 443
+    prefix_list_ids = [aws_vpc_endpoint.dynamodb.prefix_list_id]
+  }
 
   tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-lambda" })
-}
-
-resource "aws_vpc_security_group_egress_rule" "lambda_to_dynamodb_endpoint" {
-  security_group_id = aws_security_group.lambda.id
-  description       = "HTTPS to the DynamoDB gateway endpoint"
-  ip_protocol       = "tcp"
-  from_port         = 443
-  to_port           = 443
-  prefix_list_id    = aws_vpc_endpoint.dynamodb.prefix_list_id
 }
 
 resource "aws_vpc_endpoint" "dynamodb" {

@@ -11,8 +11,9 @@ public class InternalTransferMatcherTests
     private const string Email = "dave@example.com";
 
     [Fact]
-    public async Task MatchAsync_MatchesTwoNewTransactions_AcrossDifferentAccountsWithinFiveDays()
+    public async Task MatchAsync_MatchesTwoNewTransactions_AcrossDifferentAccountsWithinTwoBusinessDays()
     {
+        // Mon 1 Jun -> Wed 3 Jun: exactly 2 business days apart (the boundary).
         var a = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "");
         var b = Transaction("Savings", new DateOnly(2026, 6, 3), 100m, "");
         var bucket = Bucket(2026, 6, a, b);
@@ -39,10 +40,42 @@ public class InternalTransferMatcherTests
     }
 
     [Fact]
-    public async Task MatchAsync_DoesNotMatch_WhenMoreThanFiveDaysApart()
+    public async Task MatchAsync_Matches_AcrossAWeekend_WhenOnlyOneBusinessDayApart()
     {
-        var a = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "");
-        var b = Transaction("Savings", new DateOnly(2026, 6, 7), 100m, "");
+        // Fri 5 Jun -> Mon 8 Jun: 3 calendar days, but only 1 business day (the weekend doesn't count).
+        var a = Transaction("Checking", new DateOnly(2026, 6, 5), -100m, "");
+        var b = Transaction("Savings", new DateOnly(2026, 6, 8), 100m, "");
+        var bucket = Bucket(2026, 6, a, b);
+        var sut = CreateMatcher([bucket]);
+
+        await sut.MatchAsync(Email, [a, b], [bucket]);
+
+        Assert.Equal(InternalTransferMatcher.CategoryName, a.Category);
+        Assert.Equal(InternalTransferMatcher.CategoryName, b.Category);
+    }
+
+    [Fact]
+    public async Task MatchAsync_Matches_AcrossAWeekend_AtTheTwoBusinessDayBoundary()
+    {
+        // Fri 5 Jun -> Tue 9 Jun: 4 calendar days, exactly 2 business days (the weekend doesn't count).
+        var a = Transaction("Checking", new DateOnly(2026, 6, 5), -100m, "");
+        var b = Transaction("Savings", new DateOnly(2026, 6, 9), 100m, "");
+        var bucket = Bucket(2026, 6, a, b);
+        var sut = CreateMatcher([bucket]);
+
+        await sut.MatchAsync(Email, [a, b], [bucket]);
+
+        Assert.Equal(InternalTransferMatcher.CategoryName, a.Category);
+        Assert.Equal(InternalTransferMatcher.CategoryName, b.Category);
+    }
+
+    [Fact]
+    public async Task MatchAsync_DoesNotMatch_WhenMoreThanTwoBusinessDaysApart_EvenAcrossOnlyFiveCalendarDays()
+    {
+        // Fri 5 Jun -> Wed 10 Jun: only 5 calendar days (would have matched under the old
+        // 5-calendar-day window - this is the overmatching bug UBE-64 fixes), but 3 business days.
+        var a = Transaction("Checking", new DateOnly(2026, 6, 5), -100m, "");
+        var b = Transaction("Savings", new DateOnly(2026, 6, 10), 100m, "");
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
@@ -78,6 +111,69 @@ public class InternalTransferMatcherTests
 
         Assert.Equal(InternalTransferMatcher.CategoryName, a.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, b.Category);
+    }
+
+    [Fact]
+    public async Task MatchAsync_Matches_WhenOnlyThePositiveSideHasBpayInItsDescription()
+    {
+        var negative = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "", description: "EFT WITHDRAWAL");
+        var positive = Transaction("Savings", new DateOnly(2026, 6, 2), 100m, "", description: "BPAY PAYMENT RECEIVED");
+        var bucket = Bucket(2026, 6, negative, positive);
+        var sut = CreateMatcher([bucket]);
+
+        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+
+        Assert.Equal(InternalTransferMatcher.CategoryName, negative.Category);
+        Assert.Equal(InternalTransferMatcher.CategoryName, positive.Category);
+    }
+
+    [Theory]
+    [InlineData("Transfer to Savings")]
+    [InlineData("TRANSFER TO SAVINGS")]
+    [InlineData("internal transfer")]
+    public async Task MatchAsync_Matches_WhenOnlyTheNegativeSideMentionsTransfer_AnyCase(string negativeDescription)
+    {
+        var negative = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "", description: negativeDescription);
+        var positive = Transaction("Savings", new DateOnly(2026, 6, 2), 100m, "", description: "DEPOSIT");
+        var bucket = Bucket(2026, 6, negative, positive);
+        var sut = CreateMatcher([bucket]);
+
+        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+
+        Assert.Equal(InternalTransferMatcher.CategoryName, negative.Category);
+        Assert.Equal(InternalTransferMatcher.CategoryName, positive.Category);
+    }
+
+    [Fact]
+    public async Task MatchAsync_DoesNotMatch_WhenNeitherDescriptionRuleIsSatisfied()
+    {
+        // Amount, date, and account all line up, but neither description carries a qualifying
+        // keyword - this is the other half of the overmatching bug UBE-64 fixes.
+        var negative = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "", description: "WOOLWORTHS 1234");
+        var positive = Transaction("Savings", new DateOnly(2026, 6, 2), 100m, "", description: "REFUND RECEIVED");
+        var bucket = Bucket(2026, 6, negative, positive);
+        var sut = CreateMatcher([bucket]);
+
+        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+
+        Assert.Equal("", negative.Category);
+        Assert.Equal("", positive.Category);
+    }
+
+    [Fact]
+    public async Task MatchAsync_DoesNotMatch_WhenOnlyTheWrongSideHasAQualifyingKeyword()
+    {
+        // BPAY on the *negative* side, and "transfer" on the *positive* side - neither counts,
+        // since the rule is side-specific (BPAY must be on the + side, transfer on the - side).
+        var negative = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "", description: "BPAY PAYMENT SENT");
+        var positive = Transaction("Savings", new DateOnly(2026, 6, 2), 100m, "", description: "Transfer received");
+        var bucket = Bucket(2026, 6, negative, positive);
+        var sut = CreateMatcher([bucket]);
+
+        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+
+        Assert.Equal("", negative.Category);
+        Assert.Equal("", positive.Category);
     }
 
     [Fact]
@@ -137,11 +233,14 @@ public class InternalTransferMatcherTests
         Assert.Equal(1, matchedAddedCount);
     }
 
-    private static Transaction Transaction(string account, DateOnly date, decimal amount, string category) => new()
+    // Defaults to a description that satisfies the BPAY/transfer rule regardless of which side
+    // (positive or negative) it ends up playing, so tests that aren't specifically about the
+    // description rule don't need to think about it.
+    private static Transaction Transaction(string account, DateOnly date, decimal amount, string category, string? description = null) => new()
     {
         Account = account,
         Date = date,
-        Description = $"{account} txn {date}",
+        Description = description ?? $"{account} BPAY Transfer txn {date}",
         Category = category,
         Amount = amount,
     };

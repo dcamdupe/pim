@@ -11,7 +11,7 @@ using Pim.Api.Auth;
 using Pim.Api.Configuration;
 using Pim.Api.Repository;
 using Pim.Api.Services;
-using Pim.Api.Services.CSVParsers;
+using Pim.Api.Services.FileParsers;
 
 namespace Pim.Api.IoC;
 

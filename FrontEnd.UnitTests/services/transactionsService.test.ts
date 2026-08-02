@@ -27,7 +27,7 @@ describe('transactionsService', () => {
     it('POSTs the account and file as multipart form data with the bearer token', async () => {
       const fetchMock = vi.fn().mockResolvedValue({ ok: true })
       vi.stubGlobal('fetch', fetchMock)
-      const file = new File(['csv content'], 'transactions.csv', { type: 'text/csv' })
+      const file = new File(['qif content'], 'transactions.qif', { type: 'text/plain' })
 
       await uploadTransactions('Everyday', file)
 
@@ -48,7 +48,7 @@ describe('transactionsService', () => {
     it('throws TransactionsUploadFailedError when the response is not ok', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
-      await expect(uploadTransactions('Everyday', new File([''], 'transactions.csv'))).rejects.toBeInstanceOf(
+      await expect(uploadTransactions('Everyday', new File([''], 'transactions.qif'))).rejects.toBeInstanceOf(
         TransactionsUploadFailedError,
       )
     })

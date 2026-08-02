@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Pim.Api.Data;
 using Pim.Api.Services;
-using Pim.Api.Services.CSVParsers;
+using Pim.Api.Services.FileParsers;
 using Pim.Api.UnitTests.Helpers;
 
 namespace Pim.Api.UnitTests.Services;
@@ -14,14 +14,14 @@ public class FileProcessorTests
     private const string Account = "Everyday";
 
     [Fact]
-    public async Task ProcessAsync_ThrowsCsvParseException_WhenParserThrows()
+    public async Task ProcessAsync_ThrowsFileParseException_WhenParserThrows()
     {
         var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Throws(new FormatException());
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, []);
 
-        await Assert.ThrowsAsync<CsvParseException>(() => sut.ProcessAsync(Email, Account, CreateFile()));
+        await Assert.ThrowsAsync<FileParseException>(() => sut.ProcessAsync(Email, Account, CreateFile()));
     }
 
     [Fact]
@@ -418,7 +418,7 @@ public class FileProcessorTests
         Assert.All(month.Transactions, t => Assert.Equal(InternalTransferMatcher.CategoryName, t.Category));
     }
 
-    private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.csv");
+    private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.qif");
 
     private static Mock<IFileParserFactory> CreateFactory(Mock<IFileParser> parser)
     {

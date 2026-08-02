@@ -18,12 +18,16 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     // (Program.cs's controller JSON options).
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running
-    // Balance - 6 columns, not the 5 originally assumed. Balance (last column) is never read.
-    private const string ValidCsv =
-        "131150S1,,,,,\n" +
-        "01 JUN 2026,,\"Coffee Shop\",,-4.50,637.57\n" +
-        "15 JUN 2026,,\"Salary\",,2500.00,3137.57\n";
+    private const string ValidQif =
+        "!Type:Bank\n" +
+        "D01/06/26\n" +
+        "MCoffee Shop\n" +
+        "T-4.50\n" +
+        "^\n" +
+        "D15/06/26\n" +
+        "MSalary\n" +
+        "T2500.00\n" +
+        "^\n";
 
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
@@ -62,7 +66,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     public async Task Post_SavesParsedTransactions_WithEmptyCategory()
     {
         var client = AuthenticatedClient();
-        using var content = BuildMultipartContent("Everyday", ValidCsv);
+        using var content = BuildMultipartContent("Everyday", ValidQif);
 
         var response = await client.PostAsync("/transactions/file", content);
 
@@ -85,13 +89,13 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     {
         var client = AuthenticatedClient();
 
-        using (var firstUpload = BuildMultipartContent("Everyday", ValidCsv))
+        using (var firstUpload = BuildMultipartContent("Everyday", ValidQif))
         {
             var firstResponse = await client.PostAsync("/transactions/file", firstUpload);
             Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
         }
 
-        using (var secondUpload = BuildMultipartContent("Everyday", ValidCsv))
+        using (var secondUpload = BuildMultipartContent("Everyday", ValidQif))
         {
             var secondResponse = await client.PostAsync("/transactions/file", secondUpload);
             Assert.Equal(HttpStatusCode.NoContent, secondResponse.StatusCode);
@@ -108,42 +112,10 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
-    public async Task Post_SavesParsedTransactions_ForAQifFile()
-    {
-        var qif =
-            "!Type:Bank\n" +
-            "D01/06/26\n" +
-            "MCoffee Shop\n" +
-            "T-4.50\n" +
-            "^\n" +
-            "D15/06/26\n" +
-            "MSalary\n" +
-            "T2500.00\n" +
-            "^\n";
-        var client = AuthenticatedClient();
-        using var content = BuildMultipartContent("Everyday", qif, "transactions.qif");
-
-        var response = await client.PostAsync("/transactions/file", content);
-
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-
-        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
-        _seededMonthIds.Add(monthId);
-        using var scope = _factory.Services.CreateScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
-        var month = await repository.GetAsync(monthId);
-
-        Assert.NotNull(month);
-        Assert.Equal(2, month.Transactions.Count);
-        Assert.Contains(month.Transactions, t => t.Description == "Coffee Shop" && t.Amount == -4.50m && t.Category == "" && t.Account == "Everyday");
-        Assert.Contains(month.Transactions, t => t.Description == "Salary" && t.Amount == 2500.00m);
-    }
-
-    [Fact]
     public async Task Post_ReturnsBadRequest_WhenFileCannotBeParsed()
     {
         var client = AuthenticatedClient();
-        using var content = BuildMultipartContent("Everyday", "131150S1,,,,,\nnot-a-date,,\"Coffee\",,-4.50,637.57\n");
+        using var content = BuildMultipartContent("Everyday", "!Type:Bank\nDnot-a-date\nMCoffee\nT-4.50\n^\n");
 
         var response = await client.PostAsync("/transactions/file", content);
 
@@ -154,7 +126,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     public async Task Post_ReturnsBadRequest_ForAnUnrecognisedFileExtension()
     {
         var client = AuthenticatedClient();
-        using var content = BuildMultipartContent("Everyday", ValidCsv, "transactions.pdf");
+        using var content = BuildMultipartContent("Everyday", ValidQif, "transactions.pdf");
 
         var response = await client.PostAsync("/transactions/file", content);
 
@@ -228,14 +200,14 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     public async Task Get_ResolvesStartDate_FromRealMinTransactionDate_AfterUpload()
     {
         var client = AuthenticatedClient();
-        using (var upload = BuildMultipartContent("Everyday", ValidCsv))
+        using (var upload = BuildMultipartContent("Everyday", ValidQif))
         {
             var uploadResponse = await client.PostAsync("/transactions/file", upload);
             Assert.Equal(HttpStatusCode.NoContent, uploadResponse.StatusCode);
         }
         _seededMonthIds.Add(TransactionMonth.BuildId(_email, 2026, 6));
 
-        // ValidCsv's earliest row is 01 JUN 2026 - startDate is omitted, so this only succeeds if
+        // ValidQif's earliest row is 01 JUN 2026 - startDate is omitted, so this only succeeds if
         // the real (not mocked) MinTransactionDate flow resolved it correctly.
         var response = await client.GetAsync("/transactions?endDate=2026-06-30");
 
@@ -262,7 +234,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     public async Task Post_PopulatesTransactionDescriptions_WithNewlyParsedDescriptions()
     {
         var client = AuthenticatedClient();
-        using var content = BuildMultipartContent("Everyday", ValidCsv);
+        using var content = BuildMultipartContent("Everyday", ValidQif);
 
         var response = await client.PostAsync("/transactions/file", content);
 
@@ -353,19 +325,25 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     public async Task Post_FlagsBothTransactions_AsInternalTransfer_WhenAnInvertedAmountArrivesInAnotherAccountWithinFiveDays_AcrossSeparateUploads()
     {
         var client = AuthenticatedClient();
-        const string everydayCsv =
-            "131150S1,,,,,\n" +
-            "01 JUN 2026,,\"Transfer to Savings\",,-100.00,637.57\n";
-        const string savingsCsv =
-            "131150S2,,,,,\n" +
-            "03 JUN 2026,,\"Transfer from Everyday\",,100.00,1100.00\n";
+        const string everydayQif =
+            "!Type:Bank\n" +
+            "D01/06/26\n" +
+            "MTransfer to Savings\n" +
+            "T-100.00\n" +
+            "^\n";
+        const string savingsQif =
+            "!Type:Bank\n" +
+            "D03/06/26\n" +
+            "MTransfer from Everyday\n" +
+            "T100.00\n" +
+            "^\n";
 
-        using (var everydayUpload = BuildMultipartContent("Everyday", everydayCsv))
+        using (var everydayUpload = BuildMultipartContent("Everyday", everydayQif))
         {
             var everydayResponse = await client.PostAsync("/transactions/file", everydayUpload);
             Assert.Equal(HttpStatusCode.NoContent, everydayResponse.StatusCode);
         }
-        using (var savingsUpload = BuildMultipartContent("Savings", savingsCsv))
+        using (var savingsUpload = BuildMultipartContent("Savings", savingsQif))
         {
             var savingsResponse = await client.PostAsync("/transactions/file", savingsUpload);
             Assert.Equal(HttpStatusCode.NoContent, savingsResponse.StatusCode);
@@ -390,14 +368,14 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    private static MultipartFormDataContent BuildMultipartContent(string account, string fileText, string fileName = "transactions.csv")
+    private static MultipartFormDataContent BuildMultipartContent(string account, string fileText, string fileName = "transactions.qif")
     {
         var content = new MultipartFormDataContent
         {
             { new StringContent(account), "account" },
         };
         var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes(fileText));
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(fileName.EndsWith(".qif", StringComparison.OrdinalIgnoreCase) ? "text/plain" : "text/csv");
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
         content.Add(fileContent, "file", fileName);
         return content;
     }

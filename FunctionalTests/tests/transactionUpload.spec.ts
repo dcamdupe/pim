@@ -1,19 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Transaction upload', () => {
-  test('uploads a CSV via the Transactions page, and skips duplicates on re-upload', async ({ page }) => {
+  test('uploads a QIF via the Transactions page, and skips duplicates on re-upload', async ({ page }) => {
     const runId = Date.now();
     const desc = `Upload Test ${runId}`;
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
-    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    const dateForUpload = `${day} ${month} ${year}`;
+    const dateForUpload = `${day}/${month}/${year}`;
 
-    // Matches a real TM Bank export: Date, <blank>, Description, <blank>, Amount, running
-    // Balance - 6 columns, not the 5 originally assumed. Balance (last column) is never read.
-    const csv = `131150S1,,,,,\n${dateForUpload},,"${desc}",,-4.50,637.57\n`;
+    const qif = `!Type:Bank\nD${dateForUpload}\nM${desc}\nT-4.50\n^\n`;
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -40,9 +38,9 @@ test.describe('Transaction upload', () => {
 
     await page.locator('#account').selectOption('Playwright Upload Account');
     await page.locator('#file-input').setInputFiles({
-      name: 'transactions.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
     });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
@@ -52,9 +50,9 @@ test.describe('Transaction upload', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption('Playwright Upload Account');
     await page.locator('#file-input').setInputFiles({
-      name: 'transactions.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
     });
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page).toHaveURL(/\/transactions$/);

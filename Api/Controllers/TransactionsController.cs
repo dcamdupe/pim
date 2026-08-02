@@ -42,7 +42,7 @@ public sealed class TransactionsController : ControllerBase
         {
             await _fileProcessor.ProcessAsync(email, request.Account, request.File);
         }
-        catch (CsvParseException)
+        catch (FileParseException)
         {
             return BadRequest("Could not parse the uploaded file.");
         }

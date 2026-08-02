@@ -119,19 +119,29 @@ onMounted(async () => {
     <template v-else>
       <div class="kpi-row" :class="{ 'is-loading': chartsLoading }">
         <DashboardTile
-          :label="`${selectedMonthLabel} profit`"
+          kicker="Profit"
+          :label="selectedMonthLabel"
           :value="formatCurrency(tiles.currentMonthProfit)"
           show-delta
           :delta-pct="tiles.currentMonthProfitDeltaPct"
         />
-        <DashboardTile :label="sixMonthRangeLabel" :value="formatCurrency(tiles.previousSixMonthsProfit)" />
         <DashboardTile
-          :label="`${selectedMonthLabel} Expenses`"
+          kicker="Profit"
+          :label="`Average · ${sixMonthRangeLabel}`"
+          :value="formatCurrency(tiles.previousSixMonthsProfitAverage)"
+        />
+        <DashboardTile
+          kicker="Expenses"
+          :label="selectedMonthLabel"
           :value="formatCurrency(tiles.currentMonthExpenses)"
           show-delta
           :delta-pct="tiles.currentMonthExpensesDeltaPct"
         />
-        <DashboardTile :label="sixMonthRangeLabel" :value="formatCurrency(tiles.previousSixMonthsExpenses)" />
+        <DashboardTile
+          kicker="Expenses"
+          :label="`Average · ${sixMonthRangeLabel}`"
+          :value="formatCurrency(tiles.previousSixMonthsExpensesAverage)"
+        />
       </div>
 
       <div class="charts-row">

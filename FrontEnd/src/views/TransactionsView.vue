@@ -8,6 +8,7 @@ import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptio
 import { filterTransactions } from '../utils/transactionFilters'
 import { formatDateForApi } from '../utils/dateFormat'
 import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
+import { nextVisibleCount, TRANSACTIONS_PAGE_SIZE } from '../utils/infiniteScroll'
 
 interface PendingCategoryChange {
   transaction: Transaction
@@ -34,6 +35,10 @@ const openMenuIndex = ref<number | null>(null)
 const togglingInactive = ref(false)
 const toggleInactiveError = ref('')
 
+const visibleCount = ref(TRANSACTIONS_PAGE_SIZE)
+const scrollSentinel = ref<HTMLElement | null>(null)
+let scrollObserver: IntersectionObserver | null = null
+
 const accountOptions = computed(() => [...new Set(transactions.value.map((t) => t.account))].sort())
 
 // Search/account/category applied, but not the needs-category toggle - this is what the
@@ -51,6 +56,9 @@ const needsCategoryCount = computed(() => searchedAndCategorised.value.filter((t
 const filteredTransactions = computed(() =>
   needsCategoryOnly.value ? searchedAndCategorised.value.filter((t) => !t.category) : searchedAndCategorised.value,
 )
+// Renders only the first page of the (already fully-loaded, single-API-call) filtered set - the
+// scrollObserver below grows visibleCount as the sentinel after the table comes into view.
+const visibleTransactions = computed(() => filteredTransactions.value.slice(0, visibleCount.value))
 
 function computeRange(option: RangeOption): { startDate: string | undefined; endDate: string } {
   const end = new Date()
@@ -177,12 +185,28 @@ async function toggleInactive(transaction: Transaction) {
 onMounted(() => {
   void fetchTransactions()
   document.addEventListener('click', closeRowMenu)
+
+  scrollObserver = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      visibleCount.value = nextVisibleCount(visibleCount.value, filteredTransactions.value.length)
+    }
+  })
 })
 onUnmounted(() => {
   document.removeEventListener('click', closeRowMenu)
+  scrollObserver?.disconnect()
+})
+watch(scrollSentinel, (el, previousEl) => {
+  if (previousEl) {
+    scrollObserver?.unobserve(previousEl)
+  }
+  if (el) {
+    scrollObserver?.observe(el)
+  }
 })
 watch(selectedRange, fetchTransactions)
 watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCategoryOnly], () => {
+  visibleCount.value = TRANSACTIONS_PAGE_SIZE
   saveTransactionFilters({
     range: selectedRange.value,
     search: searchQuery.value,
@@ -247,7 +271,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(t, index) in filteredTransactions" :key="index" :class="{ 'row-inactive': t.inactive }">
+          <tr v-for="(t, index) in visibleTransactions" :key="index" :class="{ 'row-inactive': t.inactive }">
             <td class="date">{{ formatDisplayDate(t.date) }}</td>
             <td class="desc">
               {{ t.description }}
@@ -301,6 +325,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
           </tr>
         </tbody>
       </table>
+      <div v-if="visibleCount < filteredTransactions.length" ref="scrollSentinel" class="scroll-sentinel"></div>
     </div>
 
     <div v-if="pendingCategoryChange" class="modal-backdrop">
@@ -588,6 +613,10 @@ th.actions-header {
 .category-select.needs {
   border-style: dashed;
   color: var(--text);
+}
+
+.scroll-sentinel {
+  height: 1px;
 }
 
 .modal-backdrop {

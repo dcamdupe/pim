@@ -204,3 +204,58 @@ test.describe('Transaction listing', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });
+
+test.describe('Endless scroll', () => {
+  test('renders only the first 100 matching transactions, revealing more as you scroll (UBE-65)', async ({ page }) => {
+    const runId = Date.now();
+    // Distinctive token so a search can scope down to only this test's own rows - the shared,
+    // never-cleaned-up test dataset from other specs would otherwise inflate the row count.
+    const token = `ScrollTest${runId}`;
+    const accountName = `Scroll Test Account ${runId}`;
+    const TOTAL = 120;
+    const PAGE_SIZE = 100;
+
+    const dateForUpload = formatForUpload(new Date());
+    let qif = '!Type:Bank\n';
+    for (let i = 0; i < TOTAL; i++) {
+      qif += `D${dateForUpload}\nM${token} ${i}\nT-1.00\n^\n`;
+    }
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill(accountName);
+    await newRow.locator('input').nth(1).fill('666111');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(accountName);
+    await page.locator('#file-input').setInputFiles({ name: 'scroll.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    await page.getByLabel('Search description').fill(token);
+
+    const rows = page.locator('table.tx tbody tr');
+    await expect(rows).toHaveCount(PAGE_SIZE);
+
+    await page.locator('.scroll-sentinel').scrollIntoViewIfNeeded();
+    await expect(rows).toHaveCount(TOTAL);
+
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});

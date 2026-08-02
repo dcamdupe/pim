@@ -29,7 +29,9 @@ test.describe('Internal transfer matching', () => {
     const runId = Date.now();
     const today = formatForUpload(new Date());
 
-    const transferOut = `IT Out ${runId}`;
+    // The negative-amount leg carries "Transfer" so the pair satisfies UBE-64's description rule
+    // (at least one of: + side has BPAY, - side mentions "transfer").
+    const transferOut = `IT Transfer Out ${runId}`;
     const transferIn = `IT In ${runId}`;
     const controlOut = `IT Control Out ${runId}`;
     const controlIn = `IT Control In ${runId}`;
@@ -113,6 +115,62 @@ test.describe('Internal transfer matching', () => {
     // counted either - net zero change from the transfer pair. The control pair nets to zero
     // regardless of category, so it doesn't move this figure either.
     expect(afterSecondUpload - before).toBe(0);
+
+    // clean up the Settings accounts added for this test.
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+  });
+
+  test('does not auto-flag an inverted-amount pair across accounts when neither description has a qualifying keyword (UBE-64)', async ({ page }) => {
+    const runId = Date.now();
+    const today = formatForUpload(new Date());
+
+    const outDesc = `Woolworths Metro ${runId}`;
+    const inDesc = `Refund Received ${runId}`;
+    const accountA = `IT NoMatch A ${runId}`;
+    const accountB = `IT NoMatch B ${runId}`;
+    const amount = 1000 + (runId % 8000);
+
+    const outCsv = `131150S1,,,,,\n${today},,"${outDesc}",,-${amount}.00,637.57\n`;
+    const inCsv = `131150S2,,,,,\n${today},,"${inDesc}",,${amount}.00,1100.00\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    for (const account of [accountA, accountB]) {
+      await page.getByRole('button', { name: '+ Add account' }).click();
+      const newRow = page.locator('.account-row').last();
+      await newRow.locator('input').nth(0).fill(account);
+      await newRow.locator('input').nth(1).fill('444556');
+      await newRow.locator('select').selectOption('Transaction');
+    }
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(accountA);
+    await page.locator('#file-input').setInputFiles({ name: 'out.csv', mimeType: 'text/csv', buffer: Buffer.from(outCsv) });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(accountB);
+    await page.locator('#file-input').setInputFiles({ name: 'in.csv', mimeType: 'text/csv', buffer: Buffer.from(inCsv) });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    // Same day, opposite amounts, different accounts - would have overmatched before UBE-64.
+    await expect(page.locator('tr', { hasText: outDesc }).locator('.category-select')).toHaveValue('');
+    await expect(page.locator('tr', { hasText: inDesc }).locator('.category-select')).toHaveValue('');
 
     // clean up the Settings accounts added for this test.
     await page.getByRole('link', { name: 'Settings' }).click();

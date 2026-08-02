@@ -31,8 +31,10 @@ resource "aws_subnet" "private" {
 }
 
 # No NAT Gateway / Internet Gateway: the Lambda in these subnets only needs
-# DynamoDB + CloudWatch Logs, both reached via VPC endpoints below, so there's
-# no need for general internet egress.
+# DynamoDB, reached via the gateway endpoint below, so there's no need for
+# general internet egress. CloudWatch Logs delivery for the function doesn't
+# go through the function's VPC ENI at all - it's handled by the Lambda
+# service's own internal infrastructure - so no endpoint is needed for that.
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
@@ -129,17 +131,6 @@ resource "aws_security_group" "lambda" {
   tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-lambda" })
 }
 
-resource "aws_security_group" "vpc_endpoints" {
-  name        = "${var.application}-${var.environment}-vpc-endpoints"
-  description = "Security group for interface VPC endpoints"
-  vpc_id      = aws_vpc.main.id
-
-  # See aws_security_group.lambda above for why this is needed.
-  egress = []
-
-  tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-vpc-endpoints" })
-}
-
 resource "aws_vpc_security_group_egress_rule" "lambda_to_dynamodb_endpoint" {
   security_group_id = aws_security_group.lambda.id
   description       = "HTTPS to the DynamoDB gateway endpoint"
@@ -149,24 +140,6 @@ resource "aws_vpc_security_group_egress_rule" "lambda_to_dynamodb_endpoint" {
   prefix_list_id    = aws_vpc_endpoint.dynamodb.prefix_list_id
 }
 
-resource "aws_vpc_security_group_egress_rule" "lambda_to_logs_endpoint" {
-  security_group_id            = aws_security_group.lambda.id
-  description                  = "HTTPS to the CloudWatch Logs interface endpoint"
-  ip_protocol                  = "tcp"
-  from_port                    = 443
-  to_port                      = 443
-  referenced_security_group_id = aws_security_group.vpc_endpoints.id
-}
-
-resource "aws_vpc_security_group_ingress_rule" "vpc_endpoints_from_lambda" {
-  security_group_id            = aws_security_group.vpc_endpoints.id
-  description                  = "HTTPS from the Lambda"
-  ip_protocol                  = "tcp"
-  from_port                    = 443
-  to_port                      = 443
-  referenced_security_group_id = aws_security_group.lambda.id
-}
-
 resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${data.aws_region.current.region}.dynamodb"
@@ -174,17 +147,6 @@ resource "aws_vpc_endpoint" "dynamodb" {
   route_table_ids   = [aws_route_table.private.id]
 
   tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-dynamodb" })
-}
-
-resource "aws_vpc_endpoint" "logs" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.region}.logs"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = aws_subnet.private[*].id
-  security_group_ids  = [aws_security_group.vpc_endpoints.id]
-  private_dns_enabled = true
-
-  tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-logs" })
 }
 
 data "aws_region" "current" {}

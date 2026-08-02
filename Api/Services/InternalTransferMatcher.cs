@@ -7,7 +7,9 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
 {
     public const string CategoryName = "Internal Transfer";
 
-    private const int MatchWindowDays = 5;
+    private const int MatchWindowBusinessDays = 2;
+    private const string BpayKeyword = "BPAY";
+    private const string TransferKeyword = "transfer";
 
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
@@ -57,7 +59,8 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
                 !matched.Contains(candidate) &&
                 candidate.Account != added.Account &&
                 candidate.Amount == -added.Amount &&
-                Math.Abs(candidate.Date.DayNumber - added.Date.DayNumber) <= MatchWindowDays);
+                BusinessDaysBetween(candidate.Date, added.Date) <= MatchWindowBusinessDays &&
+                HasQualifyingDescription(candidate, added));
 
             if (match is null)
             {
@@ -99,9 +102,13 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
     private async Task<Dictionary<string, TransactionMonth>> FetchExternalBucketsAsync(
         string email, List<Transaction> addedTransactions, IReadOnlyCollection<TransactionMonth> loadedBuckets)
     {
+        // 2 business days can span up to 4 calendar days (e.g. Friday -> the following Tuesday),
+        // so the bucket prefetch window needs that much slack even though the actual match check
+        // below is business-day based, not calendar-day based.
+        const int prefetchCalendarDayBuffer = 4;
         var loadedIds = loadedBuckets.Select(b => b.Id).ToHashSet();
-        var minDate = addedTransactions.Min(t => t.Date).AddDays(-MatchWindowDays);
-        var maxDate = addedTransactions.Max(t => t.Date).AddDays(MatchWindowDays);
+        var minDate = addedTransactions.Min(t => t.Date).AddDays(-prefetchCalendarDayBuffer);
+        var maxDate = addedTransactions.Max(t => t.Date).AddDays(prefetchCalendarDayBuffer);
 
         var externalBuckets = new Dictionary<string, TransactionMonth>();
         foreach (var (year, month) in MonthsInRange(minDate, maxDate))
@@ -120,6 +127,36 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
         }
 
         return externalBuckets;
+    }
+
+    // Counts weekdays strictly after the earlier date, up to and including the later date (so two
+    // dates on the same day are 0 apart, consecutive weekdays are 1 apart, and a weekend in
+    // between doesn't count towards the total).
+    private static int BusinessDaysBetween(DateOnly a, DateOnly b)
+    {
+        var (earlier, later) = a <= b ? (a, b) : (b, a);
+        var businessDays = 0;
+
+        for (var date = earlier; date < later; date = date.AddDays(1))
+        {
+            var next = date.AddDays(1);
+            if (next.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+            {
+                businessDays++;
+            }
+        }
+
+        return businessDays;
+    }
+
+    // At least one of: the `+` amount side's description mentions BPAY, or the `-` amount side's
+    // description mentions "transfer" - case-insensitive either way, since real bank-statement
+    // text case isn't something a matching rule should be sensitive to.
+    private static bool HasQualifyingDescription(Transaction x, Transaction y)
+    {
+        var (positive, negative) = x.Amount > 0 ? (x, y) : (y, x);
+        return positive.Description.Contains(BpayKeyword, StringComparison.OrdinalIgnoreCase) ||
+            negative.Description.Contains(TransferKeyword, StringComparison.OrdinalIgnoreCase);
     }
 
     private static IEnumerable<(int Year, int Month)> MonthsInRange(DateOnly start, DateOnly end)

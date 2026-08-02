@@ -68,7 +68,7 @@ Each step will be confirmed with the user before implementing.
       default "month" range over the new 100-row cap for tests that don't scroll/search-scope) -
       not a regression in this feature. Cleaned via `scripts/clean_local.sh` plus removing the
       specific stale fixed-name accounts; full suite passed 23/23 afterward.
-- [ ] Open PR
+- [x] Open PR: https://github.com/dcamdupe/pim/pull/50
 
 ## Prompt log
 
@@ -78,3 +78,5 @@ Each step will be confirmed with the user before implementing.
   "Endless scroll" scenario, then diagnosed and cleaned up pre-existing environmental test-data
   pollution that was causing unrelated widespread FunctionalTests failures, before confirming the
   full suite green)
+- "commit and raise the PR" (committed, verified the committed tree builds clean before pushing,
+  pushed, opened PR #50 - no staging mistakes this time)

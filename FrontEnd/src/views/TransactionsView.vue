@@ -152,6 +152,10 @@ function declineBulkApply() {
   void applySingleCategory(pending.transaction, pending.category)
 }
 
+function cancelCategoryChange() {
+  pendingCategoryChange.value = null
+}
+
 function closeRowMenu() {
   openMenuIndex.value = null
 }
@@ -309,6 +313,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
           as <strong>{{ pendingCategoryChange.category }}</strong>.
         </p>
         <div class="modal-actions">
+          <button type="button" class="modal-button secondary" @click="cancelCategoryChange">Cancel</button>
           <button type="button" class="modal-button secondary" @click="declineBulkApply">Just this one</button>
           <button type="button" class="modal-button primary" @click="confirmBulkApply">
             Apply to {{ pendingCategoryChange.match.matchingTransactionCount }} similar transactions

@@ -163,4 +163,66 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Saved.')).toBeVisible();
   });
+
+  test('Cancel on the bulk-apply modal saves nothing (UBE-66)', async ({ page }) => {
+    const runId = Date.now();
+    const colesA = `COLES${runId} 0717 TURRAMURRA AUS`;
+    const colesB = `COLES${runId} 0760 ASQUITH AUS`;
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = today.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const year = today.getFullYear();
+    const dateForUpload = `${day} ${month} ${year}`;
+
+    const csv =
+      '131150S1,,,,,\n' +
+      `${dateForUpload},,"${colesA}",,-20.00,637.57\n` +
+      `${dateForUpload},,"${colesB}",,-15.00,617.57\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill('Playwright Cancel Account');
+    await newRow.locator('input').nth(1).fill('555888');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption('Playwright Cancel Account');
+    await page.locator('#file-input').setInputFiles({
+      name: 'transactions.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(csv),
+    });
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page.getByText(colesA)).toBeVisible();
+
+    await page.locator('tr', { hasText: colesA }).locator('.category-select').selectOption('Groceries');
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // Nothing saved - both rows are still uncategorised, even after a reload.
+    await expect(page.locator('tr', { hasText: colesA }).locator('.category-select')).toHaveValue('');
+    await expect(page.locator('tr', { hasText: colesB }).locator('.category-select')).toHaveValue('');
+    await page.reload();
+    await expect(page.locator('tr', { hasText: colesA }).locator('.category-select')).toHaveValue('');
+    await expect(page.locator('tr', { hasText: colesB }).locator('.category-select')).toHaveValue('');
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    const addedRow = page.locator('.account-row').last();
+    await addedRow.getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+  });
 });

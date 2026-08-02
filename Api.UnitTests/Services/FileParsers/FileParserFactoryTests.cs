@@ -1,34 +1,10 @@
 using System.Text;
-using Pim.Api.Services.CSVParsers;
+using Pim.Api.Services.FileParsers;
 
-namespace Pim.Api.UnitTests.Services.CSVParsers;
+namespace Pim.Api.UnitTests.Services.FileParsers;
 
 public class FileParserFactoryTests
 {
-    [Fact]
-    public void Create_ReturnsATmBankCsvParser_ForACsvFile()
-    {
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes("Date,Ignore,Description,Amount,Ignore\n"));
-        var sut = new FileParserFactory();
-
-        var result = sut.Create(stream, "transactions.csv");
-
-        Assert.IsType<TmBankCsvParser>(result);
-    }
-
-    [Theory]
-    [InlineData("transactions.CSV")]
-    [InlineData("transactions.Csv")]
-    public void Create_ReturnsATmBankCsvParser_RegardlessOfExtensionCasing(string fileName)
-    {
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes("Date,Ignore,Description,Amount,Ignore\n"));
-        var sut = new FileParserFactory();
-
-        var result = sut.Create(stream, fileName);
-
-        Assert.IsType<TmBankCsvParser>(result);
-    }
-
     [Fact]
     public void Create_ReturnsAQifParser_ForAQifFile()
     {

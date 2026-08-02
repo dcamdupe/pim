@@ -1,7 +1,7 @@
 using System.Globalization;
 using Pim.Api.Data;
 
-namespace Pim.Api.Services.CSVParsers;
+namespace Pim.Api.Services.FileParsers;
 
 // QIF has no fixed field order or column count - each record is a run of "<tag><value>" lines
 // (D=date, T=amount, P=payee, M=memo, plus others we don't use like N=number/L=class) terminated

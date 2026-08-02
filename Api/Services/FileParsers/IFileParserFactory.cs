@@ -1,4 +1,4 @@
-namespace Pim.Api.Services.CSVParsers;
+namespace Pim.Api.Services.FileParsers;
 
 public interface IFileParserFactory
 {

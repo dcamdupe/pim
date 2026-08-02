@@ -1,8 +1,8 @@
 namespace Pim.Api.Services;
 
-public sealed class CsvParseException : Exception
+public sealed class FileParseException : Exception
 {
-    public CsvParseException(string message, Exception innerException)
+    public FileParseException(string message, Exception innerException)
         : base(message, innerException)
     {
     }

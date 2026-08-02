@@ -264,9 +264,65 @@ public class TransactionUpdateServiceTests
         Assert.Equal(0, stat.UnclassifiedCount);
     }
 
-    private static Transaction Transaction(string description, DateOnly date, string category) => new()
+    [Fact]
+    public async Task DeleteTransactionsForAccountAsync_RemovesOnlyTheMatchingAccountsTransactions_AcrossMonths()
     {
-        Account = Account,
+        var june = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions =
+            [
+                Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "", "Everyday"),
+                Transaction("Interest", new DateOnly(2026, 6, 2), "Income", "Rainy day"),
+            ],
+        };
+        var july = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 7,
+            Transactions = [Transaction("Interest", new DateOnly(2026, 7, 1), "Income", "Rainy day")],
+        };
+        var months = new List<TransactionMonth> { june, july };
+        var allTransactions = june.Transactions.Concat(july.Transactions).ToList();
+        var sut = CreateService(months, [], allTransactions);
+
+        await sut.DeleteTransactionsForAccountAsync(Email, "Rainy day");
+
+        var remainingJune = Assert.Single(june.Transactions);
+        Assert.Equal("Everyday", remainingJune.Account);
+        Assert.Empty(july.Transactions);
+    }
+
+    [Fact]
+    public async Task DeleteTransactionsForAccountAsync_LeavesTheMonthUntouched_WhenNoTransactionMatches()
+    {
+        var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "", "Everyday");
+        var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
+        var months = new List<TransactionMonth> { month };
+        var sut = CreateService(months, [], [existing]);
+
+        await sut.DeleteTransactionsForAccountAsync(Email, "Rainy day");
+
+        Assert.Same(existing, Assert.Single(months).Transactions.Single());
+    }
+
+    [Fact]
+    public async Task DeleteTransactionsForAccountAsync_DoesNothing_WhenTheAccountHasNoTransactions()
+    {
+        var months = new List<TransactionMonth>();
+        var sut = CreateService(months, [], []);
+
+        await sut.DeleteTransactionsForAccountAsync(Email, "Rainy day");
+
+        Assert.Empty(months);
+    }
+
+    private static Transaction Transaction(string description, DateOnly date, string category, string? account = null) => new()
+    {
+        Account = account ?? Account,
         Date = date,
         Description = description,
         Category = category,

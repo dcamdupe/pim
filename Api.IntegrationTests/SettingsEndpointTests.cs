@@ -23,6 +23,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
 
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
+    private readonly List<string> _seededMonthIds = [];
 
     public SettingsEndpointTests(ApiWebApplicationFactory factory)
     {
@@ -46,6 +47,13 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     public async Task DisposeAsync()
     {
         using var scope = _factory.Services.CreateScope();
+
+        var transactionMonths = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        foreach (var id in _seededMonthIds)
+        {
+            await transactionMonths.DeleteAsync(id);
+        }
+
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
         await users.DeleteAsync(_email);
     }
@@ -82,6 +90,109 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
         Assert.Equal(2, body!.Accounts.Count);
         Assert.Contains(body.Accounts, a => a.Name == "Rainy day" && a.Type == Account.AccountType.Savings);
+    }
+
+    [Fact]
+    public async Task Put_RejectsDuplicateAccountNames_CaseInsensitively()
+    {
+        var client = AuthenticatedClient();
+        var request = new SettingsRequest(
+        [
+            new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction },
+            new Account { Name = "everyday", Number = "789012", Type = Account.AccountType.Savings },
+        ]);
+
+        var response = await client.PutAsJsonAsync("/settings", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Put_RejectsRemovingAnExistingAccount()
+    {
+        var client = AuthenticatedClient();
+        // The seeded user already has "Everyday" - this omits it entirely rather than renaming it.
+        var request = new SettingsRequest([new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings }]);
+
+        var response = await client.PutAsJsonAsync("/settings", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var getResponse = await client.GetAsync("/settings");
+        var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
+        Assert.Single(body!.Accounts);
+        Assert.Equal("Everyday", body.Accounts[0].Name);
+    }
+
+    [Fact]
+    public async Task Put_AllowsAddingAndEditingAccounts_WhenNoExistingOnesAreRemoved()
+    {
+        var client = AuthenticatedClient();
+        var request = new SettingsRequest(
+        [
+            new Account { Name = "Everyday", Number = "999999", Type = Account.AccountType.Savings }, // same name, edited number/type
+            new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings }, // newly added
+        ]);
+
+        var response = await client.PutAsJsonAsync("/settings", request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAccount_RemovesTheAccountAndOnlyItsTransactions()
+    {
+        var client = AuthenticatedClient();
+        using var scope = _factory.Services.CreateScope();
+
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
+        var user = (await users.GetAsync(_email))!;
+        user.Accounts.Add(new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings });
+        await users.UpdateAsync(_email, user);
+
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        var transactionMonths = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        await transactionMonths.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions =
+            [
+                new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m },
+                new Transaction { Account = "Rainy day", Date = new DateOnly(2026, 6, 12), Description = "Interest", Category = "Income", Amount = 1.20m },
+            ],
+        });
+
+        var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/account")
+        {
+            Content = JsonContent.Create(new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings }),
+        };
+        var response = await client.SendAsync(deleteRequest);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var getResponse = await client.GetAsync("/settings");
+        var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
+        Assert.DoesNotContain(body!.Accounts, a => a.Name == "Rainy day");
+
+        var month = await transactionMonths.GetAsync(monthId);
+        var remaining = Assert.Single(month!.Transactions);
+        Assert.Equal("Everyday", remaining.Account);
+    }
+
+    [Fact]
+    public async Task DeleteAccount_ReturnsNotFound_WhenNoMatchingAccountExists()
+    {
+        var client = AuthenticatedClient();
+        var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/account")
+        {
+            Content = JsonContent.Create(new Account { Name = "Does Not Exist", Number = "000000", Type = Account.AccountType.Transaction }),
+        };
+
+        var response = await client.SendAsync(deleteRequest);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private HttpClient AuthenticatedClient()

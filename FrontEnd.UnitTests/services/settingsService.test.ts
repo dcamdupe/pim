@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { getSettings, saveSettings, SettingsRequestFailedError } from '../../FrontEnd/src/services/settingsService'
+import { getSettings, saveSettings, deleteAccount, SettingsRequestFailedError } from '../../FrontEnd/src/services/settingsService'
 import { useAuthStore } from '../../FrontEnd/src/stores/auth'
 
 describe('settingsService', () => {
@@ -60,6 +60,33 @@ describe('settingsService', () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
       await expect(saveSettings([])).rejects.toBeInstanceOf(SettingsRequestFailedError)
+    })
+  })
+
+  describe('deleteAccount', () => {
+    it('DELETEs the account with the bearer token', async () => {
+      const account = { name: 'Everyday', number: '123456', type: 'Transaction' as const }
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+      vi.stubGlobal('fetch', fetchMock)
+
+      await deleteAccount(account)
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/settings\/account$/),
+        expect.objectContaining({
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer a-jwt' },
+          body: JSON.stringify(account),
+        }),
+      )
+    })
+
+    it('throws SettingsRequestFailedError when the response is not ok', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+      await expect(deleteAccount({ name: 'Everyday', number: '123456', type: 'Transaction' })).rejects.toBeInstanceOf(
+        SettingsRequestFailedError,
+      )
     })
   })
 })

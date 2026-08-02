@@ -116,12 +116,15 @@ test.describe('Internal transfer matching', () => {
     // regardless of category, so it doesn't move this figure either.
     expect(afterSecondUpload - before).toBe(0);
 
-    // clean up the Settings accounts added for this test.
+    // clean up the Settings accounts added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
   test('does not auto-flag an inverted-amount pair across accounts when neither description has a qualifying keyword (UBE-64)', async ({ page }) => {
@@ -172,11 +175,14 @@ test.describe('Internal transfer matching', () => {
     await expect(page.locator('tr', { hasText: outDesc }).locator('.category-select')).toHaveValue('');
     await expect(page.locator('tr', { hasText: inDesc }).locator('.category-select')).toHaveValue('');
 
-    // clean up the Settings accounts added for this test.
+    // clean up the Settings accounts added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

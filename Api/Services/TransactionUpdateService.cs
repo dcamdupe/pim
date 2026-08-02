@@ -115,6 +115,37 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
         }
     }
 
+    // Description-stats (TransactionCount/UnclassifiedCount) are deliberately left untouched here -
+    // they're soft heuristic counters for description matching, not financial data, and going
+    // slightly stale on account deletion is an accepted simplification.
+    public async Task DeleteTransactionsForAccountAsync(string email, string accountName)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: today);
+
+        var affectedMonths = allTransactions
+            .Where(t => t.Account == accountName)
+            .Select(t => (t.Date.Year, t.Date.Month))
+            .Distinct();
+
+        foreach (var (year, month) in affectedMonths)
+        {
+            var id = TransactionMonth.BuildId(email, year, month);
+            var bucket = await _transactionMonths.GetAsync(id);
+            if (bucket is null)
+            {
+                continue;
+            }
+
+            var remaining = bucket.Transactions.Where(t => t.Account != accountName).ToList();
+            if (remaining.Count != bucket.Transactions.Count)
+            {
+                bucket.Transactions = remaining;
+                await _transactionMonths.UpdateAsync(id, bucket);
+            }
+        }
+    }
+
     private async Task<(TransactionDescriptions Descriptions, bool IsNew)> LoadDescriptionsAsync(string email)
     {
         var descriptions = await _transactionDescriptions.GetAsync(email);

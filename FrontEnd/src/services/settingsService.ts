@@ -48,3 +48,17 @@ export async function saveSettings(accounts: Account[]): Promise<void> {
     throw new SettingsRequestFailedError()
   }
 }
+
+// Deletes immediately (not deferred to the next PUT /settings) - the Api cascades this to delete
+// every transaction linked to the account too.
+export async function deleteAccount(account: Account): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/settings/account`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(account),
+  })
+
+  if (!response.ok) {
+    throw new SettingsRequestFailedError()
+  }
+}

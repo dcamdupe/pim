@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pim.Api.Data;
 using Pim.Api.Repository;
+using Pim.Api.Services;
 
 namespace Pim.Api.Controllers;
 
@@ -11,11 +12,13 @@ namespace Pim.Api.Controllers;
 public sealed class SettingsController : ControllerBase
 {
     private readonly IRepository<User> _users;
+    private readonly ITransactionUpdateService _transactionUpdateService;
     private readonly ILogger<SettingsController> _logger;
 
-    public SettingsController(IRepository<User> users, ILogger<SettingsController> logger)
+    public SettingsController(IRepository<User> users, ITransactionUpdateService transactionUpdateService, ILogger<SettingsController> logger)
     {
         _users = users;
+        _transactionUpdateService = transactionUpdateService;
         _logger = logger;
     }
 
@@ -40,10 +43,55 @@ public sealed class SettingsController : ControllerBase
             return NotFound();
         }
 
+        if (HasDuplicateNames(request.Accounts))
+        {
+            return BadRequest("Account names must be unique.");
+        }
+
+        if (RemovesAnExistingAccount(user.Accounts, request.Accounts))
+        {
+            return BadRequest("Accounts cannot be removed via PUT /settings - use DELETE /settings/account.");
+        }
+
         user.Accounts = request.Accounts;
         await _users.UpdateAsync(user.Email, user);
 
         return NoContent();
+    }
+
+    // Matches on the full account (not just name) as a defence-in-depth check against a stale or
+    // racy client payload, even though name is the only field that actually links to transactions.
+    [HttpDelete("settings/account")]
+    public async Task<ActionResult> DeleteAccount(Account account)
+    {
+        var user = await GetAuthenticatedUser();
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        var removed = user.Accounts.RemoveAll(a => a.Name == account.Name && a.Number == account.Number && a.Type == account.Type);
+        if (removed == 0)
+        {
+            return NotFound();
+        }
+
+        await _users.UpdateAsync(user.Email, user);
+        await _transactionUpdateService.DeleteTransactionsForAccountAsync(user.Email, account.Name);
+
+        return NoContent();
+    }
+
+    private static bool HasDuplicateNames(List<Account> accounts) =>
+        accounts.GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
+
+    // Removal must go through DELETE /settings/account (which also cascades to that account's
+    // transactions) - PUT can still add and edit accounts, but every name currently on the user
+    // must still be present somewhere in the new list.
+    private static bool RemovesAnExistingAccount(List<Account> existingAccounts, List<Account> requestedAccounts)
+    {
+        var requestedNames = requestedAccounts.Select(a => a.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return existingAccounts.Any(a => !requestedNames.Contains(a.Name));
     }
 
     private async Task<User?> GetAuthenticatedUser()

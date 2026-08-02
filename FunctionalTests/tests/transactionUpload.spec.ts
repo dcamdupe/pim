@@ -65,7 +65,7 @@ test.describe('Transaction upload', () => {
     await page.getByRole('link', { name: 'Settings' }).click();
     const addedRow = page.locator('.account-row').last();
     await addedRow.getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

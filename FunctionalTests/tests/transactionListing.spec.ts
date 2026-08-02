@@ -84,8 +84,8 @@ test.describe('Transaction listing', () => {
     await page.getByRole('link', { name: 'Settings' }).click();
     const addedRow = page.locator('.account-row').last();
     await addedRow.getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
   test('filters by search, account, category, and needs-a-category', async ({ page }) => {
@@ -194,12 +194,14 @@ test.describe('Transaction listing', () => {
     await page.getByLabel('Search description').fill('');
 
     // clean up the two Settings accounts added for this test - both were appended at the end
-    // (in order), so removing "last" twice removes exactly these two, matching the single-account
-    // cleanup pattern used elsewhere in this file.
+    // (in order), so removing "last" twice removes exactly these two. Removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

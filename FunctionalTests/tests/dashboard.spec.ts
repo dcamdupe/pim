@@ -151,11 +151,12 @@ test.describe('Dashboard tiles', () => {
     await expect(page.locator('.kpi-row .kpi').nth(1).locator('.delta-pill')).not.toBeVisible();
     await expect(page.locator('.kpi-row .kpi').nth(3).locator('.delta-pill')).not.toBeVisible();
 
-    // clean up the Settings account added for this test.
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });
 
@@ -218,11 +219,12 @@ test.describe('Month filter', () => {
     const incomeVsExpensesCard = page.locator('.card', { has: page.locator('h2', { hasText: 'Income vs. expenses' }) });
     await expect(incomeVsExpensesCard.locator('.card-sub')).toHaveText(expectedRangeLabel);
 
-    // clean up the Settings account added for this test.
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });
 
@@ -277,10 +279,11 @@ test.describe('Recent transactions', () => {
     await card.getByRole('link', { name: 'View all →' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 
-    // clean up the Settings account added for this test.
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

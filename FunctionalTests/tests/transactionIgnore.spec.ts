@@ -69,10 +69,11 @@ test.describe('Ignoring transactions', () => {
     await row.getByRole('menuitem', { name: 'Set active' }).click();
     await expect(row.getByText('Inactive')).toHaveCount(0);
 
-    // clean up the Settings account added for this test.
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });

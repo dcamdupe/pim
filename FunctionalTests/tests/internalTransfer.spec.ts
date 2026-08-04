@@ -88,9 +88,9 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
     const afterFirstUpload = await currentMonthExpensesTileValue(page);
-    // Only the still-uncategorized transferOut counts as an expense here - the control pair
-    // already nets to zero regardless of category.
-    expect(afterFirstUpload - before).toBe(transferAmount);
+    // Uncategorized transactions carry no Type (UBE-75) and so aren't counted as an expense until
+    // categorised - the control pair already nets to zero regardless of category either way.
+    expect(afterFirstUpload - before).toBe(0);
 
     // Account B's leg arrives in a separate import - matching must look across the already-stored
     // transaction from the first upload, not just within this file's own rows.

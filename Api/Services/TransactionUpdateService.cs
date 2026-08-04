@@ -8,23 +8,27 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<DescriptionMapping> _descriptionMappings;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
+    private readonly IRepository<User> _users;
     private readonly ITransactionQueryService _transactionQueryService;
 
     public TransactionUpdateService(
         IRepository<TransactionMonth> transactionMonths,
         IRepository<DescriptionMapping> descriptionMappings,
         IRepository<TransactionDescriptions> transactionDescriptions,
+        IRepository<User> users,
         ITransactionQueryService transactionQueryService)
     {
         _transactionMonths = transactionMonths;
         _descriptionMappings = descriptionMappings;
         _transactionDescriptions = transactionDescriptions;
+        _users = users;
         _transactionQueryService = transactionQueryService;
     }
 
     public async Task UpdateTransactionsAsync(string email, List<Transaction> transactions)
     {
         (TransactionDescriptions Descriptions, bool IsNew)? descriptionsContext = null;
+        List<Category>? categories = null;
 
         foreach (var group in transactions.GroupBy(t => (t.Date.Year, t.Date.Month)))
         {
@@ -47,6 +51,9 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
 
                     if (previousCategory != updated.Category)
                     {
+                        categories ??= await LoadCategoriesAsync(email);
+                        Category.StampTransaction(updated, categories);
+
                         descriptionsContext ??= await LoadDescriptionsAsync(email);
                         TransactionDescriptionStatsHelper.AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, updated.Description, previousCategory, updated.Category);
                     }
@@ -69,8 +76,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     {
         await UpsertMappingAsync(email, descriptionStart, category);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: today);
+        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
 
         var affectedMonths = allTransactions
             .Where(t => t.Description.StartsWith(descriptionStart, StringComparison.Ordinal))
@@ -78,6 +84,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
             .Distinct();
 
         (TransactionDescriptions Descriptions, bool IsNew)? descriptionsContext = null;
+        List<Category>? categories = null;
 
         foreach (var (year, month) in affectedMonths)
         {
@@ -100,6 +107,8 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
                 TransactionDescriptionStatsHelper.AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, transaction.Description, transaction.Category, category);
 
                 transaction.Category = category;
+                categories ??= await LoadCategoriesAsync(email);
+                Category.StampTransaction(transaction, categories);
                 changed = true;
             }
 
@@ -120,8 +129,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     // slightly stale on account deletion is an accepted simplification.
     public async Task DeleteTransactionsForAccountAsync(string email, string accountName)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: today);
+        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
 
         var affectedMonths = allTransactions
             .Where(t => t.Account == accountName)
@@ -151,8 +159,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     // deliberately left untouched here for the same reason as DeleteTransactionsForAccountAsync.
     public async Task RemoveCategoryFromTransactionsAsync(string email, string categoryName)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: today);
+        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
 
         var affectedMonths = allTransactions
             .Where(t => t.Category == categoryName)
@@ -172,6 +179,8 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
             foreach (var transaction in bucket.Transactions.Where(t => t.Category == categoryName))
             {
                 transaction.Category = string.Empty;
+                transaction.Type = null;
+                transaction.Inactive = null;
                 changed = true;
             }
 
@@ -180,6 +189,21 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
                 await _transactionMonths.UpdateAsync(id, bucket);
             }
         }
+    }
+
+    // These callers all want "every transaction, unbounded" - GetTransactionsAsync just requires a
+    // concrete endDate, so this stands in for "no upper bound" rather than a real cutoff. A plain
+    // UTC "today" undercounts: local time can run up to ~14 hours ahead of UTC, so a transaction
+    // dated "today" in the caller's real timezone can still be "tomorrow" from UTC's point of view
+    // until UTC catches up - silently excluding it from GetTransactionsAsync's `t.Date <= endDate`
+    // filter. Padding by a few days comfortably covers that gap without needing to know the user's
+    // actual timezone.
+    private static DateOnly UnboundedEndDate() => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(3);
+
+    private async Task<List<Category>> LoadCategoriesAsync(string email)
+    {
+        var user = await _users.GetAsync(email);
+        return user?.Categories ?? [];
     }
 
     private async Task<(TransactionDescriptions Descriptions, bool IsNew)> LoadDescriptionsAsync(string email)

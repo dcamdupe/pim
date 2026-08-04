@@ -61,6 +61,50 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
+    public async Task UpdateTransactionsAsync_StampsTypeAndInactive_FromTheNewCategorysDefinition_WhenCategoryChanges()
+    {
+        var month = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "")],
+        };
+        var months = new List<TransactionMonth> { month };
+        var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
+        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Inactive } };
+        var sut = CreateService(months, categories: categories);
+
+        await sut.UpdateTransactionsAsync(Email, [updated]);
+
+        var stored = Assert.Single(months).Transactions.Single();
+        Assert.Equal(Category.CategoryType.Inactive, stored.Type);
+        Assert.True(stored.Inactive);
+    }
+
+    [Fact]
+    public async Task UpdateTransactionsAsync_DoesNotReapplyTheCategoryStamp_WhenOnlyInactiveChangesAndCategoryStaysTheSame()
+    {
+        var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
+        existing.Type = Category.CategoryType.Expense;
+        existing.Inactive = false;
+        var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
+        var months = new List<TransactionMonth> { month };
+        // Same category as the existing "Dining" definition would produce (not Inactive-typed), but
+        // the category itself is unchanged here - a manual "Set inactive" toggle should stick rather
+        // than being immediately re-stamped back to the category definition's own Inactive value.
+        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense } };
+        var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
+        updated.Type = Category.CategoryType.Expense;
+        updated.Inactive = true;
+        var sut = CreateService(months, categories: categories);
+
+        await sut.UpdateTransactionsAsync(Email, [updated]);
+
+        Assert.True(Assert.Single(months).Transactions.Single().Inactive);
+    }
+
+    [Fact]
     public async Task UpdateTransactionsAsync_DecrementsUnclassifiedCount_WhenATransactionBecomesClassified()
     {
         var month = new TransactionMonth
@@ -203,6 +247,27 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
+    public async Task ApplyDescriptionMappingAsync_StampsTypeAndInactive_FromTheCategorysDefinition()
+    {
+        var june = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("COLES 0717 TURRAMURRA AUS", new DateOnly(2026, 6, 1), "")],
+        };
+        var months = new List<TransactionMonth> { june };
+        var categories = new List<Category> { new() { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense } };
+        var sut = CreateService(months, [], june.Transactions, categories: categories);
+
+        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
+
+        var transaction = june.Transactions.Single();
+        Assert.Equal(Category.CategoryType.Expense, transaction.Type);
+        Assert.False(transaction.Inactive);
+    }
+
+    [Fact]
     public async Task ApplyDescriptionMappingAsync_DecrementsUnclassifiedCount_ForEachTransactionItReclassifies()
     {
         var june = new TransactionMonth
@@ -323,6 +388,9 @@ public class TransactionUpdateServiceTests
     [Fact]
     public async Task RemoveCategoryFromTransactionsAsync_ClearsOnlyTheMatchingCategory_AcrossMonths()
     {
+        var coles = Transaction("Coles", new DateOnly(2026, 6, 1), "Groceries");
+        coles.Type = Category.CategoryType.Expense;
+        coles.Inactive = false;
         var june = new TransactionMonth
         {
             Email = Email,
@@ -330,7 +398,7 @@ public class TransactionUpdateServiceTests
             Month = 6,
             Transactions =
             [
-                Transaction("Coles", new DateOnly(2026, 6, 1), "Groceries"),
+                coles,
                 Transaction("Salary", new DateOnly(2026, 6, 2), "Income"),
             ],
         };
@@ -347,7 +415,10 @@ public class TransactionUpdateServiceTests
 
         await sut.RemoveCategoryFromTransactionsAsync(Email, "Groceries");
 
-        Assert.Equal("", june.Transactions.Single(t => t.Description == "Coles").Category);
+        var colesAfter = june.Transactions.Single(t => t.Description == "Coles");
+        Assert.Equal("", colesAfter.Category);
+        Assert.Null(colesAfter.Type);
+        Assert.Null(colesAfter.Inactive);
         Assert.Equal("Income", june.Transactions.Single(t => t.Description == "Salary").Category);
         Assert.Equal("", july.Transactions.Single().Category);
     }
@@ -390,16 +461,19 @@ public class TransactionUpdateServiceTests
         List<TransactionMonth> months,
         List<DescriptionMapping>? mappings = null,
         List<Transaction>? allTransactionsForQuery = null,
-        List<TransactionDescriptions>? transactionDescriptions = null)
+        List<TransactionDescriptions>? transactionDescriptions = null,
+        List<Category>? categories = null)
     {
         var transactionRepository = RepositoryMockFactory.Create(months);
         var mappingRepository = RepositoryMockFactory.Create(mappings ?? []);
         var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
+        var users = new List<User> { new() { Email = Email, PasswordHash = "unused", Categories = categories ?? [] } };
+        var userRepository = RepositoryMockFactory.Create(users);
         var queryService = new Mock<ITransactionQueryService>();
         queryService
             .Setup(s => s.GetTransactionsAsync(Email, null, It.IsAny<DateOnly>()))
             .ReturnsAsync(allTransactionsForQuery ?? []);
 
-        return new TransactionUpdateService(transactionRepository.Object, mappingRepository.Object, transactionDescriptionsRepository.Object, queryService.Object);
+        return new TransactionUpdateService(transactionRepository.Object, mappingRepository.Object, transactionDescriptionsRepository.Object, userRepository.Object, queryService.Object);
     }
 }

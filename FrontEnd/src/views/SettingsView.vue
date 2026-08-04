@@ -9,6 +9,7 @@ import {
   type Account,
   type AccountType,
   type CategoryDefinition,
+  type CategoryType,
 } from '../services/settingsService'
 import { refreshCategories } from '../services/categoriesService'
 import { COLOUR_PALETTE } from '../constants/colourPalette'
@@ -20,6 +21,7 @@ interface PendingRemoval {
 
 const INTERNAL_TRANSFER = 'Internal Transfer'
 const accountTypes: AccountType[] = ['Credit', 'Transaction', 'Savings']
+const categoryTypes: CategoryType[] = ['Income', 'Expense', 'Inactive']
 
 const accounts = ref<Account[]>([])
 const loading = ref(true)
@@ -36,6 +38,7 @@ const categories = ref<CategoryDefinition[]>([])
 const newCategoryName = ref('')
 const newCategoryColour = ref<string>(COLOUR_PALETTE[27]) // Blue 500 - a neutral, visible default swatch
 const showColourPicker = ref(false)
+const newCategoryType = ref<CategoryType>('Expense')
 const addingCategory = ref(false)
 const addCategoryError = ref('')
 
@@ -136,7 +139,11 @@ async function onAddCategory() {
     return
   }
 
-  const category: CategoryDefinition = { name: newCategoryName.value.trim(), colour: newCategoryColour.value }
+  const category: CategoryDefinition = {
+    name: newCategoryName.value.trim(),
+    colour: newCategoryColour.value,
+    type: newCategoryType.value,
+  }
   addingCategory.value = true
   try {
     await addCategory(category)
@@ -144,6 +151,7 @@ async function onAddCategory() {
     await refreshCategories()
     newCategoryName.value = ''
     newCategoryColour.value = COLOUR_PALETTE[27]
+    newCategoryType.value = 'Expense'
   } catch {
     addCategoryError.value = 'Could not add the category. Please try again.'
   } finally {
@@ -246,6 +254,7 @@ function cancelRemoveCategory() {
         <div v-for="category in categories" :key="category.name" class="category-row">
           <span class="swatch" :style="{ background: category.colour }" aria-hidden="true"></span>
           <span class="category-name">{{ category.name }}</span>
+          <span class="category-type">{{ category.type }}</span>
           <button
             type="button"
             class="remove-button"
@@ -300,6 +309,13 @@ function cancelRemoveCategory() {
               ></button>
             </div>
           </div>
+        </div>
+
+        <div class="field">
+          <label for="new-category-type">Type</label>
+          <select id="new-category-type" v-model="newCategoryType">
+            <option v-for="type in categoryTypes" :key="type" :value="type">{{ type }}</option>
+          </select>
         </div>
 
         <button type="button" class="add-button" :disabled="addingCategory" @click="onAddCategory">
@@ -471,6 +487,11 @@ label {
 .category-name {
   flex: 1;
   color: var(--text);
+}
+
+.category-type {
+  font-size: 12px;
+  color: var(--text-h);
 }
 
 .add-category-row {

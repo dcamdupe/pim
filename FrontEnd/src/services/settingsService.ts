@@ -20,9 +20,12 @@ function authHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${useAuthStore().token}` }
 }
 
+export type CategoryType = 'Income' | 'Expense' | 'Inactive'
+
 export interface CategoryDefinition {
   name: string
   colour: string
+  type: CategoryType
 }
 
 export interface Settings {

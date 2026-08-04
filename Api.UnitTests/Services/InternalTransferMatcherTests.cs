@@ -26,6 +26,26 @@ public class InternalTransferMatcherTests
     }
 
     [Fact]
+    public async Task MatchAsync_StampsTypeAndInactive_FromTheInternalTransferCategoryDefinition_WhenOneIsSeeded()
+    {
+        var a = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "");
+        var b = Transaction("Savings", new DateOnly(2026, 6, 3), 100m, "");
+        var bucket = Bucket(2026, 6, a, b);
+        var categories = new List<Category>
+        {
+            new() { Name = InternalTransferMatcher.CategoryName, Colour = "#6b7280", Type = Category.CategoryType.Inactive },
+        };
+        var sut = CreateMatcher([bucket], categories);
+
+        await sut.MatchAsync(Email, [a, b], [bucket]);
+
+        Assert.Equal(Category.CategoryType.Inactive, a.Type);
+        Assert.True(a.Inactive);
+        Assert.Equal(Category.CategoryType.Inactive, b.Type);
+        Assert.True(b.Inactive);
+    }
+
+    [Fact]
     public async Task MatchAsync_DoesNotMatch_WhenBothTransactionsAreInTheSameAccount()
     {
         var a = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "");
@@ -183,7 +203,10 @@ public class InternalTransferMatcherTests
         var mayBucket = Bucket(2026, 5, oldTransaction);
         var months = new List<TransactionMonth> { mayBucket };
         var monthsRepo = RepositoryMockFactory.Create(months);
-        var sut = new InternalTransferMatcher(monthsRepo.Object, RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object);
+        var sut = new InternalTransferMatcher(
+            monthsRepo.Object,
+            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object,
+            RepositoryMockFactory.Create(new List<User>()).Object);
 
         var added = Transaction("Checking", new DateOnly(2026, 6, 2), -100m, "");
         var juneBucket = Bucket(2026, 6, added);
@@ -206,7 +229,7 @@ public class InternalTransferMatcherTests
             new() { Email = Email, Descriptions = [new TransactionDescriptionStat { Description = oldTransaction.Description, TransactionCount = 1, UnclassifiedCount = 1 }] },
         };
         var descriptionsRepo = RepositoryMockFactory.Create(descriptions);
-        var sut = new InternalTransferMatcher(monthsRepo.Object, descriptionsRepo.Object);
+        var sut = new InternalTransferMatcher(monthsRepo.Object, descriptionsRepo.Object, RepositoryMockFactory.Create(new List<User>()).Object);
 
         var added = Transaction("Checking", new DateOnly(2026, 6, 2), -100m, "");
         var juneBucket = Bucket(2026, 6, added);
@@ -253,6 +276,9 @@ public class InternalTransferMatcherTests
         Transactions = [.. transactions],
     };
 
-    private static InternalTransferMatcher CreateMatcher(List<TransactionMonth> months) =>
-        new(RepositoryMockFactory.Create(months).Object, RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object);
+    private static InternalTransferMatcher CreateMatcher(List<TransactionMonth> months, List<Category>? categories = null) =>
+        new(
+            RepositoryMockFactory.Create(months).Object,
+            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object,
+            RepositoryMockFactory.Create(new List<User> { new() { Email = Email, PasswordHash = "unused", Categories = categories ?? [] } }).Object);
 }

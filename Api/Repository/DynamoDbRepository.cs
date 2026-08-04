@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 
@@ -9,6 +10,16 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
 {
     private const string IdAttribute = "id";
     private const string DataAttribute = "data";
+
+    // Matches Program.cs's controller JSON options - enums round-trip as readable strings (e.g.
+    // "Expense") rather than the default int encoding, so stored data is human-inspectable/editable
+    // (as setup_local.sh's seed data relies on) and consistent with what the Api's own HTTP layer
+    // writes/reads. JsonStringEnumConverter's reader still accepts the old int encoding too, so this
+    // doesn't break any enum values written before this option existed.
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private static readonly PropertyInfo IdProperty = typeof(T)
         .GetProperties()
@@ -35,7 +46,7 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
         }
 
         _logger.LogInformation("DynamoDB GetAsync response: table={Table} id={Id} found=true", _tableName, id);
-        return JsonSerializer.Deserialize<T>(response.Item[DataAttribute].S);
+        return JsonSerializer.Deserialize<T>(response.Item[DataAttribute].S, JsonOptions);
     }
 
     public Task AddAsync(T entity) => PutAsync("AddAsync", (string)IdProperty.GetValue(entity)!, entity);
@@ -55,7 +66,7 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
         await _client.PutItemAsync(_tableName, new Dictionary<string, AttributeValue>
         {
             [IdAttribute] = new(id),
-            [DataAttribute] = new(JsonSerializer.Serialize(entity)),
+            [DataAttribute] = new(JsonSerializer.Serialize(entity, JsonOptions)),
         });
         _logger.LogInformation("DynamoDB {Operation} response: table={Table} id={Id}", operation, _tableName, id);
     }

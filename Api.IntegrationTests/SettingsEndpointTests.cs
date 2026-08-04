@@ -199,7 +199,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     public async Task AddCategory_AppendsTheCategory()
     {
         var client = AuthenticatedClient();
-        var category = new Category { Name = "Groceries", Colour = "#00ff00" };
+        var category = new Category { Name = "Groceries", Colour = "#00ff00", Type = Category.CategoryType.Expense };
 
         var response = await client.PostAsJsonAsync("/settings/category", category);
 
@@ -210,12 +210,27 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     }
 
     [Fact]
+    public async Task AddCategory_RoundTripsTheInactiveTypeOption()
+    {
+        var client = AuthenticatedClient();
+        var category = new Category { Name = "Internal Transfer 2", Colour = "#6b7280", Type = Category.CategoryType.Inactive };
+
+        var response = await client.PostAsJsonAsync("/settings/category", category);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var getResponse = await client.GetAsync("/settings");
+        var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
+        var stored = body!.Categories.Single(c => c.Name == "Internal Transfer 2");
+        Assert.Equal(Category.CategoryType.Inactive, stored.Type);
+    }
+
+    [Fact]
     public async Task AddCategory_RejectsDuplicateNames_CaseInsensitively()
     {
         var client = AuthenticatedClient();
-        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Groceries", Colour = "#00ff00" });
+        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Groceries", Colour = "#00ff00", Type = Category.CategoryType.Expense });
 
-        var response = await client.PostAsJsonAsync("/settings/category", new Category { Name = "groceries", Colour = "#ff0000" });
+        var response = await client.PostAsJsonAsync("/settings/category", new Category { Name = "groceries", Colour = "#ff0000", Type = Category.CategoryType.Expense });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -224,7 +239,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     public async Task DeleteCategory_RemovesTheCategoryAndClearsItFromTransactionsAcrossMonths()
     {
         var client = AuthenticatedClient();
-        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Groceries", Colour = "#00ff00" });
+        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Groceries", Colour = "#00ff00", Type = Category.CategoryType.Expense });
 
         using var scope = _factory.Services.CreateScope();
         var transactionMonths = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
@@ -258,7 +273,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
 
         var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/category")
         {
-            Content = JsonContent.Create(new Category { Name = "Groceries", Colour = "#00ff00" }),
+            Content = JsonContent.Create(new Category { Name = "Groceries", Colour = "#00ff00", Type = Category.CategoryType.Expense }),
         };
         var response = await client.SendAsync(deleteRequest);
 
@@ -282,7 +297,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var client = AuthenticatedClient();
         var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/category")
         {
-            Content = JsonContent.Create(new Category { Name = "Does Not Exist", Colour = "#000000" }),
+            Content = JsonContent.Create(new Category { Name = "Does Not Exist", Colour = "#000000", Type = Category.CategoryType.Expense }),
         };
 
         var response = await client.SendAsync(deleteRequest);
@@ -294,11 +309,11 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     public async Task DeleteCategory_RejectsInternalTransfer()
     {
         var client = AuthenticatedClient();
-        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Internal Transfer", Colour = "#000000" });
+        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Internal Transfer", Colour = "#000000", Type = Category.CategoryType.Expense });
 
         var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/category")
         {
-            Content = JsonContent.Create(new Category { Name = "Internal Transfer", Colour = "#000000" }),
+            Content = JsonContent.Create(new Category { Name = "Internal Transfer", Colour = "#000000", Type = Category.CategoryType.Expense }),
         };
         var response = await client.SendAsync(deleteRequest);
 

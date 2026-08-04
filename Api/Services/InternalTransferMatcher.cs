@@ -13,11 +13,16 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
 
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
+    private readonly IRepository<User> _users;
 
-    public InternalTransferMatcher(IRepository<TransactionMonth> transactionMonths, IRepository<TransactionDescriptions> transactionDescriptions)
+    public InternalTransferMatcher(
+        IRepository<TransactionMonth> transactionMonths,
+        IRepository<TransactionDescriptions> transactionDescriptions,
+        IRepository<User> users)
     {
         _transactionMonths = transactionMonths;
         _transactionDescriptions = transactionDescriptions;
+        _users = users;
     }
 
     public async Task MatchAsync(string email, List<Transaction> addedTransactions, IReadOnlyCollection<TransactionMonth> loadedBuckets)
@@ -46,6 +51,7 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
         var matched = new HashSet<Transaction>();
         var dirtyExternalBuckets = new HashSet<TransactionMonth>();
         (TransactionDescriptions Descriptions, bool IsNew)? descriptionsContext = null;
+        List<Category>? categories = null;
 
         foreach (var added in addedTransactions)
         {
@@ -70,6 +76,9 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
             var previousMatchCategory = match.Category;
             added.Category = CategoryName;
             match.Category = CategoryName;
+            categories ??= (await _users.GetAsync(email))?.Categories ?? [];
+            Category.StampTransaction(added, categories);
+            Category.StampTransaction(match, categories);
             matched.Add(added);
             matched.Add(match);
 

@@ -11,8 +11,8 @@ import { useAuthStore } from '../../FrontEnd/src/stores/auth'
 const STORAGE_KEY = 'pim.categories'
 
 const categories = [
-  { name: 'Groceries', colour: '#00ff00' },
-  { name: 'Dining', colour: '#eda100' },
+  { name: 'Groceries', colour: '#00ff00', type: 'Expense' as const },
+  { name: 'Dining', colour: '#eda100', type: 'Expense' as const },
 ]
 
 describe('categoriesService', () => {

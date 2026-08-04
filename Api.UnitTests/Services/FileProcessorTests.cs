@@ -373,6 +373,37 @@ public class FileProcessorTests
     }
 
     [Fact]
+    public async Task ProcessAsync_StampsTypeAndInactive_FromTheMappedCategorysDefinition()
+    {
+        var mapping = new DescriptionMapping
+        {
+            Email = Email,
+            Mappings = [new DescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
+        };
+        var user = new User
+        {
+            Email = Email,
+            PasswordHash = "hash",
+            Categories = [new Category { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense }],
+        };
+        var parser = new Mock<IFileParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
+        ]);
+        var factory = CreateFactory(parser);
+        var months = new List<TransactionMonth>();
+        var sut = CreateProcessor(factory, months, users: [user], descriptionMappings: [mapping]);
+
+        await sut.ProcessAsync(Email, Account, CreateFile());
+
+        var month = Assert.Single(months);
+        var transaction = month.Transactions.Single();
+        Assert.Equal(Category.CategoryType.Expense, transaction.Type);
+        Assert.False(transaction.Inactive);
+    }
+
+    [Fact]
     public async Task ProcessAsync_PrefersTheMostPreciseDescriptionMapping_WhenMoreThanOneMatches()
     {
         var mapping = new DescriptionMapping
@@ -438,7 +469,7 @@ public class FileProcessorTests
         var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
         var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
         var creditDescriptionMappingRepository = RepositoryMockFactory.Create(descriptionMappings ?? []);
-        var internalTransferMatcher = new InternalTransferMatcher(transactionRepository.Object, transactionDescriptionsRepository.Object);
+        var internalTransferMatcher = new InternalTransferMatcher(transactionRepository.Object, transactionDescriptionsRepository.Object, userRepository.Object);
         return new FileProcessor(
             factory.Object,
             transactionRepository.Object,

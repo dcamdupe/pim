@@ -142,7 +142,8 @@ up; `TransactionUpdateService` needs the same.
       preserved when category unchanged; Type/Inactive cleared on category deletion)
 - [x] `transactionsService.ts` - `type` field on `Transaction`
 - [x] `settingsService.ts`/`categoriesService.ts` - `inactive`/`type` fields
-- [x] `SettingsView.vue` - Inactive checkbox + Type dropdown, list indicators
+- [x] `SettingsView.vue` - Type dropdown (Income/Expense/Inactive), list indicators (superseded by
+      the follow-up below - the separate Inactive checkbox was removed)
 - [x] `dashboardMetrics.ts` - use `type`/`inactive` instead of hardcoded category names
 - [x] `FrontEnd.UnitTests` updated (112/112 passing - `dashboardMetrics.test.ts` fixtures switched
       from category-name-based to Type/Inactive-based, matching the new dashboard logic)
@@ -176,7 +177,65 @@ Confirmed visually in light + dark: Type/Inactive render correctly on all seeded
 (Internal Transfer shows "Expense" + "Inactive"), and a newly-added category with Type=Income,
 Inactive=true round-trips correctly through the add form.
 
+## Follow-up: Inactive folded into the Type enum
+
+Per feedback after the above was done: `Inactive` moved from a standalone `bool` field on `Category`
+into a third `CategoryType` enum member (`Income`, `Expense`, `Inactive`), rather than an orthogonal
+flag alongside Type.
+
+- `Api/Data/Category.cs` - `Inactive` property removed; `enum CategoryType` gained `Inactive`.
+  `StampTransaction` now derives `Transaction.Inactive` from `category.Type == CategoryType.Inactive`
+  (`null` when no category matches, same as before) instead of reading a separate field - "the enum
+  value of Inactive should have the same effect" the old flag did.
+- `SettingsController` - unaffected (still binds the full `Category` object).
+- All Api/Api.UnitTests/Api.IntegrationTests call sites constructing `Category { ..., Inactive = ... }`
+  updated to use `Type = Category.CategoryType.Inactive` instead where that was the intent.
+- `settingsService.ts`'s `CategoryType` gained `'Inactive'`; `CategoryDefinition.inactive` removed.
+  `transactionsService.ts`'s `Transaction.type` union gained `'Inactive'` too (it mirrors
+  `Category.Type` 1:1 now).
+- `SettingsView.vue` - removed the "Inactive" checkbox and its dedicated chip/CSS; the Type dropdown
+  now offers Income/Expense/Inactive, and the existing `category.type` text display is sufficient
+  (an Inactive-typed category just reads "Inactive" there, no separate indicator needed).
+- `scripts/setup_local.sh` - dropped the `Inactive` field from every seeded category; Internal
+  Transfer is now seeded with `"Type": "Inactive"` directly.
+- Verified: `dotnet test` 133/133, `npm run build`/`lint` clean, `FrontEnd.UnitTests` 112/112.
+
+### Second bug found during re-verification: `DateTime.UtcNow` undercounts "today"
+
+Re-running the full Playwright suite after the enum refactor kept failing on bulk-apply-category,
+account-deletion-cascade, and category-deletion-cascade, but only some of the time - and a full
+local dataset reset made it fail consistently. Root cause turned out to be unrelated to the enum
+refactor entirely (confirmed: `Api.IntegrationTests`/`Api.UnitTests` use fixed explicit dates like
+`new DateOnly(2026, 6, 10)`, so they never exercised this).
+
+`TransactionUpdateService.ApplyDescriptionMappingAsync`, `DeleteTransactionsForAccountAsync`, and
+`RemoveCategoryFromTransactionsAsync` (`DeleteTransactionsForAccountAsync`/
+`RemoveCategoryFromTransactionsAsync` predate UBE-75, from UBE-72) all computed
+`DateOnly.FromDateTime(DateTime.UtcNow)` as an `endDate` cutoff for "give me every transaction" -
+but local time can run up to ~14 hours ahead of UTC. Testing at 08:11 AEST (22:11 UTC the *previous*
+day), a transaction dated "today" locally was excluded by `GetTransactionsAsync`'s
+`t.Date <= endDate` filter, since UTC hadn't rolled over to that calendar day yet - silently
+no-opping all three bulk operations for anything dated today. Reproduced directly via curl (upload a
+transaction dated today, `POST /mapping/description`, confirm the category never actually applies)
+before touching any test code.
+
+**Fix**: since these three callers never wanted a precise "as of today" cutoff (they want *every*
+transaction, unbounded - `today` was only ever a stand-in for "no upper limit" because
+`GetTransactionsAsync` requires a concrete `endDate`), extracted a shared
+`UnboundedEndDate() => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(3)` helper and pointed all
+three at it. Correct regardless of server/caller timezone (3 days of slack comfortably covers any
+real-world UTC offset), no client changes, no infra changes. Considered and rejected: `DateTime.Now`
+(only fixes local dev - Lambda's TZ isn't set to match the user's real timezone in production) and
+passing an explicit date from the client (bigger footprint for the same result).
+
+Reproduced-then-confirmed-fixed via curl on a fully clean dataset (delete user -> `clean_local.sh` ->
+reseed -> upload -> bulk-apply -> category came back `"Groceries"` correctly). Final verification:
+`dotnet test` 133/133, full Playwright suite 24/24 clean.
+
 ## Prompt log
 
 - "start a worklog for UBE-75"
 - "1. re-use. 2. inactive means nothing for the category, it meansthat when the transaction is flagged with this category the transaction should be set to inactive. 3. correct. 4. I will manually remove"
+- "I want to change inactive to be an option in the dropdown with Expense and Income. This should be added as another option to the enum. The Inactive attribute should be removed from the data object and the enum value of Inactive should have the same effect."
+- "Read the run_local.sh background output file to confirm the Api and FrontEnd are ready. Test that login now works..." (re-verification instructions, x2)
+- "change the code that deletes transactions to extend the end date to UTC now + 3 days and add a comment why"

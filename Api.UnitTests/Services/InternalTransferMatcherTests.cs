@@ -33,15 +33,15 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var categories = new List<Category>
         {
-            new() { Name = InternalTransferMatcher.CategoryName, Colour = "#6b7280", Type = Category.CategoryType.Expense, Inactive = true },
+            new() { Name = InternalTransferMatcher.CategoryName, Colour = "#6b7280", Type = Category.CategoryType.Inactive },
         };
         var sut = CreateMatcher([bucket], categories);
 
         await sut.MatchAsync(Email, [a, b], [bucket]);
 
-        Assert.Equal(Category.CategoryType.Expense, a.Type);
+        Assert.Equal(Category.CategoryType.Inactive, a.Type);
         Assert.True(a.Inactive);
-        Assert.Equal(Category.CategoryType.Expense, b.Type);
+        Assert.Equal(Category.CategoryType.Inactive, b.Type);
         Assert.True(b.Inactive);
     }
 

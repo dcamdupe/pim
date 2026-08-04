@@ -384,7 +384,7 @@ public class FileProcessorTests
         {
             Email = Email,
             PasswordHash = "hash",
-            Categories = [new Category { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense, Inactive = false }],
+            Categories = [new Category { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense }],
         };
         var parser = new Mock<IFileParser>();
         parser.Setup(p => p.Parse(Account)).Returns(

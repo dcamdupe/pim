@@ -72,13 +72,13 @@ public class TransactionUpdateServiceTests
         };
         var months = new List<TransactionMonth> { month };
         var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
-        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense, Inactive = true } };
+        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Inactive } };
         var sut = CreateService(months, categories: categories);
 
         await sut.UpdateTransactionsAsync(Email, [updated]);
 
         var stored = Assert.Single(months).Transactions.Single();
-        Assert.Equal(Category.CategoryType.Expense, stored.Type);
+        Assert.Equal(Category.CategoryType.Inactive, stored.Type);
         Assert.True(stored.Inactive);
     }
 
@@ -90,10 +90,10 @@ public class TransactionUpdateServiceTests
         existing.Inactive = false;
         var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
         var months = new List<TransactionMonth> { month };
-        // Same category as the existing "Dining" definition would produce (Inactive: false), but the
-        // category itself is unchanged here - a manual "Set inactive" toggle should stick rather than
-        // being immediately re-stamped back to the category definition's own Inactive value.
-        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense, Inactive = false } };
+        // Same category as the existing "Dining" definition would produce (not Inactive-typed), but
+        // the category itself is unchanged here - a manual "Set inactive" toggle should stick rather
+        // than being immediately re-stamped back to the category definition's own Inactive value.
+        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense } };
         var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
         updated.Type = Category.CategoryType.Expense;
         updated.Inactive = true;
@@ -257,7 +257,7 @@ public class TransactionUpdateServiceTests
             Transactions = [Transaction("COLES 0717 TURRAMURRA AUS", new DateOnly(2026, 6, 1), "")],
         };
         var months = new List<TransactionMonth> { june };
-        var categories = new List<Category> { new() { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense, Inactive = false } };
+        var categories = new List<Category> { new() { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense } };
         var sut = CreateService(months, [], june.Transactions, categories: categories);
 
         await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");

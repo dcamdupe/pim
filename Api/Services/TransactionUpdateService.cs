@@ -76,8 +76,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     {
         await UpsertMappingAsync(email, descriptionStart, category);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: today);
+        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
 
         var affectedMonths = allTransactions
             .Where(t => t.Description.StartsWith(descriptionStart, StringComparison.Ordinal))
@@ -130,8 +129,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     // slightly stale on account deletion is an accepted simplification.
     public async Task DeleteTransactionsForAccountAsync(string email, string accountName)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: today);
+        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
 
         var affectedMonths = allTransactions
             .Where(t => t.Account == accountName)
@@ -161,8 +159,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     // deliberately left untouched here for the same reason as DeleteTransactionsForAccountAsync.
     public async Task RemoveCategoryFromTransactionsAsync(string email, string categoryName)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: today);
+        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
 
         var affectedMonths = allTransactions
             .Where(t => t.Category == categoryName)
@@ -193,6 +190,15 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
             }
         }
     }
+
+    // These callers all want "every transaction, unbounded" - GetTransactionsAsync just requires a
+    // concrete endDate, so this stands in for "no upper bound" rather than a real cutoff. A plain
+    // UTC "today" undercounts: local time can run up to ~14 hours ahead of UTC, so a transaction
+    // dated "today" in the caller's real timezone can still be "tomorrow" from UTC's point of view
+    // until UTC catches up - silently excluding it from GetTransactionsAsync's `t.Date <= endDate`
+    // filter. Padding by a few days comfortably covers that gap without needing to know the user's
+    // actual timezone.
+    private static DateOnly UnboundedEndDate() => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(3);
 
     private async Task<List<Category>> LoadCategoriesAsync(string email)
     {

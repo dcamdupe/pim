@@ -9,7 +9,7 @@ export interface Transaction {
   category: string
   amount: number
   inactive: boolean | null
-  type: 'Income' | 'Expense' | null
+  type: 'Income' | 'Expense' | 'Inactive' | null
 }
 
 export class TransactionsUploadFailedError extends Error {

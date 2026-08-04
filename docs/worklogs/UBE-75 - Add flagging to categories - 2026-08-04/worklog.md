@@ -148,7 +148,33 @@ up; `TransactionUpdateService` needs the same.
       from category-name-based to Type/Inactive-based, matching the new dashboard logic)
 - [x] `scripts/setup_local.sh` - seed `Inactive`/`Type` on defaults (verified: reseeded test user's
       Groceries/Income/Internal Transfer categories carry the expected values)
-- [ ] Build/test/lint verification + manual browser check (light + dark)
+- [x] Build/test/lint verification + manual browser check (light + dark)
+
+## Bug found during end-to-end verification
+
+`Api/Repository/DynamoDbRepository.cs` serialized/deserialized entities with the **default**
+`JsonSerializerOptions` (int-encoded enums), while every HTTP controller uses
+`JsonStringEnumConverter` (`Program.cs`). This was latent - never previously exposed, since no enum
+field had ever been seeded with a string value directly into DynamoDB (the seed script always wrote
+`Accounts: []`). Seeding `Category.Type` as `"Expense"`/`"Income"` strings (matching the ticket's Q3
+mapping) crashed every `GetAsync<User>` with a `JsonException`, which took down login entirely (500
+on `POST /login`, since `AuthenticationLocal.ValidateAsync` loads the `User` record) - all 22
+Playwright specs that log in failed.
+
+**Fix**: `DynamoDbRepository<T>` now uses a shared `JsonSerializerOptions` with
+`JsonStringEnumConverter`, matching the HTTP layer, in both `Serialize`/`Deserialize` calls.
+`JsonStringEnumConverter`'s reader accepts both the old int encoding and the new string encoding, so
+this is backward-compatible with any enum values (e.g. existing `Account.Type`) written before this
+fix existed. Also found and fixed a related test bug: `internalTransfer.spec.ts` asserted
+uncategorised transactions still count as a dashboard expense (accurate before UBE-75, no longer
+true now that only `Type: Expense` transactions count) - updated the expectation and comment.
+
+Final verification: `dotnet test` 133/133, `npm run build`/`lint` clean, `FrontEnd.UnitTests`
+112/112, full Playwright suite 24/24 (one `Month filter` failure on an earlier run was the same
+pre-existing shared-dataset flakiness noted in UBE-72 - passed alone and on a clean re-run).
+Confirmed visually in light + dark: Type/Inactive render correctly on all seeded categories
+(Internal Transfer shows "Expense" + "Inactive"), and a newly-added category with Type=Income,
+Inactive=true round-trips correctly through the add form.
 
 ## Prompt log
 

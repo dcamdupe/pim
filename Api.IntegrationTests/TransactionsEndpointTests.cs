@@ -339,7 +339,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         var addCategoryResponse = await client.PostAsJsonAsync(
             "/settings/category",
-            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense, Inactive = true });
+            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Inactive });
         Assert.Equal(HttpStatusCode.NoContent, addCategoryResponse.StatusCode);
 
         var updated = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
@@ -348,7 +348,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var month = await repository.GetAsync(monthId);
         var transaction = month!.Transactions.Single();
-        Assert.Equal(Category.CategoryType.Expense, transaction.Type);
+        Assert.Equal(Category.CategoryType.Inactive, transaction.Type);
         Assert.True(transaction.Inactive);
     }
 
@@ -370,7 +370,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         await client.PostAsJsonAsync(
             "/settings/category",
-            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense, Inactive = false });
+            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense });
 
         var categorised = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
         await client.PutAsJsonAsync("/transactions", new List<Transaction> { categorised });

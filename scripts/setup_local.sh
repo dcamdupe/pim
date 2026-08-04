@@ -88,28 +88,32 @@ setup_local() {
        --endpoint-url "$dynamo_endpoint" --region "$dynamo_region" 2>/dev/null | jq -e '.Item' >/dev/null 2>&1; then
     echo "Test login \"$test_email\" already exists, skipping."
   else
-    # Type/Inactive set "based on the original meaning" (UBE-75): every spend category is an
-    # Expense; Income is Income; Internal Transfer is marked Inactive so its transactions still
-    # drop out of dashboard sums once stamped, replacing the old hardcoded category-name check.
+    # Type set "based on the original meaning" (UBE-75): every spend category is an Expense; Income
+    # is Income; Internal Transfer is the Inactive type so its transactions still drop out of
+    # dashboard sums once stamped, replacing the old hardcoded category-name check.
     local default_categories
     default_categories='[
-      {"Name": "Housing", "Colour": "#2a78d6", "Type": "Expense", "Inactive": false},
-      {"Name": "Groceries", "Colour": "#eb6834", "Type": "Expense", "Inactive": false},
-      {"Name": "Transport", "Colour": "#1baf7a", "Type": "Expense", "Inactive": false},
-      {"Name": "Dining", "Colour": "#eda100", "Type": "Expense", "Inactive": false},
-      {"Name": "Shopping", "Colour": "#e87ba4", "Type": "Expense", "Inactive": false},
-      {"Name": "Utilities", "Colour": "#008300", "Type": "Expense", "Inactive": false},
-      {"Name": "Entertainment", "Colour": "#4a3aa7", "Type": "Expense", "Inactive": false},
-      {"Name": "Medical", "Colour": "#0891b2", "Type": "Expense", "Inactive": false},
-      {"Name": "Subscriptions", "Colour": "#c026d3", "Type": "Expense", "Inactive": false},
-      {"Name": "Income", "Colour": "#0f766e", "Type": "Income", "Inactive": false},
-      {"Name": "Other", "Colour": "#e34948", "Type": "Expense", "Inactive": false},
-      {"Name": "Internal Transfer", "Colour": "#6b7280", "Type": "Expense", "Inactive": true}
+      {"Name": "Housing", "Colour": "#2a78d6", "Type": "Expense"},
+      {"Name": "Groceries", "Colour": "#eb6834", "Type": "Expense"},
+      {"Name": "Transport", "Colour": "#1baf7a", "Type": "Expense"},
+      {"Name": "Dining", "Colour": "#eda100", "Type": "Expense"},
+      {"Name": "Shopping", "Colour": "#e87ba4", "Type": "Expense"},
+      {"Name": "Utilities", "Colour": "#008300", "Type": "Expense"},
+      {"Name": "Entertainment", "Colour": "#4a3aa7", "Type": "Expense"},
+      {"Name": "Medical", "Colour": "#0891b2", "Type": "Expense"},
+      {"Name": "Subscriptions", "Colour": "#c026d3", "Type": "Expense"},
+      {"Name": "Income", "Colour": "#0f766e", "Type": "Income"},
+      {"Name": "Other", "Colour": "#e34948", "Type": "Expense"},
+      {"Name": "Internal Transfer", "Colour": "#6b7280", "Type": "Inactive"}
     ]'
 
+    # A fresh user with no MinTransactionDate makes GetTransactionsAsync's null-startDate fallback
+    # (used by account/category deletion cascades and description-mapping bulk-apply) return no
+    # transactions at all until their first upload sets it - seeding a far-past date here avoids
+    # that cold-start gap for local dev/testing.
     local user_data item
     user_data="$(jq -nc --arg email "$test_email" --arg hash "$password_hash" --argjson categories "$default_categories" \
-      '{Email: $email, PasswordHash: $hash, Accounts: [], Categories: $categories}')"
+      '{Email: $email, PasswordHash: $hash, Accounts: [], Categories: $categories, MinTransactionDate: "2020-01-01"}')"
     item="$(jq -nc --arg id "$test_email" --arg data "$user_data" \
       '{id: {S: $id}, data: {S: $data}}')"
 

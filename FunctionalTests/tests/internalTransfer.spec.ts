@@ -72,8 +72,8 @@ test.describe('Internal transfer matching', () => {
       await newRow.locator('input').nth(1).fill('444555');
       await newRow.locator('select').selectOption('Transaction');
     }
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     // Account A's leg (out-transfer + control) arrives first, on its own - the out-transfer is
     // still unmatched at this point and counts as a normal uncategorized expense.
@@ -81,7 +81,7 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountA);
     await page.locator('#file-input').setInputFiles({ name: 'out.qif', mimeType: 'text/plain', buffer: Buffer.from(outQif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.locator('tr', { hasText: transferOut }).locator('.category-select')).toHaveValue('');
 
@@ -98,7 +98,7 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountB);
     await page.locator('#file-input').setInputFiles({ name: 'in.qif', mimeType: 'text/plain', buffer: Buffer.from(inQif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     // Cross-account, inverted-amount pair - both auto-flagged, overriding the out-transfer's
@@ -156,21 +156,21 @@ test.describe('Internal transfer matching', () => {
       await newRow.locator('input').nth(1).fill('444556');
       await newRow.locator('select').selectOption('Transaction');
     }
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountA);
     await page.locator('#file-input').setInputFiles({ name: 'out.qif', mimeType: 'text/plain', buffer: Buffer.from(outQif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountB);
     await page.locator('#file-input').setInputFiles({ name: 'in.qif', mimeType: 'text/plain', buffer: Buffer.from(inQif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     // Same day, opposite amounts, different accounts - would have overmatched before UBE-64.

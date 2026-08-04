@@ -11,5 +11,7 @@ public sealed class User
 
     public List<Account> Accounts { get; set; } = [];
 
+    public List<Category> Categories { get; set; } = [];
+
     public DateOnly? MinTransactionDate { get; set; }
 }

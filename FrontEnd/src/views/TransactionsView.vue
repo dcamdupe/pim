@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { CATEGORIES, categoryColor } from '../constants/categories'
+import { categoryColor, categoryNames } from '../services/categoriesService'
 import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
 import { getTransactions, updateTransactions, saveDescriptionMapping, type Transaction } from '../services/transactionsService'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
@@ -17,6 +17,7 @@ interface PendingCategoryChange {
 }
 
 const storedFilters = loadStoredTransactionFilters()
+const CATEGORIES = categoryNames()
 
 const transactions = ref<Transaction[]>([])
 const loading = ref(true)

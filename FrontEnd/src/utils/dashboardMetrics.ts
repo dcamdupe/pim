@@ -1,5 +1,5 @@
 import type { Transaction } from '../services/transactionsService'
-import { categoryColor } from '../constants/categories'
+import { categoryColor } from '../services/categoriesService'
 
 export interface DateRange {
   start: Date

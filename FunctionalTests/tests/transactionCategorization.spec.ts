@@ -39,8 +39,8 @@ test.describe('Transaction categorization', () => {
     await newRow.locator('input').nth(0).fill('Playwright Categorization Account');
     await newRow.locator('input').nth(1).fill('555666');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
@@ -50,7 +50,7 @@ test.describe('Transaction categorization', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from(qif),
     });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(colesA)).toBeVisible();
 
@@ -82,7 +82,7 @@ test.describe('Transaction categorization', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from(followUpQif),
     });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.locator('tr', { hasText: colesC }).locator('.category-select')).toHaveValue('Groceries');
 
@@ -127,8 +127,8 @@ test.describe('Transaction categorization', () => {
     await newRow.locator('input').nth(0).fill('Playwright Duplicate Desc Account');
     await newRow.locator('input').nth(1).fill('555777');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
@@ -138,7 +138,7 @@ test.describe('Transaction categorization', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from(qif),
     });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     const netflixRows = page.locator('tr', { hasText: netflix });
@@ -191,8 +191,8 @@ test.describe('Transaction categorization', () => {
     await newRow.locator('input').nth(0).fill('Playwright Cancel Account');
     await newRow.locator('input').nth(1).fill('555888');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
@@ -202,7 +202,7 @@ test.describe('Transaction categorization', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from(qif),
     });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(colesA)).toBeVisible();
 

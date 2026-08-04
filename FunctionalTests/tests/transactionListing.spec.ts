@@ -41,8 +41,8 @@ test.describe('Transaction listing', () => {
     await newRow.locator('input').nth(0).fill('Playwright Listing Account');
     await newRow.locator('input').nth(1).fill('333444');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
@@ -52,7 +52,7 @@ test.describe('Transaction listing', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from(qif),
     });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     // Default filter is "Last month" - today's row shows, the 6-weeks-ago row doesn't.
@@ -127,20 +127,20 @@ test.describe('Transaction listing', () => {
     await newRow.locator('input').nth(0).fill(accountB);
     await newRow.locator('input').nth(1).fill('555888');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountA);
     await page.locator('#file-input').setInputFiles({ name: 'a.qif', mimeType: 'text/plain', buffer: Buffer.from(qifA) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountB);
     await page.locator('#file-input').setInputFiles({ name: 'b.qif', mimeType: 'text/plain', buffer: Buffer.from(qifB) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     // All four rows visible before any filter is applied.
@@ -233,14 +233,14 @@ test.describe('Endless scroll', () => {
     await newRow.locator('input').nth(0).fill(accountName);
     await newRow.locator('input').nth(1).fill('666111');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountName);
     await page.locator('#file-input').setInputFiles({ name: 'scroll.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.getByLabel('Search description').fill(token);

@@ -41,8 +41,8 @@ test.describe('Account deletion', () => {
     await login(page);
     await page.getByRole('link', { name: 'Settings' }).click();
     await addAccount(page, accountName, '444001', 'Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
@@ -54,7 +54,7 @@ test.describe('Account deletion', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountName);
     await page.locator('#file-input').setInputFiles({ name: 'txn.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(description)).toBeVisible();
 
@@ -91,8 +91,8 @@ test.describe('Account deletion', () => {
     await page.getByRole('link', { name: 'Settings' }).click();
     await addAccount(page, accountName, '444002', 'Transaction');
     await addAccount(page, otherAccountName, '444003', 'Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
@@ -105,13 +105,13 @@ test.describe('Account deletion', () => {
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountName);
     await page.locator('#file-input').setInputFiles({ name: 'txn.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(otherAccountName);
     await page.locator('#file-input').setInputFiles({ name: 'other.qif', mimeType: 'text/plain', buffer: Buffer.from(otherQif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(description)).toBeVisible();
     await expect(page.getByText(otherDescription)).toBeVisible();
@@ -169,13 +169,13 @@ test.describe('Account deletion', () => {
     await addAccount(page, accountName, '444005', 'Transaction');
     const secondRow = await addAccount(page, accountName, '444006', 'Savings');
 
-    await expect(page.getByText('Account names must be unique.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await expect(page.getByText('Account names must be unique.').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save' }).first()).toBeDisabled();
 
     // Fixing the duplicate re-enables Save - and cleans up both unsaved rows.
     await secondRow.locator('input').nth(0).fill(`${accountName} 2`);
     await expect(page.getByText('Account names must be unique.')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Save' }).first()).toBeEnabled();
 
     const firstRow = await findAccountRow(page, accountName);
     await firstRow.getByRole('button', { name: 'Remove account' }).click();

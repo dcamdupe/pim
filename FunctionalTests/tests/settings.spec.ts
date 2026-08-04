@@ -27,8 +27,8 @@ test.describe('Settings', () => {
     await newRow.locator('input').nth(1).fill('999999');
     await newRow.locator('select').selectOption('Savings');
 
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
     await expect(page.locator('.account-row')).toHaveCount(rowsBefore + 1);
 
     await page.reload();
@@ -43,5 +43,42 @@ test.describe('Settings', () => {
     await persistedRow.getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
     await expect(page.locator('.account-row')).toHaveCount(rowsBefore);
+  });
+
+  test('adds a category, it appears in the transaction category dropdown, then deletes it via the confirm modal', async ({
+    page,
+  }) => {
+    // Unique per run, same reasoning as the account test above - the Api rejects duplicate
+    // category names (case-insensitive) for the same user.
+    const categoryName = `Playwright Category ${Date.now()}`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await expect(page).toHaveURL(/\/settings$/);
+
+    await page.locator('#new-category-name').fill(categoryName);
+    await page.getByRole('button', { name: '+ Add category' }).click();
+    await expect(page.getByText(categoryName)).toBeVisible();
+
+    // The Transactions page's category dropdown is only populated at mount time from the
+    // local-storage cache, which onAddCategory refreshes - a fresh navigation is required to see it.
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page.getByLabel('Category filter').locator('option', { hasText: categoryName })).toHaveCount(1);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await expect(page).toHaveURL(/\/settings$/);
+
+    const categoryRow = page.locator('.category-row', { hasText: categoryName });
+    await categoryRow.getByRole('button', { name: `Remove category ${categoryName}` }).click();
+    await expect(page.getByText('Delete category?')).toBeVisible();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByText('Delete category?')).not.toBeVisible();
+    await expect(page.locator('.category-name', { hasText: categoryName })).toHaveCount(0);
   });
 });

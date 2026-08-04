@@ -31,7 +31,7 @@ public sealed class SettingsController : ControllerBase
             return NotFound();
         }
 
-        return Ok(new SettingsResponse(user.Accounts, user.MinTransactionDate));
+        return Ok(new SettingsResponse(user.Accounts, user.Categories, user.MinTransactionDate));
     }
 
     [HttpPut("settings")]
@@ -82,6 +82,59 @@ public sealed class SettingsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("settings/category")]
+    public async Task<ActionResult> AddCategory(Category category)
+    {
+        var user = await GetAuthenticatedUser();
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (string.IsNullOrWhiteSpace(category.Name))
+        {
+            return BadRequest("Category name is required.");
+        }
+
+        if (user.Categories.Any(c => string.Equals(c.Name, category.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return BadRequest("Category names must be unique.");
+        }
+
+        user.Categories.Add(category);
+        await _users.UpdateAsync(user.Email, user);
+
+        return NoContent();
+    }
+
+    // Internal Transfer is excluded because InternalTransferMatcher hardcodes that exact name for
+    // automated matching - deleting it would silently break auto-categorisation on future imports.
+    [HttpDelete("settings/category")]
+    public async Task<ActionResult> DeleteCategory(Category category)
+    {
+        var user = await GetAuthenticatedUser();
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(category.Name, InternalTransferMatcher.CategoryName, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest($"\"{InternalTransferMatcher.CategoryName}\" cannot be deleted.");
+        }
+
+        var removed = user.Categories.RemoveAll(c => string.Equals(c.Name, category.Name, StringComparison.OrdinalIgnoreCase));
+        if (removed == 0)
+        {
+            return NotFound();
+        }
+
+        await _users.UpdateAsync(user.Email, user);
+        await _transactionUpdateService.RemoveCategoryFromTransactionsAsync(user.Email, category.Name);
+
+        return NoContent();
+    }
+
     private static bool HasDuplicateNames(List<Account> accounts) =>
         accounts.GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
 
@@ -107,6 +160,6 @@ public sealed class SettingsController : ControllerBase
     }
 }
 
-public sealed record SettingsResponse(List<Account> Accounts, DateOnly? MinTransactionDate);
+public sealed record SettingsResponse(List<Account> Accounts, List<Category> Categories, DateOnly? MinTransactionDate);
 
 public sealed record SettingsRequest(List<Account> Accounts);

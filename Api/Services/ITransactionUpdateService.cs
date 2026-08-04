@@ -9,4 +9,6 @@ public interface ITransactionUpdateService
     Task ApplyDescriptionMappingAsync(string email, string descriptionStart, string category);
 
     Task DeleteTransactionsForAccountAsync(string email, string accountName);
+
+    Task RemoveCategoryFromTransactionsAsync(string email, string categoryName);
 }

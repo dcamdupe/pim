@@ -96,14 +96,14 @@ test.describe('Dashboard tiles', () => {
     await newRow.locator('input').nth(0).fill(`DashAccount${runId}`);
     await newRow.locator('input').nth(1).fill('333777');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(`DashAccount${runId}`);
     await page.locator('#file-input').setInputFiles({ name: 'dash.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await page.getByLabel('Date range').selectOption('allTime');
 
@@ -192,15 +192,15 @@ test.describe('Month filter', () => {
     await newRow.locator('input').nth(0).fill(`MonthFilterAccount${runId}`);
     await newRow.locator('input').nth(1).fill('333779');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(`MonthFilterAccount${runId}`);
     const qif = '!Type:Bank\n' + qifRecord(targetMonth, income, '1500.00');
     await page.locator('#file-input').setInputFiles({ name: 'monthfilter.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await page.getByLabel('Date range').selectOption('allTime');
     await page.locator('tr', { hasText: income }).locator('.category-select').selectOption('Income');
@@ -252,14 +252,14 @@ test.describe('Recent transactions', () => {
     await newRow.locator('input').nth(0).fill(`RecentAccount${runId}`);
     await newRow.locator('input').nth(1).fill('333778');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(`RecentAccount${runId}`);
     await page.locator('#file-input').setInputFiles({ name: 'recent.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await page.getByLabel('Date range').selectOption('allTime');
 

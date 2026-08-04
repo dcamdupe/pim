@@ -88,9 +88,25 @@ setup_local() {
        --endpoint-url "$dynamo_endpoint" --region "$dynamo_region" 2>/dev/null | jq -e '.Item' >/dev/null 2>&1; then
     echo "Test login \"$test_email\" already exists, skipping."
   else
+    local default_categories
+    default_categories='[
+      {"Name": "Housing", "Colour": "#2a78d6"},
+      {"Name": "Groceries", "Colour": "#eb6834"},
+      {"Name": "Transport", "Colour": "#1baf7a"},
+      {"Name": "Dining", "Colour": "#eda100"},
+      {"Name": "Shopping", "Colour": "#e87ba4"},
+      {"Name": "Utilities", "Colour": "#008300"},
+      {"Name": "Entertainment", "Colour": "#4a3aa7"},
+      {"Name": "Medical", "Colour": "#0891b2"},
+      {"Name": "Subscriptions", "Colour": "#c026d3"},
+      {"Name": "Income", "Colour": "#0f766e"},
+      {"Name": "Other", "Colour": "#e34948"},
+      {"Name": "Internal Transfer", "Colour": "#6b7280"}
+    ]'
+
     local user_data item
-    user_data="$(jq -nc --arg email "$test_email" --arg hash "$password_hash" \
-      '{Email: $email, PasswordHash: $hash, Accounts: []}')"
+    user_data="$(jq -nc --arg email "$test_email" --arg hash "$password_hash" --argjson categories "$default_categories" \
+      '{Email: $email, PasswordHash: $hash, Accounts: [], Categories: $categories}')"
     item="$(jq -nc --arg id "$test_email" --arg data "$user_data" \
       '{id: {S: $id}, data: {S: $data}}')"
 

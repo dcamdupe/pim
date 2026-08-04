@@ -1,7 +1,8 @@
 # UBE-75: Add flagging to categories
 
 Linear: https://linear.app/uberconcept/issue/UBE-75/add-flagging-to-categories
-Status: In Progress · Priority: No priority
+Status: Done · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/52
 
 ## Description (from Linear)
 
@@ -239,3 +240,4 @@ reseed -> upload -> bulk-apply -> category came back `"Groceries"` correctly). F
 - "I want to change inactive to be an option in the dropdown with Expense and Income. This should be added as another option to the enum. The Inactive attribute should be removed from the data object and the enum value of Inactive should have the same effect."
 - "Read the run_local.sh background output file to confirm the Api and FrontEnd are ready. Test that login now works..." (re-verification instructions, x2)
 - "change the code that deletes transactions to extend the end date to UTC now + 3 days and add a comment why"
+- "commit and raise PR"

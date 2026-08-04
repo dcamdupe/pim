@@ -1,7 +1,8 @@
 # UBE-72: Soft code the categories
 
 Linear: https://linear.app/uberconcept/issue/UBE-72/soft-code-the-categories
-Status: In Progress · Priority: No priority
+Status: Done · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/51
 
 ## Description (from Linear)
 
@@ -184,3 +185,4 @@ transactions.
 - "adjust the colour picker to select from a pallet of 40 standard colours"
 - "adjust the categories to a 2 column display that is less spaced out vertically. Dioplay the pallet as a dropdown to the right of the new category name"
 - "Add another save button below the categories, triggering the same action"
+- "commit and raise the PR"

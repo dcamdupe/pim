@@ -195,6 +195,116 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task AddCategory_AppendsTheCategory()
+    {
+        var client = AuthenticatedClient();
+        var category = new Category { Name = "Groceries", Colour = "#00ff00" };
+
+        var response = await client.PostAsJsonAsync("/settings/category", category);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var getResponse = await client.GetAsync("/settings");
+        var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
+        Assert.Contains(body!.Categories, c => c.Name == "Groceries" && c.Colour == "#00ff00");
+    }
+
+    [Fact]
+    public async Task AddCategory_RejectsDuplicateNames_CaseInsensitively()
+    {
+        var client = AuthenticatedClient();
+        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Groceries", Colour = "#00ff00" });
+
+        var response = await client.PostAsJsonAsync("/settings/category", new Category { Name = "groceries", Colour = "#ff0000" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_RemovesTheCategoryAndClearsItFromTransactionsAcrossMonths()
+    {
+        var client = AuthenticatedClient();
+        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Groceries", Colour = "#00ff00" });
+
+        using var scope = _factory.Services.CreateScope();
+        var transactionMonths = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+
+        var juneId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(juneId);
+        await transactionMonths.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions =
+            [
+                new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coles", Category = "Groceries", Amount = -50.00m },
+                new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 12), Description = "Salary", Category = "Income", Amount = 1000.00m },
+            ],
+        });
+
+        var julyId = TransactionMonth.BuildId(_email, 2026, 7);
+        _seededMonthIds.Add(julyId);
+        await transactionMonths.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 7,
+            Transactions =
+            [
+                new Transaction { Account = "Everyday", Date = new DateOnly(2026, 7, 5), Description = "Woolworths", Category = "Groceries", Amount = -30.00m },
+            ],
+        });
+
+        var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/category")
+        {
+            Content = JsonContent.Create(new Category { Name = "Groceries", Colour = "#00ff00" }),
+        };
+        var response = await client.SendAsync(deleteRequest);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var getResponse = await client.GetAsync("/settings");
+        var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
+        Assert.DoesNotContain(body!.Categories, c => c.Name == "Groceries");
+
+        var june = await transactionMonths.GetAsync(juneId);
+        Assert.Equal("", june!.Transactions.Single(t => t.Description == "Coles").Category);
+        Assert.Equal("Income", june.Transactions.Single(t => t.Description == "Salary").Category);
+
+        var july = await transactionMonths.GetAsync(julyId);
+        Assert.Equal("", july!.Transactions.Single(t => t.Description == "Woolworths").Category);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_ReturnsNotFound_WhenNoMatchingCategoryExists()
+    {
+        var client = AuthenticatedClient();
+        var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/category")
+        {
+            Content = JsonContent.Create(new Category { Name = "Does Not Exist", Colour = "#000000" }),
+        };
+
+        var response = await client.SendAsync(deleteRequest);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCategory_RejectsInternalTransfer()
+    {
+        var client = AuthenticatedClient();
+        await client.PostAsJsonAsync("/settings/category", new Category { Name = "Internal Transfer", Colour = "#000000" });
+
+        var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/category")
+        {
+            Content = JsonContent.Create(new Category { Name = "Internal Transfer", Colour = "#000000" }),
+        };
+        var response = await client.SendAsync(deleteRequest);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private HttpClient AuthenticatedClient()
     {
         var client = _factory.CreateClient();

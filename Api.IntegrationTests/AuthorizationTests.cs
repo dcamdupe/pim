@@ -16,6 +16,8 @@ public sealed class AuthorizationTests : IClassFixture<ApiWebApplicationFactory>
         yield return [HttpMethod.Get, "/settings"];
         yield return [HttpMethod.Put, "/settings"];
         yield return [HttpMethod.Delete, "/settings/account"];
+        yield return [HttpMethod.Post, "/settings/category"];
+        yield return [HttpMethod.Delete, "/settings/category"];
         yield return [HttpMethod.Get, "/transactions?startDate=2026-01-01&endDate=2026-01-31"];
         yield return [HttpMethod.Post, "/transactions/file"];
         yield return [HttpMethod.Put, "/transactions"];

@@ -20,8 +20,14 @@ function authHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${useAuthStore().token}` }
 }
 
+export interface CategoryDefinition {
+  name: string
+  colour: string
+}
+
 export interface Settings {
   accounts: Account[]
+  categories: CategoryDefinition[]
   minTransactionDate: string | null
 }
 
@@ -56,6 +62,32 @@ export async function deleteAccount(account: Account): Promise<void> {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(account),
+  })
+
+  if (!response.ok) {
+    throw new SettingsRequestFailedError()
+  }
+}
+
+export async function addCategory(category: CategoryDefinition): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/settings/category`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(category),
+  })
+
+  if (!response.ok) {
+    throw new SettingsRequestFailedError()
+  }
+}
+
+// Deletes immediately (not deferred to the next PUT /settings) - the Api cascades this to clear the
+// category from every transaction that had it.
+export async function deleteCategory(category: CategoryDefinition): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/settings/category`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(category),
   })
 
   if (!response.ok) {

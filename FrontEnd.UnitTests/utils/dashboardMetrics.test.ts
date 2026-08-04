@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import {
   getCurrentMonthRange,
   getPreviousSixMonthsRange,
@@ -150,6 +150,18 @@ describe('computeDashboardTiles', () => {
 })
 
 describe('computeExpensesByCategory', () => {
+  beforeEach(() => {
+    localStorage.setItem(
+      'pim.categories',
+      JSON.stringify([
+        { name: 'Housing', colour: '#2a78d6' },
+        { name: 'Groceries', colour: '#eb6834' },
+        { name: 'Dining', colour: '#eda100' },
+        { name: 'Shopping', colour: '#e87ba4' },
+      ]),
+    )
+  })
+
   it('sums expenses per category, sorted highest-spend first', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Groceries', amount: -100 }),

@@ -320,6 +320,63 @@ public class TransactionUpdateServiceTests
         Assert.Empty(months);
     }
 
+    [Fact]
+    public async Task RemoveCategoryFromTransactionsAsync_ClearsOnlyTheMatchingCategory_AcrossMonths()
+    {
+        var june = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions =
+            [
+                Transaction("Coles", new DateOnly(2026, 6, 1), "Groceries"),
+                Transaction("Salary", new DateOnly(2026, 6, 2), "Income"),
+            ],
+        };
+        var july = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 7,
+            Transactions = [Transaction("Woolworths", new DateOnly(2026, 7, 1), "Groceries")],
+        };
+        var months = new List<TransactionMonth> { june, july };
+        var allTransactions = june.Transactions.Concat(july.Transactions).ToList();
+        var sut = CreateService(months, [], allTransactions);
+
+        await sut.RemoveCategoryFromTransactionsAsync(Email, "Groceries");
+
+        Assert.Equal("", june.Transactions.Single(t => t.Description == "Coles").Category);
+        Assert.Equal("Income", june.Transactions.Single(t => t.Description == "Salary").Category);
+        Assert.Equal("", july.Transactions.Single().Category);
+    }
+
+    [Fact]
+    public async Task RemoveCategoryFromTransactionsAsync_LeavesTheMonthUntouched_WhenNoTransactionMatches()
+    {
+        var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
+        var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
+        var months = new List<TransactionMonth> { month };
+        var sut = CreateService(months, [], [existing]);
+
+        await sut.RemoveCategoryFromTransactionsAsync(Email, "Groceries");
+
+        Assert.Same(existing, Assert.Single(months).Transactions.Single());
+        Assert.Equal("Dining", existing.Category);
+    }
+
+    [Fact]
+    public async Task RemoveCategoryFromTransactionsAsync_DoesNothing_WhenTheCategoryHasNoTransactions()
+    {
+        var months = new List<TransactionMonth>();
+        var sut = CreateService(months, [], []);
+
+        await sut.RemoveCategoryFromTransactionsAsync(Email, "Groceries");
+
+        Assert.Empty(months);
+    }
+
     private static Transaction Transaction(string description, DateOnly date, string category, string? account = null) => new()
     {
         Account = account ?? Account,

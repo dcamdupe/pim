@@ -27,8 +27,8 @@ test.describe('Transaction upload', () => {
     await newRow.locator('input').nth(0).fill('Playwright Upload Account');
     await newRow.locator('input').nth(1).fill('111222');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
@@ -42,7 +42,7 @@ test.describe('Transaction upload', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from(qif),
     });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(desc)).toBeVisible();
 
@@ -54,7 +54,7 @@ test.describe('Transaction upload', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from(qif),
     });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(desc)).toHaveCount(1);
 

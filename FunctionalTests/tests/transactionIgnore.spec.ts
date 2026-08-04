@@ -34,14 +34,14 @@ test.describe('Ignoring transactions', () => {
     await newRow.locator('input').nth(0).fill(accountName);
     await newRow.locator('input').nth(1).fill('555999');
     await newRow.locator('select').selectOption('Transaction');
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption(accountName);
     await page.locator('#file-input').setInputFiles({ name: 'transactions.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     const row = page.locator('tr', { hasText: desc });

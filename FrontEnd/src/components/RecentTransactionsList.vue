@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Transaction } from '../services/transactionsService'
-import { categoryColor } from '../constants/categories'
+import { categoryColor } from '../services/categoriesService'
 import { MONTH_ABBREVIATIONS } from '../utils/dashboardMetrics'
 
 defineProps<{

@@ -23,6 +23,7 @@ function tx(overrides: Partial<Transaction>): Transaction {
     category: '',
     amount: -1,
     inactive: null,
+    type: null,
     ...overrides,
   }
 }
@@ -53,24 +54,24 @@ describe('getPreviousSixMonthsRange', () => {
 })
 
 describe('computeDashboardTiles', () => {
-  it('sums Income-category transactions as income, everything else as expenses', () => {
+  it('sums Income-Type transactions as income, Expense-Type as expenses, and ignores untyped (uncategorized) ones', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
-      tx({ date: '2026-07-06', category: 'Groceries', amount: -200 }),
-      tx({ date: '2026-07-07', category: '', amount: -50 }), // uncategorized counts as an expense
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -200 }),
+      tx({ date: '2026-07-07', category: '', type: null, amount: -50 }), // uncategorized: no Type, not counted
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
 
-    expect(tiles.currentMonthExpenses).toBe(250)
-    expect(tiles.currentMonthProfit).toBe(3000 - 250)
+    expect(tiles.currentMonthExpenses).toBe(200)
+    expect(tiles.currentMonthProfit).toBe(3000 - 200)
   })
 
   it('excludes transactions where inactive is true, includes false and null', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Income', amount: 1000, inactive: null }),
-      tx({ date: '2026-07-06', category: 'Income', amount: 500, inactive: false }),
-      tx({ date: '2026-07-07', category: 'Income', amount: 9999, inactive: true }),
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 1000, inactive: null }),
+      tx({ date: '2026-07-06', category: 'Income', type: 'Income', amount: 500, inactive: false }),
+      tx({ date: '2026-07-07', category: 'Income', type: 'Income', amount: 9999, inactive: true }),
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -80,10 +81,10 @@ describe('computeDashboardTiles', () => {
 
   it('buckets transactions into current-month vs previous-6-months by date, excluding anything outside both', () => {
     const transactions = [
-      tx({ date: '2026-07-15', category: 'Income', amount: 100 }), // current month
-      tx({ date: '2026-06-15', category: 'Income', amount: 200 }), // previous 6 months
-      tx({ date: '2026-01-01', category: 'Income', amount: 300 }), // previous 6 months (start boundary)
-      tx({ date: '2025-12-31', category: 'Income', amount: 9999 }), // outside both ranges
+      tx({ date: '2026-07-15', category: 'Income', type: 'Income', amount: 100 }), // current month
+      tx({ date: '2026-06-15', category: 'Income', type: 'Income', amount: 200 }), // previous 6 months
+      tx({ date: '2026-01-01', category: 'Income', type: 'Income', amount: 300 }), // previous 6 months (start boundary)
+      tx({ date: '2025-12-31', category: 'Income', type: 'Income', amount: 9999 }), // outside both ranges
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -94,9 +95,9 @@ describe('computeDashboardTiles', () => {
 
   it('computes the delta percentage against the average of the previous 6 months, not the total', () => {
     const transactions = [
-      tx({ date: '2026-07-01', category: 'Income', amount: 1200 }), // current month profit = 1200
+      tx({ date: '2026-07-01', category: 'Income', type: 'Income', amount: 1200 }), // current month profit = 1200
       // previous 6 months total profit = 3600 -> average = 600 -> (1200-600)/600 = 100%
-      tx({ date: '2026-01-01', category: 'Income', amount: 3600 }),
+      tx({ date: '2026-01-01', category: 'Income', type: 'Income', amount: 3600 }),
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -105,7 +106,7 @@ describe('computeDashboardTiles', () => {
   })
 
   it('returns a null delta when the previous-6-months average is zero', () => {
-    const transactions = [tx({ date: '2026-07-01', category: 'Income', amount: 500 })]
+    const transactions = [tx({ date: '2026-07-01', category: 'Income', type: 'Income', amount: 500 })]
 
     const tiles = computeDashboardTiles(transactions, today)
 
@@ -115,8 +116,8 @@ describe('computeDashboardTiles', () => {
 
   it('nets a refund against expenses in the same month rather than double-counting it', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Shopping', amount: -100 }),
-      tx({ date: '2026-07-06', category: 'Shopping', amount: 20 }), // partial refund
+      tx({ date: '2026-07-05', category: 'Shopping', type: 'Expense', amount: -100 }),
+      tx({ date: '2026-07-06', category: 'Shopping', type: 'Expense', amount: 20 }), // partial refund
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -124,10 +125,12 @@ describe('computeDashboardTiles', () => {
     expect(tiles.currentMonthExpenses).toBe(80)
   })
 
+  // Internal Transfer's category is stamped Inactive by the Api (UBE-75), so it drops out via the
+  // inactive filter rather than any Type/category-name check here.
   it('excludes Internal Transfer transactions from expenses', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Groceries', amount: -200 }),
-      tx({ date: '2026-07-06', category: 'Internal Transfer', amount: -500 }),
+      tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -200 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -137,10 +140,10 @@ describe('computeDashboardTiles', () => {
 
   it('excludes Internal Transfer transactions from profit, on both the income and expense side', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
-      tx({ date: '2026-07-06', category: 'Groceries', amount: -200 }),
-      tx({ date: '2026-07-07', category: 'Internal Transfer', amount: -500 }),
-      tx({ date: '2026-07-08', category: 'Internal Transfer', amount: 500 }),
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -200 }),
+      tx({ date: '2026-07-07', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
+      tx({ date: '2026-07-08', category: 'Internal Transfer', type: 'Income', inactive: true, amount: 500 }),
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -164,9 +167,9 @@ describe('computeExpensesByCategory', () => {
 
   it('sums expenses per category, sorted highest-spend first', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Groceries', amount: -100 }),
-      tx({ date: '2026-07-06', category: 'Groceries', amount: -50 }),
-      tx({ date: '2026-07-07', category: 'Dining', amount: -300 }),
+      tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -100 }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -50 }),
+      tx({ date: '2026-07-07', category: 'Dining', type: 'Expense', amount: -300 }),
     ]
 
     const result = computeExpensesByCategory(transactions, today)
@@ -181,9 +184,9 @@ describe('computeExpensesByCategory', () => {
 
   it('excludes Income and Internal Transfer categories', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
-      tx({ date: '2026-07-06', category: 'Internal Transfer', amount: -500 }),
-      tx({ date: '2026-07-07', category: 'Groceries', amount: -200 }),
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
+      tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -200 }),
     ]
 
     const result = computeExpensesByCategory(transactions, today)
@@ -193,9 +196,9 @@ describe('computeExpensesByCategory', () => {
 
   it('excludes transactions where inactive is true, includes false and null', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Groceries', amount: -200, inactive: null }),
-      tx({ date: '2026-07-06', category: 'Groceries', amount: -100, inactive: false }),
-      tx({ date: '2026-07-07', category: 'Groceries', amount: -9999, inactive: true }),
+      tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -200, inactive: null }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -100, inactive: false }),
+      tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -9999, inactive: true }),
     ]
 
     const result = computeExpensesByCategory(transactions, today)
@@ -205,8 +208,8 @@ describe('computeExpensesByCategory', () => {
 
   it('excludes transactions outside the current month', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Groceries', amount: -200 }),
-      tx({ date: '2026-06-05', category: 'Groceries', amount: -9999 }),
+      tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -200 }),
+      tx({ date: '2026-06-05', category: 'Groceries', type: 'Expense', amount: -9999 }),
     ]
 
     const result = computeExpensesByCategory(transactions, today)
@@ -216,8 +219,8 @@ describe('computeExpensesByCategory', () => {
 
   it('nets a refund against a category rather than double-counting it', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Shopping', amount: -100 }),
-      tx({ date: '2026-07-06', category: 'Shopping', amount: 20 }), // partial refund
+      tx({ date: '2026-07-05', category: 'Shopping', type: 'Expense', amount: -100 }),
+      tx({ date: '2026-07-06', category: 'Shopping', type: 'Expense', amount: 20 }), // partial refund
     ]
 
     const result = computeExpensesByCategory(transactions, today)
@@ -231,12 +234,13 @@ describe('computeExpensesByCategory', () => {
     expect(result).toEqual([])
   })
 
-  it('excludes a category that nets a refund/credit for the month, without dragging other percentages negative', () => {
+  it('excludes untyped (uncategorized) transactions from the breakdown entirely', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Housing', amount: -400 }),
-      // A big refund exceeding this month's Uncategorized spend - nets to a credit, not an expense.
-      tx({ date: '2026-07-06', category: '', amount: -100 }),
-      tx({ date: '2026-07-07', category: '', amount: 900 }),
+      tx({ date: '2026-07-05', category: 'Housing', type: 'Expense', amount: -400 }),
+      // Uncategorized transactions have no Type, so they never enter the per-category totals at all
+      // (unlike a real expense category, which could still net to a credit and get filtered out).
+      tx({ date: '2026-07-06', category: '', type: null, amount: -100 }),
+      tx({ date: '2026-07-07', category: '', type: null, amount: 900 }),
     ]
 
     const result = computeExpensesByCategory(transactions, today)
@@ -245,7 +249,7 @@ describe('computeExpensesByCategory', () => {
   })
 
   it('looks up the display color from CATEGORY_COLORS', () => {
-    const transactions = [tx({ date: '2026-07-05', category: 'Groceries', amount: -100 })]
+    const transactions = [tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -100 })]
 
     const result = computeExpensesByCategory(transactions, today)
 
@@ -282,10 +286,10 @@ describe('computeMonthlyIncomeExpenses', () => {
 
   it('sums income and expenses into the matching month bucket', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
-      tx({ date: '2026-07-06', category: 'Groceries', amount: -200 }),
-      tx({ date: '2026-06-10', category: 'Income', amount: 1000 }),
-      tx({ date: '2026-06-11', category: 'Dining', amount: -300 }),
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -200 }),
+      tx({ date: '2026-06-10', category: 'Income', type: 'Income', amount: 1000 }),
+      tx({ date: '2026-06-11', category: 'Dining', type: 'Expense', amount: -300 }),
     ]
 
     const result = computeMonthlyIncomeExpenses(transactions, today)
@@ -296,9 +300,9 @@ describe('computeMonthlyIncomeExpenses', () => {
 
   it('excludes Internal Transfer and inactive transactions', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Income', amount: 3000 }),
-      tx({ date: '2026-07-06', category: 'Internal Transfer', amount: -500 }),
-      tx({ date: '2026-07-07', category: 'Groceries', amount: -200, inactive: true }),
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
+      tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -200, inactive: true }),
     ]
 
     const result = computeMonthlyIncomeExpenses(transactions, today)
@@ -307,7 +311,7 @@ describe('computeMonthlyIncomeExpenses', () => {
   })
 
   it('excludes transactions outside the 6-month window', () => {
-    const transactions = [tx({ date: '2026-01-15', category: 'Income', amount: 9999 })]
+    const transactions = [tx({ date: '2026-01-15', category: 'Income', type: 'Income', amount: 9999 })]
 
     const result = computeMonthlyIncomeExpenses(transactions, today)
 

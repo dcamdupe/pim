@@ -36,93 +36,121 @@ based on the original meaning.
   Shopping, Utilities, Entertainment, Medical, Subscriptions, Income, Other, Internal Transfer) with
   just `Name`/`Colour`.
 
-## Open questions (flagging for confirmation before I start)
+## Open questions - resolved
 
-1. **Naming collision on `Transaction.Inactive`.** The ticket says setting a transaction's category
-   should "also set inactive" on the transaction - but `Transaction.Inactive` already means something
-   else today (a manual, independent "ignore this transaction" toggle the user sets directly, per
-   the existing row-menu feature). If applying a category also overwrites `Inactive` from the
-   category's own inactive flag, then **every time a category is picked (including re-picking the
-   same category, or the automated Internal Transfer matcher running), it would silently clobber
-   whatever the user had manually set via "Set active"/"Set inactive"** on that transaction. Is that
-   the intended behaviour, or should the category-driven flag live in its own field (e.g. a separate
-   `CategoryInactive` on `Transaction`) so it doesn't fight with the existing manual toggle?
-2. **What does "inactive" mean for a *category*?** My working assumption: an inactive category is
-   hidden from the category-picker dropdown when categorising a transaction going forward (so it
-   can't be newly assigned), but stays visible (muted) in Settings, remains valid on transactions
-   already carrying it, and can still be assigned by the automated Internal Transfer matcher
-   regardless of its inactive flag. Confirm/correct?
-3. **Default data mapping for `setup_local.sh`.** My proposed mapping "based on the original
-   meaning": all spend categories (Housing, Groceries, Transport, Dining, Shopping, Utilities,
-   Entertainment, Medical, Subscriptions, Other) → `Type: Expense`, `Inactive: false`; `Income` →
-   `Type: Income`, `Inactive: false`; `Internal Transfer` → `Inactive: true` (so its transactions
-   drop out of dashboard sums via the existing `!inactive` filter, replacing today's hardcoded
-   `!== 'Internal Transfer'` string check) and `Type: Expense` (arbitrary, since it's excluded via
-   `Inactive` either way). Confirm this mapping, especially Internal Transfer.
-4. **Existing (pre-migration) transactions with no `Type`/no category-driven inactive stamp.** These
-   would need to fall back to something for dashboard math - proposed: treat a transaction with no
-   `Type` as `Expense` for calculation purposes only if it has a non-empty category (matches today's
-   `!== 'Income'` behaviour defaulting everything else to expense), and exclude uncategorised (`""`)
-   transactions from both Income and Expense sums exactly as today. Confirm?
+1. **Naming collision on `Transaction.Inactive`.** Resolved: re-use the existing field - setting a
+   transaction's category does overwrite `Inactive` from the category's own inactive flag.
+   Implementation note worked out below: to avoid this fighting the existing manual "Set
+   active"/"Set inactive" toggle (which PUTs the *same* category with just `inactive` flipped), the
+   server only re-stamps `Type`/`Inactive` from the category when the category **actually changes**
+   on that PUT - not on every save. That's also exactly the existing `previousCategory !=
+   updated.Category` condition `TransactionUpdateService.UpdateTransactionsAsync` already uses for
+   its unclassified-stats bookkeeping, so the two naturally share a guard.
+2. **What "inactive" means for a category.** Resolved: nothing about the category itself (it stays
+   fully selectable/visible everywhere, no picker filtering) - it's purely a directive: *"transactions
+   flagged with this category should be set inactive."* Dropped the "filter the category picker"
+   line item from the plan below - it doesn't apply.
+3. **Default data mapping for `setup_local.sh`.** Confirmed as proposed: all spend categories →
+   `Type: Expense, Inactive: false`; `Income` → `Type: Income, Inactive: false`; `Internal Transfer`
+   → `Inactive: true` (so its transactions drop out of dashboard sums via the existing `!inactive`
+   filter - once stamped, this fully replaces today's hardcoded `!== 'Internal Transfer'` string
+   check), `Type: Expense` (arbitrary, excluded via `Inactive` regardless).
+4. **Pre-existing local transactions with no `Type`.** User will manually clear old local data - no
+   migration/backfill needed. Dashboard math simply won't count a transaction with no `Type` towards
+   either Income or Expense (clean `t.type === 'Income'`/`'Expense'` checks, no fallback rule).
 
-## Plan (pending confirmation of the above)
+## Additional scope found during investigation
+
+Category gets *set* (and so needs this stamping applied) in four places, not just the one PUT
+endpoint originally scoped - all four now stamp `Type`/`Inactive` from `User.Categories` via a
+shared `Category.StampTransaction(transaction, categories)` helper, only when the category is
+actually changing:
+- `TransactionUpdateService.UpdateTransactionsAsync` (`PUT /transactions` - manual single/bulk edit)
+- `TransactionUpdateService.ApplyDescriptionMappingAsync` (`POST /mapping/description` bulk-apply to
+  existing matching transactions) - already guarded by `if (transaction.Category == category)
+  continue;`, so always a real change when reached
+- `FileProcessor.ApplyDescriptionMappingAsync` (upload-time auto-categorisation from a saved
+  mapping) - always a real change (freshly parsed transactions start uncategorised)
+- `InternalTransferMatcher.MatchAsync` (auto-assigns `"Internal Transfer"`) - always a real change
+
+`InternalTransferMatcher` needs `IRepository<User>` added to its constructor to look the category
+up; `TransactionUpdateService` needs the same.
+
+## Plan
 
 **Api**
 
 1. `Api/Data/Category.cs` - add `bool Inactive` and `required CategoryType Type` (nested
    `enum CategoryType { Income, Expense }`, matching the `Account`/`Account.AccountType` nesting
-   convention).
-2. `Api/Data/Transaction.cs` - add a nullable `Category.CategoryType? Type` field, and (pending Q1)
-   either reuse `Inactive` or add a new field for the category-driven flag.
+   convention). Add a static `StampTransaction(Transaction, IEnumerable<Category>)` helper: looks up
+   `transaction.Category` in the list and sets `transaction.Type`/`transaction.Inactive` from the
+   match (both cleared to `null` if the category isn't found, e.g. cleared to `""`).
+2. `Api/Data/Transaction.cs` - add nullable `Category.CategoryType? Type`; update the
+   `MatchesIdentity` doc comment to also mention `Type` alongside `Category`/`Inactive` as
+   deliberately excluded/edited-after-import fields.
 3. `Api/Controllers/SettingsController.cs` - `POST /settings/category` accepts `Inactive`/`Type` in
    the request body (still name-uniqueness-checked, still no edit/PUT path).
-4. `Api/Services/TransactionUpdateService.cs` - when a transaction's `Category` is set/changed
-   (`UpdateTransactionsAsync`), look up that category on `User.Categories` and stamp `Type` (and,
-   per Q1, the inactive flag) onto the transaction before persisting - single source of truth,
-   server-side, not trusted from the client payload.
-5. `Api/Services/InternalTransferMatcher.cs` - route its auto-assignment through the same
-   stamping logic so matched pairs get `Type`/inactive consistent with the `Internal Transfer`
-   category definition.
-6. `Api.IntegrationTests`/`Api.UnitTests` - coverage for the above (category Type/Inactive
-   round-trip, stamping on categorisation, Internal Transfer matcher stamping).
+4. `Api/Services/TransactionUpdateService.cs` - inject `IRepository<User>`. In
+   `UpdateTransactionsAsync`, call `Category.StampTransaction` right where it already checks
+   `previousCategory != updated.Category`. In `ApplyDescriptionMappingAsync`, call it right after
+   `transaction.Category = category;`.
+5. `Api/Services/FileProcessor.cs` - in `ApplyDescriptionMappingAsync`, call
+   `Category.StampTransaction` right after `transaction.Category = match.Category;` (it already has
+   `IRepository<User>` injected for `UpdateMinTransactionDateAsync`).
+6. `Api/Services/InternalTransferMatcher.cs` - inject `IRepository<User>`; call
+   `Category.StampTransaction` on both `added`/`match` right after assigning `CategoryName`.
+7. `Api.IntegrationTests`/`Api.UnitTests` - coverage: category Type/Inactive round-trip through
+   Settings; stamping via PUT /transactions category change; stamping *not* re-applied when only
+   `inactive` changes (category unchanged - the manual toggle keeps working); stamping via
+   description-mapping bulk apply and file-upload auto-categorisation; Internal Transfer matcher
+   stamping.
 
 **FrontEnd**
 
-7. `settingsService.ts`/`categoriesService.ts` - extend `CategoryDefinition` with `inactive: boolean`
+8. `transactionsService.ts` - add `type: 'Income' | 'Expense' | null` to the `Transaction` interface.
+9. `settingsService.ts`/`categoriesService.ts` - extend `CategoryDefinition` with `inactive: boolean`
    and `type: 'Income' | 'Expense'`.
-8. `SettingsView.vue` - add-category form gets an "Inactive" checkbox and a Type dropdown; category
-   list rows show Type and a muted/"Inactive" indicator.
-9. `TransactionsView.vue` - the per-row category `<select>` excludes inactive categories from the
-   assignable options (a transaction already carrying an inactive category still displays it).
-10. `dashboardMetrics.ts` - replace the hardcoded `'Income'`/`'Internal Transfer'` string checks with
-    `transaction.type === 'Income'`/`'Expense'`, relying on the existing `isCounted()`/`!inactive`
-    filter to keep excluding Internal Transfer (per Q1/Q3 resolution).
-11. `FrontEnd.UnitTests` + `FunctionalTests` updated for all of the above.
-12. `scripts/setup_local.sh` - seed `Inactive`/`Type` on each default category per the Q3 mapping.
+10. `SettingsView.vue` - add-category form gets an "Inactive" checkbox and a Type dropdown
+    (default `Expense`); category list rows show Type and an "Inactive" tag when set. (No picker
+    filtering - Q2 resolution.)
+11. `dashboardMetrics.ts` - replace the hardcoded `'Income'`/`'Internal Transfer'` string checks in
+    `sumIncome`/`sumExpenses`/`computeExpensesByCategory` with `transaction.type === 'Income'`/
+    `'Expense'`, relying on the existing `isCounted()`/`!inactive` filter to keep excluding Internal
+    Transfer once it's stamped.
+12. `FrontEnd.UnitTests` + `FunctionalTests` updated for all of the above.
+13. `scripts/setup_local.sh` - seed `Inactive`/`Type` on each default category per the Q3 mapping.
 
 **Verification**
 
-13. `dotnet test`; `npm run build`/`lint`; `FrontEnd.UnitTests`; full Playwright suite; manual
-    browser check (light + dark) - add an inactive category, confirm it drops out of the picker,
-    confirm dashboard Income/Expense math still matches expectations.
+14. `dotnet test`; `npm run build`/`lint`; `FrontEnd.UnitTests`; full Playwright suite; manual
+    browser check (light + dark) - add a category with Type/Inactive set, categorise a transaction
+    with it, confirm the transaction picks up `Inactive`/`Type`, confirm the manual "Set
+    active/inactive" toggle still works independently, confirm dashboard Income/Expense math.
 
 ## Checklist
 
-- [ ] Confirm open questions above before starting implementation
-- [ ] `Api/Data/Category.cs` - `Inactive` + `Type`
-- [ ] `Api/Data/Transaction.cs` - `Type` (+ Q1 resolution)
-- [ ] `SettingsController` - `POST /settings/category` accepts `Inactive`/`Type`
-- [ ] `TransactionUpdateService` - stamp `Type`/inactive on categorisation
-- [ ] `InternalTransferMatcher` - stamp `Type`/inactive on auto-match
-- [ ] `Api.IntegrationTests`/`Api.UnitTests` - new coverage
-- [ ] `settingsService.ts`/`categoriesService.ts` - `inactive`/`type` fields
-- [ ] `SettingsView.vue` - Inactive checkbox + Type dropdown, list indicators
-- [ ] `TransactionsView.vue` - exclude inactive categories from the picker
-- [ ] `dashboardMetrics.ts` - use `type`/`inactive` instead of hardcoded category names
-- [ ] `FrontEnd.UnitTests` + `FunctionalTests` updated
-- [ ] `scripts/setup_local.sh` - seed `Inactive`/`Type` on defaults
+- [x] `Api/Data/Category.cs` - `Inactive` + `Type` + `StampTransaction` helper
+- [x] `Api/Data/Transaction.cs` - `Type` field + updated doc comment
+- [x] `SettingsController` - `POST /settings/category` accepts `Inactive`/`Type` (already bound the
+      full `Category` object, no controller changes needed)
+- [x] `TransactionUpdateService` - stamp on category change in both mutation methods (also clears
+      `Type`/`Inactive` in `RemoveCategoryFromTransactionsAsync` when a category is deleted)
+- [x] `FileProcessor` - stamp on upload-time auto-categorisation
+- [x] `InternalTransferMatcher` - stamp on auto-match
+- [x] `Api.IntegrationTests`/`Api.UnitTests` - new coverage (133/133 passing: category Type/Inactive
+      round-trip; stamping on PUT category change across all 4 mutation sites; manual toggle
+      preserved when category unchanged; Type/Inactive cleared on category deletion)
+- [x] `transactionsService.ts` - `type` field on `Transaction`
+- [x] `settingsService.ts`/`categoriesService.ts` - `inactive`/`type` fields
+- [x] `SettingsView.vue` - Inactive checkbox + Type dropdown, list indicators
+- [x] `dashboardMetrics.ts` - use `type`/`inactive` instead of hardcoded category names
+- [x] `FrontEnd.UnitTests` updated (112/112 passing - `dashboardMetrics.test.ts` fixtures switched
+      from category-name-based to Type/Inactive-based, matching the new dashboard logic)
+- [x] `scripts/setup_local.sh` - seed `Inactive`/`Type` on defaults (verified: reseeded test user's
+      Groceries/Income/Internal Transfer categories carry the expected values)
 - [ ] Build/test/lint verification + manual browser check (light + dark)
 
 ## Prompt log
 
 - "start a worklog for UBE-75"
+- "1. re-use. 2. inactive means nothing for the category, it meansthat when the transaction is flagged with this category the transaction should be set to inactive. 3. correct. 4. I will manually remove"

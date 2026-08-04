@@ -322,6 +322,74 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
+    public async Task Put_StampsTypeAndInactive_FromTheCategoryDefinition_WhenCategoryChanges()
+    {
+        var client = AuthenticatedClient();
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        await repository.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        });
+
+        var addCategoryResponse = await client.PostAsJsonAsync(
+            "/settings/category",
+            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense, Inactive = true });
+        Assert.Equal(HttpStatusCode.NoContent, addCategoryResponse.StatusCode);
+
+        var updated = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
+        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { updated });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var month = await repository.GetAsync(monthId);
+        var transaction = month!.Transactions.Single();
+        Assert.Equal(Category.CategoryType.Expense, transaction.Type);
+        Assert.True(transaction.Inactive);
+    }
+
+    [Fact]
+    public async Task Put_DoesNotReapplyTheCategoryStamp_WhenOnlyInactiveChangesAndTheCategoryStaysTheSame()
+    {
+        var client = AuthenticatedClient();
+        var monthId = TransactionMonth.BuildId(_email, 2026, 6);
+        _seededMonthIds.Add(monthId);
+        using var scope = _factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        await repository.AddAsync(new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
+        });
+
+        await client.PostAsJsonAsync(
+            "/settings/category",
+            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense, Inactive = false });
+
+        var categorised = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
+        await client.PutAsJsonAsync("/transactions", new List<Transaction> { categorised });
+
+        // Manual "Set inactive" toggle - same category, only Inactive flipped. Should stick rather
+        // than being immediately overwritten back to the category's own Inactive=false. The real
+        // client always spreads the full transaction object (including the server-derived Type) back
+        // on every PUT, so this mirrors that rather than a partial payload.
+        var manuallyInactive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m, Type = Category.CategoryType.Expense, Inactive = true };
+        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { manuallyInactive });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var month = await repository.GetAsync(monthId);
+        var transaction = month!.Transactions.Single();
+        Assert.True(transaction.Inactive);
+        Assert.Equal(Category.CategoryType.Expense, transaction.Type);
+    }
+
+    [Fact]
     public async Task Post_FlagsBothTransactions_AsInternalTransfer_WhenAnInvertedAmountArrivesInAnotherAccountWithinFiveDays_AcrossSeparateUploads()
     {
         var client = AuthenticatedClient();

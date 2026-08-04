@@ -126,6 +126,8 @@ public sealed class FileProcessor : IFileProcessor
             return;
         }
 
+        List<Category>? categories = null;
+
         foreach (var transaction in transactions)
         {
             // Prefer the most precise (longest DescriptionStart) match, matching the frontend's
@@ -139,6 +141,8 @@ public sealed class FileProcessor : IFileProcessor
             if (match is not null)
             {
                 transaction.Category = match.Category;
+                categories ??= (await _users.GetAsync(email))?.Categories ?? [];
+                Category.StampTransaction(transaction, categories);
             }
         }
     }

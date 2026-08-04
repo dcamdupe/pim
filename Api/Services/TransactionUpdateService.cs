@@ -8,23 +8,27 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<DescriptionMapping> _descriptionMappings;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
+    private readonly IRepository<User> _users;
     private readonly ITransactionQueryService _transactionQueryService;
 
     public TransactionUpdateService(
         IRepository<TransactionMonth> transactionMonths,
         IRepository<DescriptionMapping> descriptionMappings,
         IRepository<TransactionDescriptions> transactionDescriptions,
+        IRepository<User> users,
         ITransactionQueryService transactionQueryService)
     {
         _transactionMonths = transactionMonths;
         _descriptionMappings = descriptionMappings;
         _transactionDescriptions = transactionDescriptions;
+        _users = users;
         _transactionQueryService = transactionQueryService;
     }
 
     public async Task UpdateTransactionsAsync(string email, List<Transaction> transactions)
     {
         (TransactionDescriptions Descriptions, bool IsNew)? descriptionsContext = null;
+        List<Category>? categories = null;
 
         foreach (var group in transactions.GroupBy(t => (t.Date.Year, t.Date.Month)))
         {
@@ -47,6 +51,9 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
 
                     if (previousCategory != updated.Category)
                     {
+                        categories ??= await LoadCategoriesAsync(email);
+                        Category.StampTransaction(updated, categories);
+
                         descriptionsContext ??= await LoadDescriptionsAsync(email);
                         TransactionDescriptionStatsHelper.AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, updated.Description, previousCategory, updated.Category);
                     }
@@ -78,6 +85,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
             .Distinct();
 
         (TransactionDescriptions Descriptions, bool IsNew)? descriptionsContext = null;
+        List<Category>? categories = null;
 
         foreach (var (year, month) in affectedMonths)
         {
@@ -100,6 +108,8 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
                 TransactionDescriptionStatsHelper.AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, transaction.Description, transaction.Category, category);
 
                 transaction.Category = category;
+                categories ??= await LoadCategoriesAsync(email);
+                Category.StampTransaction(transaction, categories);
                 changed = true;
             }
 
@@ -172,6 +182,8 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
             foreach (var transaction in bucket.Transactions.Where(t => t.Category == categoryName))
             {
                 transaction.Category = string.Empty;
+                transaction.Type = null;
+                transaction.Inactive = null;
                 changed = true;
             }
 
@@ -180,6 +192,12 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
                 await _transactionMonths.UpdateAsync(id, bucket);
             }
         }
+    }
+
+    private async Task<List<Category>> LoadCategoriesAsync(string email)
+    {
+        var user = await _users.GetAsync(email);
+        return user?.Categories ?? [];
     }
 
     private async Task<(TransactionDescriptions Descriptions, bool IsNew)> LoadDescriptionsAsync(string email)

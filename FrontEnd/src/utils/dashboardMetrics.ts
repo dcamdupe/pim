@@ -119,7 +119,7 @@ function isWithinRange(transaction: Transaction, range: DateRange): boolean {
 
 function sumIncome(transactions: Transaction[]): number {
   return transactions
-    .filter((t) => isCounted(t) && t.category === 'Income')
+    .filter((t) => isCounted(t) && t.type === 'Income')
     .reduce((sum, t) => sum + t.amount, 0)
 }
 
@@ -128,19 +128,20 @@ function sumIncome(transactions: Transaction[]): number {
 // both are displayed as positive magnitudes.
 function sumExpenses(transactions: Transaction[]): number {
   const total = transactions
-    .filter((t) => isCounted(t) && t.category !== 'Income' && t.category !== 'Internal Transfer')
+    .filter((t) => isCounted(t) && t.type === 'Expense')
     .reduce((sum, t) => sum + t.amount, 0)
   return total === 0 ? 0 : -total
 }
 
-// Per-category expense breakdown for the current month, excluding Income and Internal Transfer
-// (not expense categories) and inactive transactions, sorted highest-spend first.
+// Per-category expense breakdown for the current month, excluding non-expense (Income/no-Type) and
+// inactive transactions - Internal Transfer is excluded via isCounted() since its category is
+// stamped Inactive (UBE-75) - sorted highest-spend first.
 export function computeExpensesByCategory(transactions: Transaction[], today: Date): CategoryExpense[] {
   const currentMonthTransactions = transactions.filter((t) => isWithinRange(t, getCurrentMonthRange(today)))
   const totals = new Map<string, number>()
 
   for (const t of currentMonthTransactions) {
-    if (!isCounted(t) || t.category === 'Income' || t.category === 'Internal Transfer') {
+    if (!isCounted(t) || t.type !== 'Expense') {
       continue
     }
     totals.set(t.category, (totals.get(t.category) ?? 0) - t.amount)

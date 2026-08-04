@@ -88,20 +88,23 @@ setup_local() {
        --endpoint-url "$dynamo_endpoint" --region "$dynamo_region" 2>/dev/null | jq -e '.Item' >/dev/null 2>&1; then
     echo "Test login \"$test_email\" already exists, skipping."
   else
+    # Type/Inactive set "based on the original meaning" (UBE-75): every spend category is an
+    # Expense; Income is Income; Internal Transfer is marked Inactive so its transactions still
+    # drop out of dashboard sums once stamped, replacing the old hardcoded category-name check.
     local default_categories
     default_categories='[
-      {"Name": "Housing", "Colour": "#2a78d6"},
-      {"Name": "Groceries", "Colour": "#eb6834"},
-      {"Name": "Transport", "Colour": "#1baf7a"},
-      {"Name": "Dining", "Colour": "#eda100"},
-      {"Name": "Shopping", "Colour": "#e87ba4"},
-      {"Name": "Utilities", "Colour": "#008300"},
-      {"Name": "Entertainment", "Colour": "#4a3aa7"},
-      {"Name": "Medical", "Colour": "#0891b2"},
-      {"Name": "Subscriptions", "Colour": "#c026d3"},
-      {"Name": "Income", "Colour": "#0f766e"},
-      {"Name": "Other", "Colour": "#e34948"},
-      {"Name": "Internal Transfer", "Colour": "#6b7280"}
+      {"Name": "Housing", "Colour": "#2a78d6", "Type": "Expense", "Inactive": false},
+      {"Name": "Groceries", "Colour": "#eb6834", "Type": "Expense", "Inactive": false},
+      {"Name": "Transport", "Colour": "#1baf7a", "Type": "Expense", "Inactive": false},
+      {"Name": "Dining", "Colour": "#eda100", "Type": "Expense", "Inactive": false},
+      {"Name": "Shopping", "Colour": "#e87ba4", "Type": "Expense", "Inactive": false},
+      {"Name": "Utilities", "Colour": "#008300", "Type": "Expense", "Inactive": false},
+      {"Name": "Entertainment", "Colour": "#4a3aa7", "Type": "Expense", "Inactive": false},
+      {"Name": "Medical", "Colour": "#0891b2", "Type": "Expense", "Inactive": false},
+      {"Name": "Subscriptions", "Colour": "#c026d3", "Type": "Expense", "Inactive": false},
+      {"Name": "Income", "Colour": "#0f766e", "Type": "Income", "Inactive": false},
+      {"Name": "Other", "Colour": "#e34948", "Type": "Expense", "Inactive": false},
+      {"Name": "Internal Transfer", "Colour": "#6b7280", "Type": "Expense", "Inactive": true}
     ]'
 
     local user_data item

@@ -23,7 +23,7 @@ describe('settingsService', () => {
   describe('getSettings', () => {
     it('fetches /settings with the bearer token and returns the accounts, categories and minTransactionDate', async () => {
       const accounts = [{ name: 'Everyday', number: '123456', type: 'Transaction' }]
-      const categories = [{ name: 'Groceries', colour: '#00ff00' }]
+      const categories = [{ name: 'Groceries', colour: '#00ff00', inactive: false, type: 'Expense' as const }]
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ accounts, categories, minTransactionDate: '2026-06-10' }),
@@ -100,7 +100,7 @@ describe('settingsService', () => {
 
   describe('addCategory', () => {
     it('POSTs the category with the bearer token', async () => {
-      const category = { name: 'Groceries', colour: '#00ff00' }
+      const category = { name: 'Groceries', colour: '#00ff00', inactive: false, type: 'Expense' as const }
       const fetchMock = vi.fn().mockResolvedValue({ ok: true })
       vi.stubGlobal('fetch', fetchMock)
 
@@ -119,13 +119,13 @@ describe('settingsService', () => {
     it('throws SettingsRequestFailedError when the response is not ok', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
-      await expect(addCategory({ name: 'Groceries', colour: '#00ff00' })).rejects.toBeInstanceOf(SettingsRequestFailedError)
+      await expect(addCategory({ name: 'Groceries', colour: '#00ff00', inactive: false, type: 'Expense' as const })).rejects.toBeInstanceOf(SettingsRequestFailedError)
     })
   })
 
   describe('deleteCategory', () => {
     it('DELETEs the category with the bearer token', async () => {
-      const category = { name: 'Groceries', colour: '#00ff00' }
+      const category = { name: 'Groceries', colour: '#00ff00', inactive: false, type: 'Expense' as const }
       const fetchMock = vi.fn().mockResolvedValue({ ok: true })
       vi.stubGlobal('fetch', fetchMock)
 
@@ -144,7 +144,7 @@ describe('settingsService', () => {
     it('throws SettingsRequestFailedError when the response is not ok', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
-      await expect(deleteCategory({ name: 'Groceries', colour: '#00ff00' })).rejects.toBeInstanceOf(SettingsRequestFailedError)
+      await expect(deleteCategory({ name: 'Groceries', colour: '#00ff00', inactive: false, type: 'Expense' as const })).rejects.toBeInstanceOf(SettingsRequestFailedError)
     })
   })
 })

@@ -1,7 +1,8 @@
 # UBE-76: Rename inactive to ignore
 
 Linear: https://linear.app/uberconcept/issue/UBE-76/rename-inactive-to-ignore
-Status: Todo · Priority: No priority
+Status: Done · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/54
 
 ## Description (from Linear)
 
@@ -160,3 +161,6 @@ Category Type dropdown/list correctly show "Ignore" for Internal Transfer instea
 
 - "start a worklog for UBE-76"
 - "1. rename for consistency. 2. use ignore everywhere. 3. manual migration"
+- "Read the output of the background manual-check Playwright run... report back concisely" (final
+  verification instructions)
+- "commit and raise PR"

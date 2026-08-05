@@ -180,7 +180,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
             {
                 transaction.Category = string.Empty;
                 transaction.Type = null;
-                transaction.Inactive = null;
+                transaction.Ignore = null;
                 changed = true;
             }
 

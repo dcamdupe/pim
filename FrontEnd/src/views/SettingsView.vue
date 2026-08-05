@@ -21,7 +21,7 @@ interface PendingRemoval {
 
 const INTERNAL_TRANSFER = 'Internal Transfer'
 const accountTypes: AccountType[] = ['Credit', 'Transaction', 'Savings']
-const categoryTypes: CategoryType[] = ['Income', 'Expense', 'Inactive']
+const categoryTypes: CategoryType[] = ['Income', 'Expense', 'Ignore']
 
 const accounts = ref<Account[]>([])
 const loading = ref(true)

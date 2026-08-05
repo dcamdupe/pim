@@ -5,10 +5,10 @@ import type { Transaction } from '../../FrontEnd/src/services/transactionsServic
 const noFilters: TransactionFilters = { search: '', account: '', category: '', needsCategoryOnly: false }
 
 const transactions: Transaction[] = [
-  { account: 'Everyday', date: '2026-07-01', description: 'Coffee Shop', category: 'Dining', amount: -4.5, inactive: null },
-  { account: 'Everyday', date: '2026-07-02', description: 'Salary', category: 'Income', amount: 2500, inactive: null },
-  { account: 'Credit Card', date: '2026-07-03', description: 'Whole Foods Market', category: '', amount: -86.42, inactive: null },
-  { account: 'Credit Card', date: '2026-07-04', description: 'Coffee Beans Direct', category: '', amount: -12, inactive: null },
+  { account: 'Everyday', date: '2026-07-01', description: 'Coffee Shop', category: 'Dining', amount: -4.5, ignore: null },
+  { account: 'Everyday', date: '2026-07-02', description: 'Salary', category: 'Income', amount: 2500, ignore: null },
+  { account: 'Credit Card', date: '2026-07-03', description: 'Whole Foods Market', category: '', amount: -86.42, ignore: null },
+  { account: 'Credit Card', date: '2026-07-04', description: 'Coffee Beans Direct', category: '', amount: -12, ignore: null },
 ]
 
 describe('filterTransactions', () => {

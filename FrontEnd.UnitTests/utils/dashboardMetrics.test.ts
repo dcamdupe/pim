@@ -22,7 +22,7 @@ function tx(overrides: Partial<Transaction>): Transaction {
     description: 'Test',
     category: '',
     amount: -1,
-    inactive: null,
+    ignore: null,
     type: null,
     ...overrides,
   }
@@ -67,11 +67,11 @@ describe('computeDashboardTiles', () => {
     expect(tiles.currentMonthProfit).toBe(3000 - 200)
   })
 
-  it('excludes transactions where inactive is true, includes false and null', () => {
+  it('excludes transactions where ignore is true, includes false and null', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 1000, inactive: null }),
-      tx({ date: '2026-07-06', category: 'Income', type: 'Income', amount: 500, inactive: false }),
-      tx({ date: '2026-07-07', category: 'Income', type: 'Income', amount: 9999, inactive: true }),
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 1000, ignore: null }),
+      tx({ date: '2026-07-06', category: 'Income', type: 'Income', amount: 500, ignore: false }),
+      tx({ date: '2026-07-07', category: 'Income', type: 'Income', amount: 9999, ignore: true }),
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -125,12 +125,12 @@ describe('computeDashboardTiles', () => {
     expect(tiles.currentMonthExpenses).toBe(80)
   })
 
-  // Internal Transfer's category is stamped Inactive by the Api (UBE-75), so it drops out via the
-  // inactive filter rather than any Type/category-name check here.
+  // Internal Transfer's category is stamped Ignore by the Api (UBE-75/UBE-76), so it drops out via
+  // the ignore filter rather than any Type/category-name check here.
   it('excludes Internal Transfer transactions from expenses', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -200 }),
-      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', ignore: true, amount: -500 }),
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -142,8 +142,8 @@ describe('computeDashboardTiles', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
       tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -200 }),
-      tx({ date: '2026-07-07', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
-      tx({ date: '2026-07-08', category: 'Internal Transfer', type: 'Income', inactive: true, amount: 500 }),
+      tx({ date: '2026-07-07', category: 'Internal Transfer', type: 'Expense', ignore: true, amount: -500 }),
+      tx({ date: '2026-07-08', category: 'Internal Transfer', type: 'Income', ignore: true, amount: 500 }),
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
@@ -185,7 +185,7 @@ describe('computeExpensesByCategory', () => {
   it('excludes Income and Internal Transfer categories', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
-      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', ignore: true, amount: -500 }),
       tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -200 }),
     ]
 
@@ -194,11 +194,11 @@ describe('computeExpensesByCategory', () => {
     expect(result).toEqual([{ category: 'Groceries', amount: 200, pct: 100, color: expect.any(String) }])
   })
 
-  it('excludes transactions where inactive is true, includes false and null', () => {
+  it('excludes transactions where ignore is true, includes false and null', () => {
     const transactions = [
-      tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -200, inactive: null }),
-      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -100, inactive: false }),
-      tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -9999, inactive: true }),
+      tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -200, ignore: null }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -100, ignore: false }),
+      tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -9999, ignore: true }),
     ]
 
     const result = computeExpensesByCategory(transactions, today)
@@ -298,11 +298,11 @@ describe('computeMonthlyIncomeExpenses', () => {
     expect(result.find((m) => m.month === 'Jun')).toMatchObject({ income: 1000, expense: 300 })
   })
 
-  it('excludes Internal Transfer and inactive transactions', () => {
+  it('excludes Internal Transfer and ignored transactions', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
-      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', inactive: true, amount: -500 }),
-      tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -200, inactive: true }),
+      tx({ date: '2026-07-06', category: 'Internal Transfer', type: 'Expense', ignore: true, amount: -500 }),
+      tx({ date: '2026-07-07', category: 'Groceries', type: 'Expense', amount: -200, ignore: true }),
     ]
 
     const result = computeMonthlyIncomeExpenses(transactions, today)

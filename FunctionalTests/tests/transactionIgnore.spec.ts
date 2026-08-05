@@ -8,7 +8,7 @@ function formatForUpload(date: Date): string {
 }
 
 test.describe('Ignoring transactions', () => {
-  test('toggles a transaction inactive and back active via the row menu, reloading the listing each time', async ({
+  test('ignores a transaction and unignores it via the row menu, reloading the listing each time', async ({
     page,
   }) => {
     const runId = Date.now();
@@ -45,28 +45,30 @@ test.describe('Ignoring transactions', () => {
 
     const row = page.locator('tr', { hasText: desc });
     const otherRow = page.locator('tr', { hasText: otherDesc });
-    await expect(row.getByText('Inactive')).toHaveCount(0);
+    // The chip is checked via its own element (not getByText) since the test's own description
+    // fixture ("Ignore Test ...") would otherwise collide with a plain substring text search.
+    await expect(row.locator('.chip')).toHaveCount(0);
 
     // Only one row's menu is open at a time - opening this row's menu first, then clicking
     // elsewhere on the page (the page heading), confirms the outside-click-closes behaviour
     // before actually exercising the toggle.
     await row.getByRole('button', { name: `Actions for ${desc}` }).click();
-    await expect(row.getByRole('menuitem', { name: 'Set inactive' })).toBeVisible();
+    await expect(row.getByRole('menuitem', { name: 'Ignore', exact: true })).toBeVisible();
     await page.getByRole('heading', { name: 'Transactions' }).click();
-    await expect(row.getByRole('menuitem', { name: 'Set inactive' })).toHaveCount(0);
+    await expect(row.getByRole('menuitem', { name: 'Ignore', exact: true })).toHaveCount(0);
 
-    // Set inactive - the listing reloads and the row shows the "Inactive" indicator.
+    // Ignore - the listing reloads and the row shows the "Ignore" indicator.
     await row.getByRole('button', { name: `Actions for ${desc}` }).click();
-    await row.getByRole('menuitem', { name: 'Set inactive' }).click();
-    await expect(row.getByText('Inactive')).toBeVisible();
+    await row.getByRole('menuitem', { name: 'Ignore', exact: true }).click();
+    await expect(row.locator('.chip')).toHaveText('Ignore');
     // The unrelated row is untouched.
-    await expect(otherRow.getByText('Inactive')).toHaveCount(0);
+    await expect(otherRow.locator('.chip')).toHaveCount(0);
 
-    // Set active again - the "Inactive" indicator clears.
+    // Unignore again - the "Ignore" indicator clears.
     await row.getByRole('button', { name: `Actions for ${desc}` }).click();
-    await expect(row.getByRole('menuitem', { name: 'Set active' })).toBeVisible();
-    await row.getByRole('menuitem', { name: 'Set active' }).click();
-    await expect(row.getByText('Inactive')).toHaveCount(0);
+    await expect(row.getByRole('menuitem', { name: 'Unignore' })).toBeVisible();
+    await row.getByRole('menuitem', { name: 'Unignore' }).click();
+    await expect(row.locator('.chip')).toHaveCount(0);
 
     // clean up the Settings account added for this test - removal is immediate via a
     // confirmation modal (UBE-57), not deferred to Save.

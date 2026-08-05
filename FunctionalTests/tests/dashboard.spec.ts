@@ -64,7 +64,7 @@ test.describe('Dashboard tiles', () => {
     const expenseThisMonth = `DashExpenseThisMonth${runId}`;
     const incomePrior = `DashIncomePrior${runId}`;
     const expensePriorActive = `DashExpensePriorActive${runId}`;
-    const expensePriorInactive = `DashExpensePriorInactive${runId}`;
+    const expensePriorIgnore = `DashExpensePriorIgnore${runId}`;
 
     const qif =
       '!Type:Bank\n' +
@@ -72,7 +72,7 @@ test.describe('Dashboard tiles', () => {
       qifRecord(today, expenseThisMonth, '-200.00') +
       qifRecord(twoMonthsAgo, incomePrior, '1000.00') +
       qifRecord(twoMonthsAgo, expensePriorActive, '-300.00') +
-      qifRecord(twoMonthsAgo, expensePriorInactive, '-999.00');
+      qifRecord(twoMonthsAgo, expensePriorIgnore, '-999.00');
 
     await page.goto('/login');
     await page.locator('#email').fill('testuser@example.com');
@@ -119,13 +119,15 @@ test.describe('Dashboard tiles', () => {
     await categorize(expenseThisMonth, 'Groceries');
     await categorize(incomePrior, 'Income');
     await categorize(expensePriorActive, 'Dining');
-    await categorize(expensePriorInactive, 'Dining');
+    await categorize(expensePriorIgnore, 'Dining');
 
-    // Mark the "prior" inactive-expense transaction inactive so it's excluded from the tiles.
-    const inactiveRow = page.locator('tr', { hasText: expensePriorInactive });
-    await inactiveRow.getByRole('button', { name: `Actions for ${expensePriorInactive}` }).click();
-    await inactiveRow.getByRole('menuitem', { name: 'Set inactive' }).click();
-    await expect(inactiveRow.getByText('Inactive')).toBeVisible();
+    // Ignore the "prior" expense transaction so it's excluded from the tiles.
+    const ignoreRow = page.locator('tr', { hasText: expensePriorIgnore });
+    await ignoreRow.getByRole('button', { name: `Actions for ${expensePriorIgnore}` }).click();
+    await ignoreRow.getByRole('menuitem', { name: 'Ignore', exact: true }).click();
+    // Checked via the chip's own element (not getByText) since this row's description itself
+    // contains "Ignore", which a plain substring text search would also match.
+    await expect(ignoreRow.locator('.chip')).toHaveText('Ignore');
 
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
@@ -140,7 +142,7 @@ test.describe('Dashboard tiles', () => {
     // Current month: income 3000, expense 200 -> profit +2800, expenses +200.
     expect(after.currentProfit - before.currentProfit).toBe(2800);
     expect(after.currentExpenses - before.currentExpenses).toBe(200);
-    // Previous 6 months: income 1000, active expense 300 (the -999 inactive one excluded)
+    // Previous 6 months: income 1000, active expense 300 (the -999 ignored one excluded)
     // -> profit +700, expenses +300, shown on the tile as an average over 6 months (UBE-73).
     // The tile displays whole dollars (no cents), and "before"/"after" are each independently
     // rounded before this delta is taken, so up to ~$1 of combined rounding error is expected -

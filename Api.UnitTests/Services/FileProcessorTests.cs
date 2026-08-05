@@ -373,7 +373,7 @@ public class FileProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_StampsTypeAndInactive_FromTheMappedCategorysDefinition()
+    public async Task ProcessAsync_StampsTypeAndIgnore_FromTheMappedCategorysDefinition()
     {
         var mapping = new DescriptionMapping
         {
@@ -400,7 +400,7 @@ public class FileProcessorTests
         var month = Assert.Single(months);
         var transaction = month.Transactions.Single();
         Assert.Equal(Category.CategoryType.Expense, transaction.Type);
-        Assert.False(transaction.Inactive);
+        Assert.False(transaction.Ignore);
     }
 
     [Fact]

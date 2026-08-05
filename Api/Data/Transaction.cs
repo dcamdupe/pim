@@ -12,13 +12,13 @@ public sealed class Transaction
 
     public required decimal Amount { get; set; }
 
-    public bool? Inactive { get; set; }
+    public bool? Ignore { get; set; }
 
     public Category.CategoryType? Type { get; set; }
 
     // Date+Description+Amount+Account is the closest thing this app has to a stable identity for
     // a transaction (there's no surrogate id) - used both to skip re-uploaded duplicates and to
-    // find which stored transaction a PUT /transactions edit refers to. Category, Inactive and Type
+    // find which stored transaction a PUT /transactions edit refers to. Category, Ignore and Type
     // are deliberately excluded, since all three are expected to be edited after import.
     public static bool MatchesIdentity(Transaction a, Transaction b) =>
         a.Date == b.Date &&

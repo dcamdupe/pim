@@ -26,23 +26,23 @@ public class InternalTransferMatcherTests
     }
 
     [Fact]
-    public async Task MatchAsync_StampsTypeAndInactive_FromTheInternalTransferCategoryDefinition_WhenOneIsSeeded()
+    public async Task MatchAsync_StampsTypeAndIgnore_FromTheInternalTransferCategoryDefinition_WhenOneIsSeeded()
     {
         var a = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "");
         var b = Transaction("Savings", new DateOnly(2026, 6, 3), 100m, "");
         var bucket = Bucket(2026, 6, a, b);
         var categories = new List<Category>
         {
-            new() { Name = InternalTransferMatcher.CategoryName, Colour = "#6b7280", Type = Category.CategoryType.Inactive },
+            new() { Name = InternalTransferMatcher.CategoryName, Colour = "#6b7280", Type = Category.CategoryType.Ignore },
         };
         var sut = CreateMatcher([bucket], categories);
 
         await sut.MatchAsync(Email, [a, b], [bucket]);
 
-        Assert.Equal(Category.CategoryType.Inactive, a.Type);
-        Assert.True(a.Inactive);
-        Assert.Equal(Category.CategoryType.Inactive, b.Type);
-        Assert.True(b.Inactive);
+        Assert.Equal(Category.CategoryType.Ignore, a.Type);
+        Assert.True(a.Ignore);
+        Assert.Equal(Category.CategoryType.Ignore, b.Type);
+        Assert.True(b.Ignore);
     }
 
     [Fact]

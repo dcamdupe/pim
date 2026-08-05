@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-78/expand-the-date-filters-in-transaction
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/56
 
 ## Description (from Linear)
 

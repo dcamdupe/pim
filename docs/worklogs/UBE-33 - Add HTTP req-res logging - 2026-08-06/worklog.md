@@ -105,13 +105,43 @@ The two routes named in the ticket:
 
 ## Checklist
 
-- [ ] `RequestResponseLoggingMiddleware.cs` - request+response logging, redaction for
+- [x] `RequestResponseLoggingMiddleware.cs` - request+response logging, redaction for
       password/multipart-file
-- [ ] `Program.cs` - wire up the middleware
-- [ ] `RequestResponseLoggingTests.cs` - log-capture integration tests
-- [ ] `dotnet test` passing
-- [ ] Manual local verification via `run_local.sh`
+- [x] `Program.cs` - wire up the middleware (`dotnet build` clean, 0 warnings under
+      `TreatWarningsAsErrors`)
+- [x] `RequestResponseLoggingTests.cs` - log-capture integration tests (3 new: login redaction,
+      file-upload redaction, plain GET verb/URL/querystring/status)
+- [x] `dotnet test` passing - 85 unit + 52 integration (49 previous + 3 new)
+- [x] Manual local verification - real `dotnet run --project Api` + `curl` (login, file upload, GET)
+      confirms console output exactly as designed (see Verification below)
+
+## Verification
+
+`dotnet build` clean (0 warnings, `TreatWarningsAsErrors`). `dotnet test` 85 unit + 52 integration (49
+previous + 3 new `RequestResponseLoggingTests`) all passing - these use a custom in-memory
+`ILoggerProvider` layered onto the real pipeline via `WebApplicationFactory.WithWebHostBuilder`,
+capturing the actual formatted log lines to assert against (confirmed it composes correctly with the
+app's own `ClearProviders()` + NLog setup in `ServiceMapping.ConfigureLogging`).
+
+Manual verification via a real `dotnet run --project Api` + `curl` against `/login`,
+`/transactions/file`, and `GET /transactions`, reading the console output directly:
+
+```
+HTTP request: POST /login body={"email":"testuser@example.com","password":"***"}
+HTTP response: 200 body={"token":"eyJhbGci..."}
+HTTP request: GET /transactions?startDate=2026-01-01&endDate=2026-12-31 body=
+HTTP response: 200 body={"transactions":[]}
+HTTP request: POST /transactions/file body=account=ManualVerifyAccount&file=[file: verify.qif, 58 bytes]
+HTTP response: 204 body=
+```
+
+Confirmed: password redacted, uploaded file's content (including a distinctive merchant name planted
+in the QIF specifically to check for a leak) never appears anywhere in the log, the file's own
+filename/size are still shown, every request-scoped log line shares one request-id prefix (existing
+UBE-43 behavior, unaffected), and the login response's JWT token is logged in full per the "request
+sonly" redaction scope documented above.
 
 ## Prompt log
 
 - "start a worklog for UBE-33"
+- "go ahead"

@@ -42,12 +42,23 @@ maps 1:1 to the 4 workflow files/top-level names, not the jobs within them.
 
 ## Checklist
 
-- [ ] `dotnet.yml` renamed to "Build Api"
-- [ ] `frontend.yml` renamed to "Build Front end"
-- [ ] `terraform.yml` renamed to "Deploy Terraform"
-- [ ] `deploy.yml` renamed to "Deploy platform"
-- [ ] YAML validity + sanity test pass
+- [x] `dotnet.yml` renamed to "Build Api"
+- [x] `frontend.yml` renamed to "Build Front end"
+- [x] `terraform.yml` renamed to "Deploy Terraform"
+- [x] `deploy.yml` renamed to "Deploy platform"
+- [x] YAML validity + sanity test pass - all 4 workflow files parse cleanly (`ruby -ryaml`, no
+      `actionlint`/`yamllint` available locally); `dotnet test` 85+49 passing, `FrontEnd.UnitTests`
+      113/113 passing (unaffected, as expected - no application code touched)
+
+## Verification
+
+`git diff` confirms exactly the 4 intended one-line `name:` changes, nothing else. All 4 YAML files
+parse cleanly. `dotnet test` and `FrontEnd.UnitTests` both pass unaffected, as expected for a
+workflow-metadata-only change - `terraform.yml`/`deploy.yml` can't be exercised locally (manual
+`workflow_dispatch` only, real AWS credentials required), so their new display names will only be
+confirmed live in the Actions tab after this merges.
 
 ## Prompt log
 
 - "start a worklog on UBE-29"
+- "go ahead"

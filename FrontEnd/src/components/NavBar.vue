@@ -97,6 +97,9 @@ function onLogout() {
   display: flex;
   align-items: center;
   gap: 4px;
+  padding: 4px;
+  background: var(--page-bg);
+  border-radius: 12px;
 }
 
 .tab {
@@ -110,13 +113,13 @@ function onLogout() {
 
 .tab:hover,
 .tab:focus-visible {
-  background: var(--border);
   color: var(--text-h);
 }
 
 .tab.router-link-active {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--bg);
+  color: var(--text-h);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .spacer {

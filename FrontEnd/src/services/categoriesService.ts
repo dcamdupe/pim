@@ -35,7 +35,9 @@ export async function refreshCategories(): Promise<CategoryDefinition[]> {
 }
 
 export function categoryNames(): string[] {
-  return getCachedCategories().map((c) => c.name)
+  return getCachedCategories()
+    .map((c) => c.name)
+    .sort((a, b) => a.localeCompare(b))
 }
 
 export function categoryColor(category: string): string | undefined {

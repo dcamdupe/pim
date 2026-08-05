@@ -70,10 +70,10 @@ describe('categoriesService', () => {
   })
 
   describe('categoryNames', () => {
-    it('returns the names of the cached categories', () => {
+    it('returns the names of the cached categories, sorted alphabetically', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(categories))
 
-      expect(categoryNames()).toEqual(['Groceries', 'Dining'])
+      expect(categoryNames()).toEqual(['Dining', 'Groceries'])
     })
   })
 

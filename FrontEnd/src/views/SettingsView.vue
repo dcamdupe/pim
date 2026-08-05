@@ -124,6 +124,8 @@ async function onSave() {
   }
 }
 
+const sortedCategories = computed(() => [...categories.value].sort((a, b) => a.name.localeCompare(b.name)))
+
 const hasDuplicateCategoryName = computed(() =>
   categories.value.some((c) => c.name.trim().toLowerCase() === newCategoryName.value.trim().toLowerCase()),
 )
@@ -254,7 +256,7 @@ function cancelRemoveCategory() {
       <p class="subtitle">Manage the categories used to classify transactions.</p>
 
       <div class="categories">
-        <div v-for="category in categories" :key="category.name" class="category-row">
+        <div v-for="category in sortedCategories" :key="category.name" class="category-row">
           <span class="swatch" :style="{ background: category.colour }" aria-hidden="true"></span>
           <span class="category-name">{{ category.name }}</span>
           <span class="category-type">{{ category.type }}</span>

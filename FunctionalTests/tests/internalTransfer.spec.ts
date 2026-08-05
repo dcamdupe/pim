@@ -87,9 +87,10 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
     const afterFirstUpload = await currentMonthExpensesTileValue(page);
-    // Uncategorized transactions carry no Type (UBE-75) and so aren't counted as an expense until
-    // categorised - the control pair already nets to zero regardless of category either way.
-    expect(afterFirstUpload - before).toBe(0);
+    // Uncategorized transactions carry no Type (UBE-75), but a negative amount still counts as an
+    // expense (UBE-69) - transferOut and controlOut are both negative-amount and uncategorized here,
+    // so both count; controlIn is positive (money in), so it doesn't.
+    expect(afterFirstUpload - before).toBe(transferAmount + controlAmount);
 
     // Account B's leg arrives in a separate import - matching must look across the already-stored
     // transaction from the first upload, not just within this file's own rows.
@@ -112,10 +113,11 @@ test.describe('Internal transfer matching', () => {
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
     const afterSecondUpload = await currentMonthExpensesTileValue(page);
-    // The out-transfer is no longer counted (now Internal Transfer) and the in-transfer was never
-    // counted either - net zero change from the transfer pair. The control pair nets to zero
-    // regardless of category, so it doesn't move this figure either.
-    expect(afterSecondUpload - before).toBe(0);
+    // transferOut drops out (now Internal Transfer, ignored) and transferIn was never counted
+    // (positive amount) either way - net zero change from the transfer pair. The control pair is
+    // still uncategorized: controlOut (negative) keeps counting as an expense, controlIn (positive)
+    // still doesn't - so only controlAmount remains on top of the baseline.
+    expect(afterSecondUpload - before).toBe(controlAmount);
 
     // clean up the Settings accounts added for this test - removal is immediate via a
     // confirmation modal (UBE-57), not deferred to Save.

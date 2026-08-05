@@ -123,25 +123,36 @@ function sumIncome(transactions: Transaction[]): number {
     .reduce((sum, t) => sum + t.amount, 0)
 }
 
+// An uncategorized transaction (no Category, so Type never got stamped) has no Income/Expense
+// classification to go on - its raw amount sign stands in instead, matching every other money-out
+// transaction (negative = money out).
+function isUncategorizedExpense(transaction: Transaction): boolean {
+  return transaction.type === null && transaction.amount < 0
+}
+
 // Expense-category transactions are naturally negative amounts (money out); negating the sum
 // gives a positive dollar figure to display, and keeps Profit = Income - Expenses correct when
-// both are displayed as positive magnitudes.
+// both are displayed as positive magnitudes. Uncategorized transactions count too (see
+// isUncategorizedExpense) so an unreviewed transaction doesn't just silently disappear from the
+// totals until someone gets around to categorizing it.
 function sumExpenses(transactions: Transaction[]): number {
   const total = transactions
-    .filter((t) => isCounted(t) && t.type === 'Expense')
+    .filter((t) => isCounted(t) && (t.type === 'Expense' || isUncategorizedExpense(t)))
     .reduce((sum, t) => sum + t.amount, 0)
   return total === 0 ? 0 : -total
 }
 
 // Per-category expense breakdown for the current month, excluding non-expense (Income/no-Type) and
 // ignored transactions - Internal Transfer is excluded via isCounted() since its category is
-// stamped Ignore (UBE-75/UBE-76) - sorted highest-spend first.
+// stamped Ignore (UBE-75/UBE-76) - sorted highest-spend first. Uncategorized expenses (see
+// isUncategorizedExpense) group under the empty-string category key, which SpendingByCategoryChart
+// displays as an "Uncategorized" slice.
 export function computeExpensesByCategory(transactions: Transaction[], today: Date): CategoryExpense[] {
   const currentMonthTransactions = transactions.filter((t) => isWithinRange(t, getCurrentMonthRange(today)))
   const totals = new Map<string, number>()
 
   for (const t of currentMonthTransactions) {
-    if (!isCounted(t) || t.type !== 'Expense') {
+    if (!isCounted(t) || !(t.type === 'Expense' || isUncategorizedExpense(t))) {
       continue
     }
     totals.set(t.category, (totals.get(t.category) ?? 0) - t.amount)

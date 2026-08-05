@@ -54,17 +54,26 @@ describe('getPreviousSixMonthsRange', () => {
 })
 
 describe('computeDashboardTiles', () => {
-  it('sums Income-Type transactions as income, Expense-Type as expenses, and ignores untyped (uncategorized) ones', () => {
+  it('sums Income-Type transactions as income, and Expense-Type plus negative-amount uncategorized transactions as expenses', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
       tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -200 }),
-      tx({ date: '2026-07-07', category: '', type: null, amount: -50 }), // uncategorized: no Type, not counted
+      tx({ date: '2026-07-07', category: '', type: null, amount: -50 }), // uncategorized, negative amount - still money out
     ]
 
     const tiles = computeDashboardTiles(transactions, today)
 
-    expect(tiles.currentMonthExpenses).toBe(200)
-    expect(tiles.currentMonthProfit).toBe(3000 - 200)
+    expect(tiles.currentMonthExpenses).toBe(250)
+    expect(tiles.currentMonthProfit).toBe(3000 - 250)
+  })
+
+  it('excludes positive-amount uncategorized transactions from both income and expenses', () => {
+    const transactions = [tx({ date: '2026-07-05', category: '', type: null, amount: 500 })]
+
+    const tiles = computeDashboardTiles(transactions, today)
+
+    expect(tiles.currentMonthExpenses).toBe(0)
+    expect(tiles.currentMonthProfit).toBe(0)
   })
 
   it('excludes transactions where ignore is true, includes false and null', () => {
@@ -234,18 +243,20 @@ describe('computeExpensesByCategory', () => {
     expect(result).toEqual([])
   })
 
-  it('excludes untyped (uncategorized) transactions from the breakdown entirely', () => {
+  it('groups negative-amount uncategorized transactions into an "Uncategorized" (empty-category) bucket, excludes positive-amount ones', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Housing', type: 'Expense', amount: -400 }),
-      // Uncategorized transactions have no Type, so they never enter the per-category totals at all
-      // (unlike a real expense category, which could still net to a credit and get filtered out).
       tx({ date: '2026-07-06', category: '', type: null, amount: -100 }),
+      // Positive amount - money in, not an expense even though uncategorized.
       tx({ date: '2026-07-07', category: '', type: null, amount: 900 }),
     ]
 
     const result = computeExpensesByCategory(transactions, today)
 
-    expect(result).toEqual([{ category: 'Housing', amount: 400, pct: 100, color: expect.any(String) }])
+    expect(result).toEqual([
+      { category: 'Housing', amount: 400, pct: 80, color: expect.any(String) },
+      { category: '', amount: 100, pct: 20, color: undefined },
+    ])
   })
 
   it('looks up the display color from CATEGORY_COLORS', () => {

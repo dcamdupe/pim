@@ -40,8 +40,26 @@ describe('findApproximateMatch', () => {
     expect(result).toBeNull()
   })
 
-  it('returns null when the description has no spaces at all', () => {
+  it('returns null when the description has no spaces at all, and no other description is an exact duplicate', () => {
     const result = findApproximateMatch('Netflix', [stat('Netflix Extra', 1)])
+
+    expect(result).toBeNull()
+  })
+
+  it('matches an exact duplicate even when the description has no spaces at all (UBE-79)', () => {
+    const result = findApproximateMatch('Netflix', [stat('Netflix', 2)])
+
+    expect(result).toEqual({ descriptionStart: 'Netflix', matchingTransactionCount: 1 })
+  })
+
+  it('returns null for a no-space description that is the only transaction with that description', () => {
+    const result = findApproximateMatch('Netflix', [stat('Netflix', 1)])
+
+    expect(result).toBeNull()
+  })
+
+  it('does not fuzzy-prefix-match a no-space description into a different, longer one, even with a duplicate elsewhere', () => {
+    const result = findApproximateMatch('Netflix', [stat('Netflix Extra', 2)])
 
     expect(result).toBeNull()
   })

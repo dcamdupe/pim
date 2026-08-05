@@ -47,5 +47,16 @@ export function findApproximateMatch(description: string, otherDescriptions: Tra
     }
   }
 
+  // No word-boundary match - the only way that happens is `description` having no spaces at all
+  // (a description with any space always finds at least its own exact-duplicate entry above, since
+  // that entry trivially starts with every prefix of itself). A single-token description can still
+  // be a genuine exact duplicate of another transaction's identical description, so check for that
+  // specifically - but only an exact match, not a `startsWith`, so e.g. "Netflix" still doesn't
+  // fuzzy-match into an unrelated, longer "Netflix Extra".
+  const exactMatch = otherDescriptions.find((stat) => stat.description === description)
+  if (exactMatch && exactMatch.transactionCount > 1) {
+    return { descriptionStart: description, matchingTransactionCount: exactMatch.transactionCount - 1 }
+  }
+
   return null
 }

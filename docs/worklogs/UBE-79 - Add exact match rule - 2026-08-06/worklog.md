@@ -64,11 +64,25 @@ unaffected by this fix.
 
 ## Checklist
 
-- [ ] `descriptionMatching.ts` - exact-duplicate fallback for zero-space descriptions
-- [ ] `descriptionMatching.test.ts` - new + reconfirmed cases
-- [ ] `transactionCategorization.spec.ts` - new end-to-end scenario
-- [ ] Build/lint/unit/Playwright verification
+- [x] `descriptionMatching.ts` - exact-duplicate fallback for zero-space descriptions
+- [x] `descriptionMatching.test.ts` - new + reconfirmed cases (116/116 passing overall)
+- [x] `transactionCategorization.spec.ts` - new end-to-end scenario (UBE-79) - 4/4 passing in that file
+- [x] Build/lint/unit/Playwright verification - `npm run build`/`lint` clean, `FrontEnd.UnitTests`
+      116/116, `transactionCategorization.spec.ts` 4/4 (ran that file only, not the full suite - this
+      is a narrow pure-function fix already covered by unit tests)
+
+## Verification
+
+`npm run build`/`lint` clean. `FrontEnd.UnitTests` 116/116 (`descriptionMatching.test.ts` gained 3
+cases: the UBE-79 fix itself, a no-duplicate-yet no-space case, and confirming a no-space description
+still doesn't fuzzy-prefix-match into a different, longer one even when that other description has its
+own duplicate). `transactionCategorization.spec.ts` 4/4, including the new UBE-79 scenario - ran just
+this spec file, not the full Playwright suite, since this is a narrow pure-function fix with solid
+unit coverage.
 
 ## Prompt log
 
 - "start a worklog for UBE-79"
+- "go"
+- "skip the playwright verification, this can be done with unit tests" / "as you've added the test,
+  run the playwright tests" (kept the new scenario, scoped verification to that one spec file)

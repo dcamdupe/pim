@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-79/expand-transaction-matching-to-include-exact-match
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/58
 
 ## Description (from Linear)
 

@@ -6,8 +6,8 @@ import { getCachedTransactionDescriptions } from '../services/transactionDescrip
 import { getTransactions, updateTransactions, saveDescriptionMapping, type Transaction } from '../services/transactionsService'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions } from '../utils/transactionFilters'
-import { formatDateForApi } from '../utils/dateFormat'
 import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
+import { computeRange, pastSixMonthOptions } from '../utils/transactionDateRange'
 import { nextVisibleCount, TRANSACTIONS_PAGE_SIZE } from '../utils/infiniteScroll'
 
 interface PendingCategoryChange {
@@ -18,6 +18,7 @@ interface PendingCategoryChange {
 
 const storedFilters = loadStoredTransactionFilters()
 const CATEGORIES = categoryNames()
+const PAST_SIX_MONTHS = pastSixMonthOptions(new Date())
 
 const transactions = ref<Transaction[]>([])
 const loading = ref(true)
@@ -61,30 +62,6 @@ const filteredTransactions = computed(() =>
 // scrollObserver below grows visibleCount as the sentinel after the table comes into view.
 const visibleTransactions = computed(() => filteredTransactions.value.slice(0, visibleCount.value))
 
-function computeRange(option: RangeOption): { startDate: string | undefined; endDate: string } {
-  const end = new Date()
-
-  if (option === 'allTime') {
-    // No startDate - the Api resolves this to the user's real earliest transaction date.
-    return { startDate: undefined, endDate: formatDateForApi(end) }
-  }
-
-  const start = new Date(end)
-  switch (option) {
-    case 'week':
-      start.setDate(start.getDate() - 7)
-      break
-    case 'month':
-      start.setMonth(start.getMonth() - 1)
-      break
-    case 'threeMonths':
-      start.setMonth(start.getMonth() - 3)
-      break
-  }
-
-  return { startDate: formatDateForApi(start), endDate: formatDateForApi(end) }
-}
-
 function formatDisplayDate(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00`)
   return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })
@@ -99,7 +76,7 @@ async function fetchTransactions() {
   loading.value = true
   loadError.value = ''
   try {
-    const { startDate, endDate } = computeRange(selectedRange.value)
+    const { startDate, endDate } = computeRange(selectedRange.value, new Date())
     transactions.value = await getTransactions(startDate, endDate)
   } catch {
     loadError.value = 'Could not load transactions. Please try again later.'
@@ -230,6 +207,9 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
         <option value="week">Last week</option>
         <option value="month">Last month</option>
         <option value="threeMonths">Last 3 months</option>
+        <option v-for="m in PAST_SIX_MONTHS" :key="m.value" :value="m.value">{{ m.label }}</option>
+        <option value="year">Last year</option>
+        <option value="financialYear">Last financial year</option>
         <option value="allTime">All time</option>
       </select>
       <input v-model="searchQuery" type="search" placeholder="Search description…" aria-label="Search description" class="search-input" />

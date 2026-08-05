@@ -59,7 +59,7 @@ export function formatMonthYear(date: Date): string {
 }
 
 // "YYYY-MM" - a stable, sortable <select> option value for a given calendar month.
-function monthKey(year: number, month: number): string {
+export function monthKey(year: number, month: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}`
 }
 

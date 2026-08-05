@@ -43,6 +43,24 @@ describe('transactionFilterStorage', () => {
       expect(loadStoredTransactionFilters()).toBeNull()
     })
 
+    it.each(['year', 'financialYear'])('accepts the new fixed range option "%s"', (range) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, range }))
+
+      expect(loadStoredTransactionFilters()).toEqual({ ...filters, range })
+    })
+
+    it('accepts a valid "month:YYYY-MM" range', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, range: 'month:2026-06' }))
+
+      expect(loadStoredTransactionFilters()).toEqual({ ...filters, range: 'month:2026-06' })
+    })
+
+    it('returns null when a "month:" range is malformed', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, range: 'month:June-2026' }))
+
+      expect(loadStoredTransactionFilters()).toBeNull()
+    })
+
     it('returns null when a required field is missing', () => {
       const { search: _search, ...rest } = filters
       localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))

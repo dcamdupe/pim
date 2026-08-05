@@ -58,15 +58,34 @@ Reference mockup: `docs/design/dashboard-mockup-calm.html`.
 
 ## Checklist
 
-- [ ] `style.css` - add `--page-bg` token (light + dark), apply to page background only
-- [ ] `NavBar.vue` - `.tabs` grey pill container
-- [ ] `NavBar.vue` - `.tab.router-link-active` white/surface thumb instead of green accent
-- [ ] Manual browser check (light + dark)
-- [ ] `npm run build`/`lint` clean
-- [ ] `FrontEnd.UnitTests` + Playwright sanity run
+- [x] `style.css` - add `--page-bg` token (light `#f2f4f8`, dark `#0e0f13`), apply to page background
+      only (`:root { background: var(--page-bg) }`) - `--bg` untouched, still drives card/nav surfaces
+- [x] `NavBar.vue` - `.tabs` grey pill container (`background: var(--page-bg)`, `padding: 4px`,
+      `border-radius: 12px`)
+- [x] `NavBar.vue` - `.tab.router-link-active` white/surface thumb (`background: var(--bg)` + subtle
+      shadow, `color: var(--text-h)`) instead of the green `var(--accent)` highlight
+- [x] Manual browser check (light + dark) - Playwright screenshots of Dashboard + Transactions in both
+      color schemes
+- [x] `npm run build`/`lint` clean
+- [x] `FrontEnd.UnitTests` (112/112), full Playwright suite (24/24), `dotnet test` (85 + 49) - all
+      passing, no regressions
+
+## Verification
+
+Screenshotted Dashboard and Transactions pages in light and dark mode via a Playwright script (logged
+in as `testuser@example.com`, `scripts/run_local.sh` running the real stack). Confirmed: page
+background is grey (light `#f2f4f8`) / near-black (dark `#0e0f13`), distinct from the white/dark card
+and navbar surfaces; the Dashboard/Transactions switch reads as a single grey pill with a white
+(light) / dark-surface (dark) "thumb" behind whichever tab is active, matching
+`docs/design/dashboard-mockup-calm.html` - no more two-button green-highlight look. No console errors
+in either screenshot pass.
+
+`npm run build`/`lint` clean, `FrontEnd.UnitTests` 112/112, full Playwright suite 24/24, `dotnet test`
+85 + 49 passing (styling-only change, no API/data impact expected or observed).
 
 ## Prompt log
 
 - "switch to main"
 - "git pull"
 - "start a worklog on UBE-69"
+- "yes go ahead"

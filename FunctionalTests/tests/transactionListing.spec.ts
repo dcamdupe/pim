@@ -255,3 +255,94 @@ test.describe('Endless scroll', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });
+
+test.describe('Expanded date filters (UBE-78)', () => {
+  test('filters by a specific past month, last year, and last financial year', async ({ page }) => {
+    const runId = Date.now();
+    const accountName = `UBE78 Account ${runId}`;
+    const today = new Date();
+
+    // 2 months back - inside one of the past-6-months dropdown options.
+    const targetMonthDate = new Date(today.getFullYear(), today.getMonth() - 2, 15);
+    const targetMonthDesc = `UBE78 TargetMonth ${runId}`;
+    const targetMonthOptionValue = `month:${targetMonthDate.getFullYear()}-${String(targetMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+    // Inside the rolling 12-month "Last year" window, but outside the past-6-months options.
+    const elevenMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 11, 10);
+    const elevenMonthsAgoDesc = `UBE78 ElevenMonths ${runId}`;
+
+    // Outside the rolling 12-month "Last year" window.
+    const thirteenMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 13, 10);
+    const thirteenMonthsAgoDesc = `UBE78 ThirteenMonths ${runId}`;
+
+    // Inside the most recently completed Australian financial year (1 Jul - 30 Jun).
+    const currentFinancialYearStart = today.getMonth() >= 6 ? today.getFullYear() : today.getFullYear() - 1;
+    const lastFinancialYearDate = new Date(currentFinancialYearStart - 1, 11, 15); // ~mid-December of last FY
+    const lastFinancialYearDesc = `UBE78 LastFY ${runId}`;
+
+    // Inside the *current* financial year - must not show under "Last financial year".
+    const currentFinancialYearDate = new Date(currentFinancialYearStart, 6, 15); // ~mid-July of the current FY
+    const currentFinancialYearDesc = `UBE78 CurrentFY ${runId}`;
+
+    const qif =
+      '!Type:Bank\n' +
+      `D${formatForUpload(targetMonthDate)}\nM${targetMonthDesc}\nT-1.00\n^\n` +
+      `D${formatForUpload(elevenMonthsAgo)}\nM${elevenMonthsAgoDesc}\nT-1.00\n^\n` +
+      `D${formatForUpload(thirteenMonthsAgo)}\nM${thirteenMonthsAgoDesc}\nT-1.00\n^\n` +
+      `D${formatForUpload(lastFinancialYearDate)}\nM${lastFinancialYearDesc}\nT-1.00\n^\n` +
+      `D${formatForUpload(currentFinancialYearDate)}\nM${currentFinancialYearDesc}\nT-1.00\n^\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill(accountName);
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(accountName);
+    await page.locator('#file-input').setInputFiles({ name: 'ube78.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    // Scope every check to just this test's own rows - the shared, never-cleaned-up test dataset
+    // from other specs would otherwise contribute noise across such a wide set of date ranges.
+    await page.getByLabel('Date range').selectOption('allTime');
+    await page.getByLabel('Search description').fill(String(runId));
+
+    // Selecting a specific past month shows only that month's row.
+    await page.getByLabel('Date range').selectOption(targetMonthOptionValue);
+    await expect(page.getByText(targetMonthDesc)).toBeVisible();
+    await expect(page.getByText(elevenMonthsAgoDesc)).not.toBeVisible();
+    await expect(page.getByText(thirteenMonthsAgoDesc)).not.toBeVisible();
+    await expect(page.getByText(lastFinancialYearDesc)).not.toBeVisible();
+    await expect(page.getByText(currentFinancialYearDesc)).not.toBeVisible();
+
+    // "Last year" is a rolling 12 months - the 11-months-ago row is inside it, the
+    // 13-months-ago row isn't.
+    await page.getByLabel('Date range').selectOption('year');
+    await expect(page.getByText(elevenMonthsAgoDesc)).toBeVisible();
+    await expect(page.getByText(thirteenMonthsAgoDesc)).not.toBeVisible();
+
+    // "Last financial year" is the most recently completed 1 Jul - 30 Jun AU financial year - the
+    // row dated inside it shows, the row dated inside the *current* financial year doesn't.
+    await page.getByLabel('Date range').selectOption('financialYear');
+    await expect(page.getByText(lastFinancialYearDesc)).toBeVisible();
+    await expect(page.getByText(currentFinancialYearDesc)).not.toBeVisible();
+
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});

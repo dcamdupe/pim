@@ -1,8 +1,15 @@
 const STORAGE_KEY = 'pim.transactionFilters'
 
-export type RangeOption = 'week' | 'month' | 'threeMonths' | 'allTime'
+// `month:YYYY-MM` is a dynamic option (one per past-6-months entry, e.g. "month:2026-06") - see
+// transactionDateRange.ts's pastSixMonthOptions().
+export type RangeOption = 'week' | 'month' | 'threeMonths' | 'year' | 'financialYear' | 'allTime' | `month:${string}`
 
-const RANGE_OPTIONS: RangeOption[] = ['week', 'month', 'threeMonths', 'allTime']
+const FIXED_RANGE_OPTIONS: RangeOption[] = ['week', 'month', 'threeMonths', 'year', 'financialYear', 'allTime']
+const MONTH_RANGE_OPTION = /^month:\d{4}-\d{2}$/
+
+function isRangeOption(value: unknown): value is RangeOption {
+  return typeof value === 'string' && (FIXED_RANGE_OPTIONS.includes(value as RangeOption) || MONTH_RANGE_OPTION.test(value))
+}
 
 export interface TransactionFiltersState {
   range: RangeOption
@@ -18,8 +25,7 @@ function isTransactionFiltersState(value: unknown): value is TransactionFiltersS
   }
   const v = value as Record<string, unknown>
   return (
-    typeof v.range === 'string' &&
-    RANGE_OPTIONS.includes(v.range as RangeOption) &&
+    isRangeOption(v.range) &&
     typeof v.search === 'string' &&
     typeof v.account === 'string' &&
     typeof v.category === 'string' &&

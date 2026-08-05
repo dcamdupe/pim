@@ -1,7 +1,8 @@
 # UBE-58: Account adjustments
 
 Linear: https://linear.app/uberconcept/issue/UBE-58/account-adjustments
-Status: In Progress · Priority: No priority
+Status: Done · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/53
 
 ## Description (from Linear)
 
@@ -122,3 +123,5 @@ Remove the account number.
 ## Prompt log
 
 - "start a worklog for UBE-58"
+- "Read the run_local.sh background output... run the full FunctionalTests Playwright suite... update the UBE-58 worklog checklist and report back concisely." (re-verification instructions)
+- "commit and raise pr"

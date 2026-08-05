@@ -230,10 +230,10 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     }
 
     [Fact]
-    public async Task AddCategory_RoundTripsTheInactiveTypeOption()
+    public async Task AddCategory_RoundTripsTheIgnoreTypeOption()
     {
         var client = AuthenticatedClient();
-        var category = new Category { Name = "Internal Transfer 2", Colour = "#6b7280", Type = Category.CategoryType.Inactive };
+        var category = new Category { Name = "Internal Transfer 2", Colour = "#6b7280", Type = Category.CategoryType.Ignore };
 
         var response = await client.PostAsJsonAsync("/settings/category", category);
 
@@ -241,7 +241,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var getResponse = await client.GetAsync("/settings");
         var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
         var stored = body!.Categories.Single(c => c.Name == "Internal Transfer 2");
-        Assert.Equal(Category.CategoryType.Inactive, stored.Type);
+        Assert.Equal(Category.CategoryType.Ignore, stored.Type);
     }
 
     [Fact]

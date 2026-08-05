@@ -30,38 +30,38 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
-    public async Task UpdateTransactionsAsync_SetsInactive_OnTheMatchingTransaction()
+    public async Task UpdateTransactionsAsync_SetsIgnore_OnTheMatchingTransaction()
     {
         var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
         var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
         var months = new List<TransactionMonth> { month };
         var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
-        updated.Inactive = true;
+        updated.Ignore = true;
         var sut = CreateService(months);
 
         await sut.UpdateTransactionsAsync(Email, [updated]);
 
-        Assert.True(Assert.Single(months).Transactions.Single().Inactive);
+        Assert.True(Assert.Single(months).Transactions.Single().Ignore);
     }
 
     [Fact]
-    public async Task UpdateTransactionsAsync_ClearsInactive_OnTheMatchingTransaction()
+    public async Task UpdateTransactionsAsync_ClearsIgnore_OnTheMatchingTransaction()
     {
         var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
-        existing.Inactive = true;
+        existing.Ignore = true;
         var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
         var months = new List<TransactionMonth> { month };
         var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "");
-        updated.Inactive = false;
+        updated.Ignore = false;
         var sut = CreateService(months);
 
         await sut.UpdateTransactionsAsync(Email, [updated]);
 
-        Assert.False(Assert.Single(months).Transactions.Single().Inactive);
+        Assert.False(Assert.Single(months).Transactions.Single().Ignore);
     }
 
     [Fact]
-    public async Task UpdateTransactionsAsync_StampsTypeAndInactive_FromTheNewCategorysDefinition_WhenCategoryChanges()
+    public async Task UpdateTransactionsAsync_StampsTypeAndIgnore_FromTheNewCategorysDefinition_WhenCategoryChanges()
     {
         var month = new TransactionMonth
         {
@@ -72,36 +72,36 @@ public class TransactionUpdateServiceTests
         };
         var months = new List<TransactionMonth> { month };
         var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
-        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Inactive } };
+        var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Ignore } };
         var sut = CreateService(months, categories: categories);
 
         await sut.UpdateTransactionsAsync(Email, [updated]);
 
         var stored = Assert.Single(months).Transactions.Single();
-        Assert.Equal(Category.CategoryType.Inactive, stored.Type);
-        Assert.True(stored.Inactive);
+        Assert.Equal(Category.CategoryType.Ignore, stored.Type);
+        Assert.True(stored.Ignore);
     }
 
     [Fact]
-    public async Task UpdateTransactionsAsync_DoesNotReapplyTheCategoryStamp_WhenOnlyInactiveChangesAndCategoryStaysTheSame()
+    public async Task UpdateTransactionsAsync_DoesNotReapplyTheCategoryStamp_WhenOnlyIgnoreChangesAndCategoryStaysTheSame()
     {
         var existing = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
         existing.Type = Category.CategoryType.Expense;
-        existing.Inactive = false;
+        existing.Ignore = false;
         var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
         var months = new List<TransactionMonth> { month };
-        // Same category as the existing "Dining" definition would produce (not Inactive-typed), but
-        // the category itself is unchanged here - a manual "Set inactive" toggle should stick rather
-        // than being immediately re-stamped back to the category definition's own Inactive value.
+        // Same category as the existing "Dining" definition would produce (not Ignore-typed), but
+        // the category itself is unchanged here - a manual "Ignore" toggle should stick rather
+        // than being immediately re-stamped back to the category definition's own Ignore value.
         var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense } };
         var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
         updated.Type = Category.CategoryType.Expense;
-        updated.Inactive = true;
+        updated.Ignore = true;
         var sut = CreateService(months, categories: categories);
 
         await sut.UpdateTransactionsAsync(Email, [updated]);
 
-        Assert.True(Assert.Single(months).Transactions.Single().Inactive);
+        Assert.True(Assert.Single(months).Transactions.Single().Ignore);
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public class TransactionUpdateServiceTests
     }
 
     [Fact]
-    public async Task ApplyDescriptionMappingAsync_StampsTypeAndInactive_FromTheCategorysDefinition()
+    public async Task ApplyDescriptionMappingAsync_StampsTypeAndIgnore_FromTheCategorysDefinition()
     {
         var june = new TransactionMonth
         {
@@ -264,7 +264,7 @@ public class TransactionUpdateServiceTests
 
         var transaction = june.Transactions.Single();
         Assert.Equal(Category.CategoryType.Expense, transaction.Type);
-        Assert.False(transaction.Inactive);
+        Assert.False(transaction.Ignore);
     }
 
     [Fact]
@@ -390,7 +390,7 @@ public class TransactionUpdateServiceTests
     {
         var coles = Transaction("Coles", new DateOnly(2026, 6, 1), "Groceries");
         coles.Type = Category.CategoryType.Expense;
-        coles.Inactive = false;
+        coles.Ignore = false;
         var june = new TransactionMonth
         {
             Email = Email,
@@ -418,7 +418,7 @@ public class TransactionUpdateServiceTests
         var colesAfter = june.Transactions.Single(t => t.Description == "Coles");
         Assert.Equal("", colesAfter.Category);
         Assert.Null(colesAfter.Type);
-        Assert.Null(colesAfter.Inactive);
+        Assert.Null(colesAfter.Ignore);
         Assert.Equal("Income", june.Transactions.Single(t => t.Description == "Salary").Category);
         Assert.Equal("", july.Transactions.Single().Category);
     }

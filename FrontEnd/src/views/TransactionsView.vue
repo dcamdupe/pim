@@ -33,8 +33,8 @@ const selectedCategory = ref(storedFilters?.category ?? '')
 const needsCategoryOnly = ref(storedFilters?.needsCategoryOnly ?? false)
 
 const openMenuIndex = ref<number | null>(null)
-const togglingInactive = ref(false)
-const toggleInactiveError = ref('')
+const togglingIgnore = ref(false)
+const toggleIgnoreError = ref('')
 
 const visibleCount = ref(TRANSACTIONS_PAGE_SIZE)
 const scrollSentinel = ref<HTMLElement | null>(null)
@@ -169,17 +169,17 @@ function closeRowMenu() {
   openMenuIndex.value = null
 }
 
-async function toggleInactive(transaction: Transaction) {
+async function toggleIgnore(transaction: Transaction) {
   openMenuIndex.value = null
-  toggleInactiveError.value = ''
-  togglingInactive.value = true
+  toggleIgnoreError.value = ''
+  togglingIgnore.value = true
   try {
-    await updateTransactions([{ ...transaction, inactive: !transaction.inactive }])
+    await updateTransactions([{ ...transaction, ignore: !transaction.ignore }])
     await fetchTransactions()
   } catch {
-    toggleInactiveError.value = 'Could not update the transaction. Please try again.'
+    toggleIgnoreError.value = 'Could not update the transaction. Please try again.'
   } finally {
-    togglingInactive.value = false
+    togglingIgnore.value = false
   }
 }
 
@@ -255,7 +255,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
     <p v-if="loading" class="status">Loading transactions…</p>
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
     <p v-else-if="categorySaveError" class="status status-error">{{ categorySaveError }}</p>
-    <p v-else-if="toggleInactiveError" class="status status-error">{{ toggleInactiveError }}</p>
+    <p v-else-if="toggleIgnoreError" class="status status-error">{{ toggleIgnoreError }}</p>
     <p v-else-if="transactions.length === 0" class="status">No transactions in this range.</p>
     <p v-else-if="filteredTransactions.length === 0" class="status">No transactions match your filters.</p>
 
@@ -272,11 +272,11 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(t, index) in visibleTransactions" :key="index" :class="{ 'row-inactive': t.inactive }">
+          <tr v-for="(t, index) in visibleTransactions" :key="index" :class="{ 'row-ignore': t.ignore }">
             <td class="date">{{ formatDisplayDate(t.date) }}</td>
             <td class="desc">
               {{ t.description }}
-              <span v-if="t.inactive" class="chip chip-muted">Inactive</span>
+              <span v-if="t.ignore" class="chip chip-muted">Ignore</span>
             </td>
             <td><span class="acct-badge">{{ t.account }}</span></td>
             <td :class="['amount', { pos: t.amount > 0 }]">{{ formatAmount(t.amount) }}</td>
@@ -315,10 +315,10 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
                     type="button"
                     class="row-menu-item"
                     role="menuitem"
-                    :disabled="togglingInactive"
-                    @click="toggleInactive(t)"
+                    :disabled="togglingIgnore"
+                    @click="toggleIgnore(t)"
                   >
-                    {{ t.inactive ? 'Set active' : 'Set inactive' }}
+                    {{ t.ignore ? 'Unignore' : 'Ignore' }}
                   </button>
                 </div>
               </div>
@@ -522,7 +522,7 @@ th.num {
   background: none;
 }
 
-table.tx tbody tr.row-inactive {
+table.tx tbody tr.row-ignore {
   opacity: 0.55;
 }
 

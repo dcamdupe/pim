@@ -89,7 +89,7 @@ setup_local() {
     echo "Test login \"$test_email\" already exists, skipping."
   else
     # Type set "based on the original meaning" (UBE-75): every spend category is an Expense; Income
-    # is Income; Internal Transfer is the Inactive type so its transactions still drop out of
+    # is Income; Internal Transfer is the Ignore type (UBE-76) so its transactions still drop out of
     # dashboard sums once stamped, replacing the old hardcoded category-name check.
     local default_categories
     default_categories='[
@@ -104,7 +104,7 @@ setup_local() {
       {"Name": "Subscriptions", "Colour": "#c026d3", "Type": "Expense"},
       {"Name": "Income", "Colour": "#0f766e", "Type": "Income"},
       {"Name": "Other", "Colour": "#e34948", "Type": "Expense"},
-      {"Name": "Internal Transfer", "Colour": "#6b7280", "Type": "Inactive"}
+      {"Name": "Internal Transfer", "Colour": "#6b7280", "Type": "Ignore"}
     ]'
 
     # A fresh user with no MinTransactionDate makes GetTransactionsAsync's null-startDate fallback

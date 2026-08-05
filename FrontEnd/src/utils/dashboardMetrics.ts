@@ -109,7 +109,7 @@ export function formatSixMonthRangeLabel(selectedMonth: Date): string {
 }
 
 function isCounted(transaction: Transaction): boolean {
-  return !transaction.inactive
+  return !transaction.ignore
 }
 
 function isWithinRange(transaction: Transaction, range: DateRange): boolean {
@@ -134,8 +134,8 @@ function sumExpenses(transactions: Transaction[]): number {
 }
 
 // Per-category expense breakdown for the current month, excluding non-expense (Income/no-Type) and
-// inactive transactions - Internal Transfer is excluded via isCounted() since its category is
-// stamped Inactive (UBE-75) - sorted highest-spend first.
+// ignored transactions - Internal Transfer is excluded via isCounted() since its category is
+// stamped Ignore (UBE-75/UBE-76) - sorted highest-spend first.
 export function computeExpensesByCategory(transactions: Transaction[], today: Date): CategoryExpense[] {
   const currentMonthTransactions = transactions.filter((t) => isWithinRange(t, getCurrentMonthRange(today)))
   const totals = new Map<string, number>()

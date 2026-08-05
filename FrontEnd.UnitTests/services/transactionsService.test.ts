@@ -97,7 +97,7 @@ describe('transactionsService', () => {
   describe('updateTransactions', () => {
     it('PUTs the transactions as JSON with the bearer token', async () => {
       const transactions: Transaction[] = [
-        { account: 'Everyday', date: '2026-06-01', description: 'Coffee', category: 'Dining', amount: -4.5, inactive: null },
+        { account: 'Everyday', date: '2026-06-01', description: 'Coffee', category: 'Dining', amount: -4.5, ignore: null },
       ]
       const fetchMock = vi.fn().mockResolvedValue({ ok: true })
       vi.stubGlobal('fetch', fetchMock)

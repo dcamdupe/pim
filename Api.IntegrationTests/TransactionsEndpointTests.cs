@@ -290,7 +290,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     }
 
     [Fact]
-    public async Task Put_UpdatesInactive_OnTheMatchingStoredTransaction_AndItRoundTripsThroughGet()
+    public async Task Put_UpdatesIgnore_OnTheMatchingStoredTransaction_AndItRoundTripsThroughGet()
     {
         var client = AuthenticatedClient();
         var monthId = TransactionMonth.BuildId(_email, 2026, 6);
@@ -305,24 +305,24 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
             Transactions = [new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m }],
         });
 
-        var setInactive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Inactive = true };
-        var setInactiveResponse = await client.PutAsJsonAsync("/transactions", new List<Transaction> { setInactive });
-        Assert.Equal(HttpStatusCode.NoContent, setInactiveResponse.StatusCode);
+        var setIgnore = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Ignore = true };
+        var setIgnoreResponse = await client.PutAsJsonAsync("/transactions", new List<Transaction> { setIgnore });
+        Assert.Equal(HttpStatusCode.NoContent, setIgnoreResponse.StatusCode);
 
         var getResponse = await client.GetAsync("/transactions?startDate=2026-06-01&endDate=2026-06-30");
         var body = await getResponse.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
-        Assert.True(body!.Transactions.Single().Inactive);
+        Assert.True(body!.Transactions.Single().Ignore);
 
-        var setActive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Inactive = false };
+        var setActive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Ignore = false };
         var setActiveResponse = await client.PutAsJsonAsync("/transactions", new List<Transaction> { setActive });
         Assert.Equal(HttpStatusCode.NoContent, setActiveResponse.StatusCode);
 
         var month = await repository.GetAsync(monthId);
-        Assert.False(month!.Transactions.Single().Inactive);
+        Assert.False(month!.Transactions.Single().Ignore);
     }
 
     [Fact]
-    public async Task Put_StampsTypeAndInactive_FromTheCategoryDefinition_WhenCategoryChanges()
+    public async Task Put_StampsTypeAndIgnore_FromTheCategoryDefinition_WhenCategoryChanges()
     {
         var client = AuthenticatedClient();
         var monthId = TransactionMonth.BuildId(_email, 2026, 6);
@@ -339,7 +339,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         var addCategoryResponse = await client.PostAsJsonAsync(
             "/settings/category",
-            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Inactive });
+            new Category { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Ignore });
         Assert.Equal(HttpStatusCode.NoContent, addCategoryResponse.StatusCode);
 
         var updated = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
@@ -348,12 +348,12 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var month = await repository.GetAsync(monthId);
         var transaction = month!.Transactions.Single();
-        Assert.Equal(Category.CategoryType.Inactive, transaction.Type);
-        Assert.True(transaction.Inactive);
+        Assert.Equal(Category.CategoryType.Ignore, transaction.Type);
+        Assert.True(transaction.Ignore);
     }
 
     [Fact]
-    public async Task Put_DoesNotReapplyTheCategoryStamp_WhenOnlyInactiveChangesAndTheCategoryStaysTheSame()
+    public async Task Put_DoesNotReapplyTheCategoryStamp_WhenOnlyIgnoreChangesAndTheCategoryStaysTheSame()
     {
         var client = AuthenticatedClient();
         var monthId = TransactionMonth.BuildId(_email, 2026, 6);
@@ -375,17 +375,17 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var categorised = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
         await client.PutAsJsonAsync("/transactions", new List<Transaction> { categorised });
 
-        // Manual "Set inactive" toggle - same category, only Inactive flipped. Should stick rather
-        // than being immediately overwritten back to the category's own Inactive=false. The real
+        // Manual "Ignore" toggle - same category, only Ignore flipped. Should stick rather
+        // than being immediately overwritten back to the category's own Ignore=false. The real
         // client always spreads the full transaction object (including the server-derived Type) back
         // on every PUT, so this mirrors that rather than a partial payload.
-        var manuallyInactive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m, Type = Category.CategoryType.Expense, Inactive = true };
-        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { manuallyInactive });
+        var manuallyIgnore = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m, Type = Category.CategoryType.Expense, Ignore = true };
+        var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { manuallyIgnore });
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var month = await repository.GetAsync(monthId);
         var transaction = month!.Transactions.Single();
-        Assert.True(transaction.Inactive);
+        Assert.True(transaction.Ignore);
         Assert.Equal(Category.CategoryType.Expense, transaction.Type);
     }
 

@@ -94,7 +94,6 @@ test.describe('Dashboard tiles', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill(`DashAccount${runId}`);
-    await newRow.locator('input').nth(1).fill('333777');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
@@ -190,7 +189,6 @@ test.describe('Month filter', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill(`MonthFilterAccount${runId}`);
-    await newRow.locator('input').nth(1).fill('333779');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
@@ -250,7 +248,6 @@ test.describe('Recent transactions', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill(`RecentAccount${runId}`);
-    await newRow.locator('input').nth(1).fill('333778');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();

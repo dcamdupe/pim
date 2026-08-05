@@ -8,11 +8,10 @@ async function login(page: import('@playwright/test').Page) {
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-async function addAccount(page: import('@playwright/test').Page, name: string, number: string, type: string) {
+async function addAccount(page: import('@playwright/test').Page, name: string, type: string) {
   await page.getByRole('button', { name: '+ Add account' }).click();
   const row = page.locator('.account-row').last();
   await row.locator('input').nth(0).fill(name);
-  await row.locator('input').nth(1).fill(number);
   await row.locator('select').selectOption(type);
   return row;
 }
@@ -40,7 +39,7 @@ test.describe('Account deletion', () => {
 
     await login(page);
     await page.getByRole('link', { name: 'Settings' }).click();
-    await addAccount(page, accountName, '444001', 'Transaction');
+    await addAccount(page, accountName, 'Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
 
@@ -89,8 +88,8 @@ test.describe('Account deletion', () => {
 
     await login(page);
     await page.getByRole('link', { name: 'Settings' }).click();
-    await addAccount(page, accountName, '444002', 'Transaction');
-    await addAccount(page, otherAccountName, '444003', 'Transaction');
+    await addAccount(page, accountName, 'Transaction');
+    await addAccount(page, otherAccountName, 'Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
 
@@ -152,7 +151,7 @@ test.describe('Account deletion', () => {
     // races ahead of it and reads 0 (same failure mode already known in settings.spec.ts).
     await page.getByRole('button', { name: '+ Add account' }).waitFor();
     const rowsBefore = await page.locator('.account-row').count();
-    const row = await addAccount(page, accountName, '444004', 'Transaction');
+    const row = await addAccount(page, accountName, 'Transaction');
 
     await row.getByRole('button', { name: 'Remove account' }).click();
 
@@ -166,8 +165,8 @@ test.describe('Account deletion', () => {
 
     await login(page);
     await page.getByRole('link', { name: 'Settings' }).click();
-    await addAccount(page, accountName, '444005', 'Transaction');
-    const secondRow = await addAccount(page, accountName, '444006', 'Savings');
+    await addAccount(page, accountName, 'Transaction');
+    const secondRow = await addAccount(page, accountName, 'Savings');
 
     await expect(page.getByText('Account names must be unique.').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Save' }).first()).toBeDisabled();

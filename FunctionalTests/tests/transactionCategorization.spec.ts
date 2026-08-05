@@ -37,7 +37,6 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill('Playwright Categorization Account');
-    await newRow.locator('input').nth(1).fill('555666');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
@@ -125,7 +124,6 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill('Playwright Duplicate Desc Account');
-    await newRow.locator('input').nth(1).fill('555777');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
@@ -189,7 +187,6 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill('Playwright Cancel Account');
-    await newRow.locator('input').nth(1).fill('555888');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();

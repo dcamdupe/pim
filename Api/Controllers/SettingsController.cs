@@ -50,7 +50,7 @@ public sealed class SettingsController : ControllerBase
 
         if (RemovesAnExistingAccount(user.Accounts, request.Accounts))
         {
-            return BadRequest("Accounts cannot be removed via PUT /settings - use DELETE /settings/account.");
+            return BadRequest("Account names can't be changed once created, and accounts can't be removed via PUT /settings - use DELETE /settings/account to remove one instead.");
         }
 
         user.Accounts = request.Accounts;
@@ -59,10 +59,10 @@ public sealed class SettingsController : ControllerBase
         return NoContent();
     }
 
-    // Matches on the full account (not just name) as a defence-in-depth check against a stale or
-    // racy client payload, even though name is the only field that actually links to transactions.
+    // Name is the account's key (UBE-58) - it's unique (enforced by Put) and immutable, so it's a
+    // sufficient match on its own, no need for a defence-in-depth match on other fields.
     [HttpDelete("settings/account")]
-    public async Task<ActionResult> DeleteAccount(Account account)
+    public async Task<ActionResult> DeleteAccount(DeleteAccountRequest request)
     {
         var user = await GetAuthenticatedUser();
         if (user is null)
@@ -70,14 +70,14 @@ public sealed class SettingsController : ControllerBase
             return NotFound();
         }
 
-        var removed = user.Accounts.RemoveAll(a => a.Name == account.Name && a.Number == account.Number && a.Type == account.Type);
+        var removed = user.Accounts.RemoveAll(a => a.Name == request.Name);
         if (removed == 0)
         {
             return NotFound();
         }
 
         await _users.UpdateAsync(user.Email, user);
-        await _transactionUpdateService.DeleteTransactionsForAccountAsync(user.Email, account.Name);
+        await _transactionUpdateService.DeleteTransactionsForAccountAsync(user.Email, request.Name);
 
         return NoContent();
     }
@@ -138,9 +138,11 @@ public sealed class SettingsController : ControllerBase
     private static bool HasDuplicateNames(List<Account> accounts) =>
         accounts.GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
 
-    // Removal must go through DELETE /settings/account (which also cascades to that account's
-    // transactions) - PUT can still add and edit accounts, but every name currently on the user
-    // must still be present somewhere in the new list.
+    // Name is the account's key (UBE-58), so it can't be edited - renaming an existing account looks
+    // identical to removing it and adding a new one, and this rejects both. Removal must go through
+    // DELETE /settings/account (which also cascades to that account's transactions) - PUT can still
+    // add accounts and edit their Type, but every name currently on the user must still be present
+    // somewhere in the new list.
     private static bool RemovesAnExistingAccount(List<Account> existingAccounts, List<Account> requestedAccounts)
     {
         var requestedNames = requestedAccounts.Select(a => a.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -163,3 +165,5 @@ public sealed class SettingsController : ControllerBase
 public sealed record SettingsResponse(List<Account> Accounts, List<Category> Categories, DateOnly? MinTransactionDate);
 
 public sealed record SettingsRequest(List<Account> Accounts);
+
+public sealed record DeleteAccountRequest(string Name);

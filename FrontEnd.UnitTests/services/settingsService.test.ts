@@ -22,7 +22,7 @@ describe('settingsService', () => {
 
   describe('getSettings', () => {
     it('fetches /settings with the bearer token and returns the accounts, categories and minTransactionDate', async () => {
-      const accounts = [{ name: 'Everyday', number: '123456', type: 'Transaction' }]
+      const accounts = [{ name: 'Everyday', type: 'Transaction' }]
       const categories = [{ name: 'Groceries', colour: '#00ff00', type: 'Expense' as const }]
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
@@ -48,7 +48,7 @@ describe('settingsService', () => {
 
   describe('saveSettings', () => {
     it('PUTs the accounts with the bearer token', async () => {
-      const accounts = [{ name: 'Everyday', number: '123456', type: 'Transaction' as const }]
+      const accounts = [{ name: 'Everyday', type: 'Transaction' as const }]
       const fetchMock = vi.fn().mockResolvedValue({ ok: true })
       vi.stubGlobal('fetch', fetchMock)
 
@@ -72,19 +72,18 @@ describe('settingsService', () => {
   })
 
   describe('deleteAccount', () => {
-    it('DELETEs the account with the bearer token', async () => {
-      const account = { name: 'Everyday', number: '123456', type: 'Transaction' as const }
+    it('DELETEs the account by name with the bearer token', async () => {
       const fetchMock = vi.fn().mockResolvedValue({ ok: true })
       vi.stubGlobal('fetch', fetchMock)
 
-      await deleteAccount(account)
+      await deleteAccount('Everyday')
 
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringMatching(/\/settings\/account$/),
         expect.objectContaining({
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer a-jwt' },
-          body: JSON.stringify(account),
+          body: JSON.stringify({ name: 'Everyday' }),
         }),
       )
     })
@@ -92,9 +91,7 @@ describe('settingsService', () => {
     it('throws SettingsRequestFailedError when the response is not ok', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
-      await expect(deleteAccount({ name: 'Everyday', number: '123456', type: 'Transaction' })).rejects.toBeInstanceOf(
-        SettingsRequestFailedError,
-      )
+      await expect(deleteAccount('Everyday')).rejects.toBeInstanceOf(SettingsRequestFailedError)
     })
   })
 

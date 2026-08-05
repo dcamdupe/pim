@@ -25,7 +25,6 @@ test.describe('Transaction upload', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill('Playwright Upload Account');
-    await newRow.locator('input').nth(1).fill('111222');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();

@@ -100,13 +100,24 @@ Remove the account number.
 - [x] `Api/Data/Account.cs` - remove `Number`
 - [x] `SettingsController.Put` - reworded rename-rejection message + comments
 - [x] `SettingsController.DeleteAccount` - `DeleteAccountRequest(Name)`, match by Name only
-- [ ] `Api.IntegrationTests/SettingsEndpointTests.cs` - updated + new rename-rejection test
-- [ ] `settingsService.ts` - drop `number`, `deleteAccount(name: string)`
-- [ ] `SettingsView.vue` - remove Number field, read-only Name for saved accounts, grid CSS, updated
+- [x] `Api.IntegrationTests/SettingsEndpointTests.cs` - updated + new rename-rejection test (49/49
+      passing; had to merge in UBE-75's already-merged main first, since this branch was cut from a
+      slightly stale main)
+- [x] `settingsService.ts` - drop `number`, `deleteAccount(name: string)`
+- [x] `SettingsView.vue` - remove Number field, read-only Name for saved accounts, grid CSS, updated
       `deleteAccount` call
-- [ ] `FrontEnd.UnitTests/services/settingsService.test.ts` - updated fixtures/signatures
-- [ ] `FunctionalTests` - all 8 affected specs updated; new/adjusted read-only-name scenario
-- [ ] Build/test/lint verification + manual browser check (light + dark)
+- [x] `FrontEnd.UnitTests/services/settingsService.test.ts` - updated fixtures/signatures (112/112
+      passing)
+- [x] `FunctionalTests` - all 8 affected specs updated (dropped the number input fill, or the
+      `addAccount` helper's `number` param in `accountDeletion.spec.ts`); added a read-only-name
+      assertion to `settings.spec.ts`'s persist-across-reload test
+- [x] Build/test/lint verification + manual browser check (light + dark) - `dotnet test` 134/134,
+      `npm run build`/`lint` clean, `FrontEnd.UnitTests` 112/112, full Playwright suite 24/24 on the
+      first run (fresh dataset reset first). Confirmed visually in light + dark: Number column gone,
+      Name field renders greyed-out/read-only on saved accounts, Type stays editable, "+ Add
+      account"'s new row's Name stays editable until saved. Note: this branch was cut from `main`
+      moments before UBE-75's PR merged, so `origin/main` had to be merged in before starting
+      implementation (clean merge, no conflicts).
 
 ## Prompt log
 

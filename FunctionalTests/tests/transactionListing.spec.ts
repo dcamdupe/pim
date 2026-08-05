@@ -39,7 +39,6 @@ test.describe('Transaction listing', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill('Playwright Listing Account');
-    await newRow.locator('input').nth(1).fill('333444');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
@@ -120,12 +119,10 @@ test.describe('Transaction listing', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     let newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill(accountA);
-    await newRow.locator('input').nth(1).fill('555777');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: '+ Add account' }).click();
     newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill(accountB);
-    await newRow.locator('input').nth(1).fill('555888');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();
@@ -231,7 +228,6 @@ test.describe('Endless scroll', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill(accountName);
-    await newRow.locator('input').nth(1).fill('666111');
     await newRow.locator('select').selectOption('Transaction');
     await page.getByRole('button', { name: 'Save' }).first().click();
     await expect(page.getByText('Saved.').first()).toBeVisible();

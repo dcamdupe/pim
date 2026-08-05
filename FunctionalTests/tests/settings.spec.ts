@@ -24,7 +24,6 @@ test.describe('Settings', () => {
     await page.getByRole('button', { name: '+ Add account' }).click();
     const newRow = page.locator('.account-row').last();
     await newRow.locator('input').nth(0).fill(accountName);
-    await newRow.locator('input').nth(1).fill('999999');
     await newRow.locator('select').selectOption('Savings');
 
     await page.getByRole('button', { name: 'Save' }).first().click();
@@ -36,6 +35,10 @@ test.describe('Settings', () => {
     const persistedRow = page.locator('.account-row').last();
     await expect(persistedRow.locator('input').nth(0)).toHaveValue(accountName);
     await expect(persistedRow.locator('select')).toHaveValue('Savings');
+
+    // Name is the account's key (UBE-58) and can't be edited once saved - unlike Type, which stays
+    // editable (the select above isn't disabled).
+    await expect(persistedRow.locator('input').nth(0)).toHaveAttribute('readonly', '');
 
     // clean up so repeated runs don't keep accumulating accounts on the shared seeded user -
     // removal of an already-saved account is immediate via a confirmation modal (UBE-57), not

@@ -72,7 +72,7 @@ onMounted(async () => {
 })
 
 function addAccount() {
-  accounts.value.push({ name: '', number: '', type: 'Transaction' })
+  accounts.value.push({ name: '', type: 'Transaction' })
   isUnsaved.value.push(true)
 }
 
@@ -94,7 +94,7 @@ async function confirmRemoveAccount() {
   deleteError.value = ''
   deleting.value = true
   try {
-    await deleteAccount(pending.account)
+    await deleteAccount(pending.account.name)
     accounts.value.splice(pending.index, 1)
     isUnsaved.value.splice(pending.index, 1)
     pendingRemoval.value = null
@@ -216,11 +216,14 @@ function cancelRemoveCategory() {
         <div v-for="(account, index) in accounts" :key="index" class="account-row">
           <div class="field">
             <label :for="`name-${index}`">Name</label>
-            <input :id="`name-${index}`" v-model="account.name" type="text" placeholder="Everyday" />
-          </div>
-          <div class="field">
-            <label :for="`number-${index}`">Number</label>
-            <input :id="`number-${index}`" v-model="account.number" type="text" placeholder="123456" />
+            <input
+              :id="`name-${index}`"
+              v-model="account.name"
+              type="text"
+              placeholder="Everyday"
+              :readonly="!isUnsaved[index]"
+              :title="!isUnsaved[index] ? `An account's name can't be changed after it's saved.` : undefined"
+            />
           </div>
           <div class="field">
             <label :for="`type-${index}`">Type</label>
@@ -407,7 +410,7 @@ function cancelRemoveCategory() {
 
 .account-row {
   display: grid;
-  grid-template-columns: 2fr 2fr 1.3fr auto;
+  grid-template-columns: 2fr 1.3fr auto;
   gap: 12px;
   align-items: end;
   padding: 12px;
@@ -419,6 +422,12 @@ function cancelRemoveCategory() {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.field input:read-only {
+  color: var(--text-h);
+  background: var(--field-bg);
+  cursor: not-allowed;
 }
 
 label {

@@ -6,7 +6,6 @@ export type AccountType = 'Credit' | 'Transaction' | 'Savings'
 
 export interface Account {
   name: string
-  number: string
   type: AccountType
 }
 
@@ -59,12 +58,13 @@ export async function saveSettings(accounts: Account[]): Promise<void> {
 }
 
 // Deletes immediately (not deferred to the next PUT /settings) - the Api cascades this to delete
-// every transaction linked to the account too.
-export async function deleteAccount(account: Account): Promise<void> {
+// every transaction linked to the account too. Name is the account's key (UBE-58), so it's all the
+// Api needs to identify which one to remove.
+export async function deleteAccount(name: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/settings/account`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(account),
+    body: JSON.stringify({ name }),
   })
 
   if (!response.ok) {

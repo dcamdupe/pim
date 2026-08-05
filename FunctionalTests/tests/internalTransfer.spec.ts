@@ -69,7 +69,6 @@ test.describe('Internal transfer matching', () => {
       await page.getByRole('button', { name: '+ Add account' }).click();
       const newRow = page.locator('.account-row').last();
       await newRow.locator('input').nth(0).fill(account);
-      await newRow.locator('input').nth(1).fill('444555');
       await newRow.locator('select').selectOption('Transaction');
     }
     await page.getByRole('button', { name: 'Save' }).first().click();
@@ -153,7 +152,6 @@ test.describe('Internal transfer matching', () => {
       await page.getByRole('button', { name: '+ Add account' }).click();
       const newRow = page.locator('.account-row').last();
       await newRow.locator('input').nth(0).fill(account);
-      await newRow.locator('input').nth(1).fill('444556');
       await newRow.locator('select').selectOption('Transaction');
     }
     await page.getByRole('button', { name: 'Save' }).first().click();

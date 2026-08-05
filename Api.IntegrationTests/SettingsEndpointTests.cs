@@ -38,7 +38,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         {
             Email = _email,
             PasswordHash = "unused-in-these-tests",
-            Accounts = [new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction }],
+            Accounts = [new Account { Name = "Everyday", Type = Account.AccountType.Transaction }],
             MinTransactionDate = new DateOnly(2026, 6, 10),
         };
         await users.AddAsync(user);
@@ -79,8 +79,8 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var client = AuthenticatedClient();
         var newAccounts = new SettingsRequest(
         [
-            new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction },
-            new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings },
+            new Account { Name = "Everyday", Type = Account.AccountType.Transaction },
+            new Account { Name = "Rainy day", Type = Account.AccountType.Savings },
         ]);
 
         var putResponse = await client.PutAsJsonAsync("/settings", newAccounts);
@@ -98,8 +98,8 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var client = AuthenticatedClient();
         var request = new SettingsRequest(
         [
-            new Account { Name = "Everyday", Number = "123456", Type = Account.AccountType.Transaction },
-            new Account { Name = "everyday", Number = "789012", Type = Account.AccountType.Savings },
+            new Account { Name = "Everyday", Type = Account.AccountType.Transaction },
+            new Account { Name = "everyday", Type = Account.AccountType.Savings },
         ]);
 
         var response = await client.PutAsJsonAsync("/settings", request);
@@ -112,7 +112,27 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     {
         var client = AuthenticatedClient();
         // The seeded user already has "Everyday" - this omits it entirely rather than renaming it.
-        var request = new SettingsRequest([new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings }]);
+        var request = new SettingsRequest([new Account { Name = "Rainy day", Type = Account.AccountType.Savings }]);
+
+        var response = await client.PutAsJsonAsync("/settings", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var getResponse = await client.GetAsync("/settings");
+        var body = await getResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
+        Assert.Single(body!.Accounts);
+        Assert.Equal("Everyday", body.Accounts[0].Name);
+    }
+
+    // Name is the account's key (UBE-58) - a rename looks structurally identical to removing the old
+    // name and adding a new one, which RemovesAnExistingAccount already rejects. Distinct test from
+    // Put_RejectsRemovingAnExistingAccount above so the ticket's specific "name can't be edited"
+    // requirement has its own direct coverage, even though today it's the same code path.
+    [Fact]
+    public async Task Put_RejectsRenamingAnExistingAccount()
+    {
+        var client = AuthenticatedClient();
+        // Same Type as the seeded "Everyday" account - only the name differs, i.e. a pure rename.
+        var request = new SettingsRequest([new Account { Name = "Everyday Renamed", Type = Account.AccountType.Transaction }]);
 
         var response = await client.PutAsJsonAsync("/settings", request);
 
@@ -129,8 +149,8 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var client = AuthenticatedClient();
         var request = new SettingsRequest(
         [
-            new Account { Name = "Everyday", Number = "999999", Type = Account.AccountType.Savings }, // same name, edited number/type
-            new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings }, // newly added
+            new Account { Name = "Everyday", Type = Account.AccountType.Savings }, // same name, edited type
+            new Account { Name = "Rainy day", Type = Account.AccountType.Savings }, // newly added
         ]);
 
         var response = await client.PutAsJsonAsync("/settings", request);
@@ -146,7 +166,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
 
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
         var user = (await users.GetAsync(_email))!;
-        user.Accounts.Add(new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings });
+        user.Accounts.Add(new Account { Name = "Rainy day", Type = Account.AccountType.Savings });
         await users.UpdateAsync(_email, user);
 
         var monthId = TransactionMonth.BuildId(_email, 2026, 6);
@@ -166,7 +186,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
 
         var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/account")
         {
-            Content = JsonContent.Create(new Account { Name = "Rainy day", Number = "789012", Type = Account.AccountType.Savings }),
+            Content = JsonContent.Create(new DeleteAccountRequest("Rainy day")),
         };
         var response = await client.SendAsync(deleteRequest);
 
@@ -187,7 +207,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var client = AuthenticatedClient();
         var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, "/settings/account")
         {
-            Content = JsonContent.Create(new Account { Name = "Does Not Exist", Number = "000000", Type = Account.AccountType.Transaction }),
+            Content = JsonContent.Create(new DeleteAccountRequest("Does Not Exist")),
         };
 
         var response = await client.SendAsync(deleteRequest);

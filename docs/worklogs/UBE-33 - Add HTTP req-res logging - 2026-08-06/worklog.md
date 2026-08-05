@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-33/add-logging-of-http-requests-and-responses
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/59
 
 ## Description (from Linear)
 

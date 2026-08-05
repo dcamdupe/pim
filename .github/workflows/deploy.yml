@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy platform
 
 # Manual only. Deploys the app (API Lambda code + FrontEnd static assets) to
 # already-provisioned infrastructure - it doesn't touch Terraform at all.

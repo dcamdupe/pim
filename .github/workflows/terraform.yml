@@ -1,4 +1,4 @@
-name: Terraform
+name: Deploy Terraform
 
 # Manual only - this can apply real changes to AWS, so it never runs on push.
 # Choose `action: plan` to just see what would change, or `action: apply` to

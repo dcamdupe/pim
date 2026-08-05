@@ -3,6 +3,7 @@ using Amazon.Lambda.AspNetCoreServer;
 using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Amazon.Lambda.Core;
 using Pim.Api.IoC;
+using Pim.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,8 @@ app.Use(async (context, next) =>
 
     await next();
 });
+
+app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsEnvironment("Local"))

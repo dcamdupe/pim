@@ -161,6 +161,71 @@ test.describe('Transaction categorization', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
+  test('offers to bulk-apply when two transactions share the exact same single-word description (UBE-79)', async ({ page }) => {
+    // Unlike the UBE-54 case above ("NETFLIX... COM", which has a space), this description has no
+    // spaces at all - findApproximateMatch() used to have no word-boundary to try at all in that
+    // case, so an exact duplicate went undetected regardless of how many transactions shared it.
+    const runId = Date.now();
+    const netflix = `NETFLIX${runId}`;
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const dateForUpload = `${day}/${month}/${year}`;
+
+    const qif =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${netflix}\nT-15.99\n^\n` +
+      `D${dateForUpload}\nM${netflix}\nT-15.99\n^\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill('Playwright No-Space Desc Account');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption('Playwright No-Space Desc Account');
+    await page.locator('#file-input').setInputFiles({
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
+    });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+
+    const netflixRows = page.locator('tr', { hasText: netflix });
+    await expect(netflixRows).toHaveCount(2);
+
+    // Categorising one of the two identical, no-space-description rows still offers to bulk-apply
+    // to the other, with an accurate "1 other transaction" count.
+    await netflixRows.first().locator('.category-select').selectOption('Entertainment');
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByText('1 other transaction')).toBeVisible();
+    await page.getByRole('button', { name: /Apply to 1 similar transactions/ }).click();
+
+    const netflixSelects = netflixRows.locator('.category-select');
+    for (const select of await netflixSelects.all()) {
+      await expect(select).toHaveValue('Entertainment');
+    }
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    const addedRow = page.locator('.account-row').last();
+    await addedRow.getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
   test('Cancel on the bulk-apply modal saves nothing (UBE-66)', async ({ page }) => {
     const runId = Date.now();
     const colesA = `COLES${runId} 0717 TURRAMURRA AUS`;

@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-69/fix-front-end-issues
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/55
 
 ## Description (from Linear)
 
@@ -89,3 +90,4 @@ in either screenshot pass.
 - "git pull"
 - "start a worklog on UBE-69"
 - "yes go ahead"
+- "yes, commit and open a PR"

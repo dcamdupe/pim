@@ -5,6 +5,8 @@ test('test', async ({ page }) => {
   const customerId = process.env.CustomerId;
   const password = process.env.Password;
   const account = process.env.Account;
+  const startDate = process.env.StartDate;
+  const endDate = process.env.EndDate;
 
   await page.goto('https://banking.westpac.com.au/wbc/banking/handler?TAM_OP=login&segment=personal&logout=false');
   await page.getByRole('heading', { name: 'Sign in to Westpac Online' }).click();
@@ -14,13 +16,10 @@ test('test', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Password' }).fill(password!);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.getByRole('link', { name: account! }).click();
-  await page.getByRole('link', { name: 'More Click to select more' }).click();
-  await page.locator('#columnFill').getByRole('link', { name: 'Exports and reports' }).click();
+  await page.goto('https://banking.westpac.com.au/secure/banking/reportsandexports/home');
   await page.getByRole('link', { name: 'Export Transactions' }).click();
-  await page.getByRole('textbox', { name: 'from date required Please' }).click();
-  await page.locator('td').nth(5).click();
-  await page.getByRole('textbox', { name: 'to date required Please enter' }).click();
-  await page.getByText('5', { exact: true }).nth(1).click();
+  await page.locator('input[name="DateRange.StartDate"]').fill(startDate!);
+  await page.locator('input[name="DateRange.EndDate"]').fill(endDate!);
   await page.getByRole('textbox', { name: 'Select accounts optional' }).click();
   await page.locator('#OpenAccounts').click();
   await page.getByRole('link', { name: 'Select dropdown' }).click();

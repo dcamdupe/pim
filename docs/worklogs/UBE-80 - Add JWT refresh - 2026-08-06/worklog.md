@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-80/getting-logged-out
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/60
 
 ## Description (from Linear)
 

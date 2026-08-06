@@ -84,17 +84,46 @@ not "fix it" - flagging that clearly since it changes what "done" means here.
 
 ## Checklist
 
-- [ ] `LoginController.cs` - `POST /login/refresh`
-- [ ] `AuthorizationTests.cs` - add to `ProtectedEndpoints()`
-- [ ] `LoginEndpointTests.cs` - new refresh cases
-- [ ] `authService.ts` - `refreshToken()`
-- [ ] `useTokenRefresh.ts` - interval composable
-- [ ] `App.vue` - wire it in
-- [ ] `authService.test.ts` - new cases
-- [ ] `useTokenRefresh.test.ts` - new test file
-- [ ] Build/lint/unit/integration verification + manual local check
+- [x] `LoginController.cs` - `POST /login/refresh`
+- [x] `AuthorizationTests.cs` - add to `ProtectedEndpoints()`
+- [x] `LoginEndpointTests.cs` - new refresh cases (85 unit + 55 integration passing overall) - found
+      and fixed a same-second-token-determinism issue in my own first draft of the "valid token"
+      test (see comment in the test itself)
+- [x] `authService.ts` - `refreshToken()`
+- [x] `useTokenRefresh.ts` - interval composable
+- [x] `App.vue` - wire it in (`npm run build`/`lint` clean)
+- [x] `authService.test.ts` - new cases
+- [x] `useTokenRefresh.test.ts` - new test file (first component-mount test in the project - used
+      `@vue/test-utils` `mount()` since `onMounted`/`onUnmounted` need a real component instance;
+      fake timers via `vi.useFakeTimers()`/`vi.advanceTimersByTimeAsync`). Caught a real bug in my
+      own first draft: mocking `refreshToken` to resolve a plain string (not a real JWT) made the
+      auth store's own `decodeExpiry` correctly treat it as unparseable and flip `isAuthenticated`
+      false after one tick - fixed by mocking a realistic JWT shape instead, not a composable bug.
+- [x] Build/lint/unit/integration verification - `FrontEnd.UnitTests` 139/139, `dotnet test` 85+55
+- [x] Manual local check - temporarily passed `useTokenRefresh(5000)` in `App.vue`, real
+      `run_local.sh` stack, Playwright script watching network + `localStorage` - 2 real
+      `POST /login/refresh` calls fired within an 11s wait, the stored token changed each time, and
+      the Api's own UBE-33 request logging confirmed the calls server-side too. Reverted the temp
+      interval back to `useTokenRefresh()` (the real 5-minute default) before committing.
+
+## Verification
+
+`dotnet build`/`dotnet test` - 85 unit + 55 integration (49 previous + 6 new: 2 refresh cases in
+`LoginEndpointTests.cs`, 1 new `AuthorizationTests` case, plus the existing suite). `npm run build`/
+`lint` clean. `FrontEnd.UnitTests` 139/139 (6 new: 2 in `authService.test.ts`, 4 in the new
+`useTokenRefresh.test.ts` - which needed `@vue/test-utils`' `mount()` since `onMounted`/`onUnmounted`
+require a real component instance, the first test in this project to do that). Manual end-to-end check
+against the real running app confirmed real refresh calls and a changing stored token.
+
+Two real things caught and fixed along the way (not pre-existing bugs, both in this change's own first
+draft): the "valid token" integration test initially asserted the refreshed token differs from the
+original, which is flaky - two tokens minted for the same email within the same second are
+byte-identical (whole-second `exp`, no `iat`/`jti`); and the first composable test mocked
+`refreshToken` to resolve a plain string instead of a real JWT shape, which made the auth store's own
+`decodeExpiry` correctly treat it as unparseable and stop authentication after one tick.
 
 ## Prompt log
 
 - "is there currently code to refresh the jwt for authentication?"
 - "start a worklog for UBE-80"
+- "go ahead"

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import path from 'path';
 
 test('test', async ({ page }) => {
   const customerId = process.env.CustomerId;
@@ -30,4 +31,5 @@ test('test', async ({ page }) => {
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export' }).click();
   const download = await downloadPromise;
+  await download.saveAs(path.join(__dirname, download.suggestedFilename()));
 });

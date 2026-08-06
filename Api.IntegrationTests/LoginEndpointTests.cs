@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Pim.Api.Controllers;
@@ -66,5 +67,40 @@ public sealed class LoginEndpointTests : IClassFixture<ApiWebApplicationFactory>
             new { email = $"unknown-{Guid.NewGuid():N}@example.com", password = Password });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Refresh_ReturnsOkWithAValidToken_WhenTheCurrentTokenIsValid()
+    {
+        var client = _factory.CreateClient();
+        var loginResponse = await client.PostAsJsonAsync("/login", new { email = _email, password = Password });
+        var originalToken = (await loginResponse.Content.ReadFromJsonAsync<LoginResponse>())!.Token;
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", originalToken);
+
+        var response = await client.PostAsync("/login/refresh", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var refreshedToken = (await response.Content.ReadFromJsonAsync<LoginResponse>())!.Token;
+        Assert.False(string.IsNullOrWhiteSpace(refreshedToken));
+
+        // The refreshed token itself authenticates a further protected call - the real point of a
+        // refresh. Not asserting it differs from the original: two tokens minted for the same email
+        // within the same second are byte-identical (same claims, same whole-second `exp`, no
+        // `iat`/`jti`) - a same-second refresh in this fast test is a timing coincidence, not a real
+        // behavior gap (5 minutes genuinely passes between refreshes in production, so `exp` always
+        // differs there).
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", refreshedToken);
+        var followUpResponse = await client.PostAsync("/login/refresh", content: null);
+        Assert.Equal(HttpStatusCode.OK, followUpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Refresh_ReturnsUnauthorized_WhenNoTokenIsProvided()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsync("/login/refresh", content: null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

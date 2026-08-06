@@ -23,6 +23,7 @@ public sealed class AuthorizationTests : IClassFixture<ApiWebApplicationFactory>
         yield return [HttpMethod.Put, "/transactions"];
         yield return [HttpMethod.Get, "/transactions/descriptions"];
         yield return [HttpMethod.Post, "/mapping/description"];
+        yield return [HttpMethod.Post, "/login/refresh"];
     }
 
     [Theory]

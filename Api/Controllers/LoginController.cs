@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pim.Api.Auth;
 
@@ -31,6 +33,21 @@ public sealed class LoginController : ControllerBase
 
         var token = _tokenGenerator.GenerateToken(request.Email);
         _logger.LogInformation("Login token generated");
+        return Ok(new LoginResponse(token));
+    }
+
+    // Called periodically by the FrontEnd (every 5 minutes - well within the token's own
+    // ExpiryMinutes) to renew the token before it expires, so a long-lived session doesn't get
+    // logged out just from sitting idle. [Authorize] itself is the "is the current token still
+    // valid" check - an already-expired token is rejected by JWT bearer validation before this
+    // action ever runs, so this only extends a still-live session, never revives a dead one.
+    [Authorize]
+    [HttpPost("login/refresh")]
+    public ActionResult<LoginResponse> Refresh()
+    {
+        var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var token = _tokenGenerator.GenerateToken(email);
+        _logger.LogInformation("Login token refreshed");
         return Ok(new LoginResponse(token));
     }
 }

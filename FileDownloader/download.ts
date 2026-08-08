@@ -3,7 +3,7 @@ import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
 
 async function main() {
-  const config = loadConfig();
+  const config = await loadConfig();
 
   const downloader = new WestpacDownloader();
   const savedPath = await downloader.download(config);

@@ -15,5 +15,8 @@
     "@types/node": "^26.1.1",
     "dotenv": "^17.4.2",
     "tsx": "^4.23.11"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1106.0"
   }
 }

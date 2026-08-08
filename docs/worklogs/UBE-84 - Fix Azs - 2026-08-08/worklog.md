@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-84/fix-azs
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/61
 
 ## Description (from Linear)
 

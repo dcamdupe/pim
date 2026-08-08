@@ -30,6 +30,42 @@ resource "aws_subnet" "private" {
   })
 }
 
+# One public subnet for the downloader module's scheduled Fargate task - unlike the Lambda, that
+# task has to reach the real internet (the bank's own site), not just AWS service endpoints, so a
+# private subnet + gateway endpoints can't work for it. A single subnet (not one per AZ, unlike
+# private above) is enough for a single once-daily batch task with no availability requirement.
+# High cidrsubnet index (200) keeps it well clear of aws_subnet.private's low indices regardless
+# of az_count.
+resource "aws_subnet" "public" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 200)
+  availability_zone = local.azs[0]
+
+  tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-public" })
+}
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}" })
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = merge(local.common_tags, { Name = "${var.application}-${var.environment}-public" })
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
 # No NAT Gateway / Internet Gateway: the Lambda in these subnets only needs
 # DynamoDB, reached via the gateway endpoint below, so there's no need for
 # general internet egress. CloudWatch Logs delivery for the function doesn't

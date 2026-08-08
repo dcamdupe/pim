@@ -32,3 +32,18 @@ output "api_custom_domain_target" {
   description = "Target domain name for the API's custom domain - point api_domain_name's DNS record (CNAME/ALIAS) at this."
   value       = module.api.custom_domain_target
 }
+
+output "downloader_ecr_repository_url" {
+  description = "ECR repository URL for the downloader image. Copy into the downloader deploy workflow's DOWNLOADER_ECR_REPOSITORY_URL repo variable."
+  value       = module.downloader.ecr_repository_url
+}
+
+output "downloader_ecs_cluster_name" {
+  description = "Name of the ECS cluster the scheduled downloader task runs in. Copy into the downloader deploy workflow's DOWNLOADER_ECS_CLUSTER repo variable."
+  value       = module.downloader.ecs_cluster_name
+}
+
+output "downloader_ecs_task_definition_family" {
+  description = "Task definition family the downloader deploy workflow registers new revisions under. Copy into the downloader deploy workflow's DOWNLOADER_TASK_FAMILY repo variable."
+  value       = module.downloader.ecs_task_definition_family
+}

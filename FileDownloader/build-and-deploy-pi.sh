@@ -8,11 +8,16 @@ PI_HOST="pi@pi.uberconcept.com"
 IMAGE="downloader:latest"
 CONTROL_SOCKET="$(mktemp -u)"
 
-# Single SSH connection, reused (and password-prompted) once for both steps below.
+# Single SSH connection, reused (and password-prompted) once for both steps below. Also wipes
+# the plaintext .env decrypted below, so it doesn't linger on disk past this script's run.
 cleanup() {
+  rm -f .env
   ssh -o ControlPath="$CONTROL_SOCKET" -O exit "$PI_HOST" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
+
+echo "Decrypting .env..."
+./decrypt-env.sh
 
 echo "Building image for linux/arm64..."
 docker buildx build --platform linux/arm64 -t "$IMAGE" --load .

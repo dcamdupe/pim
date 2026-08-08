@@ -10,8 +10,6 @@ RUN npm ci
 COPY . .
 RUN chmod +x download.sh
 
-# No .env is copied in (see .dockerignore) - either mount one at runtime
-# (`docker run -v $(pwd)/.env:/app/.env ...`) or leave it out entirely and
-# config.ts falls back to AWS Secrets Manager ("pim_data"), which is the
-# expected path when this runs somewhere with a real AWS role (e.g. ECS/Fargate).
+# .env is copied in as part of the build context - decrypt-env.sh must be run before building
+# so a plaintext .env exists to copy (see build-and-deploy-pi.sh).
 CMD ["./download.sh"]

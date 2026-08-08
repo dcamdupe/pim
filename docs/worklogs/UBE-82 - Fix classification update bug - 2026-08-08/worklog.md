@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-82/bug-updating-transaction-classifications-only-applies-to-currently
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/62
 
 ## Description (from Linear)
 

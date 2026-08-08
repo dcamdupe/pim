@@ -61,13 +61,3 @@ module "api" {
   domain_name                                 = var.api_domain_name
   certificate_arn                             = var.api_certificate_arn
 }
-
-module "downloader" {
-  source = "./modules/downloader"
-
-  application      = var.application
-  environment      = var.environment
-  aws_region       = var.aws_region
-  vpc_id           = module.networking.vpc_id
-  public_subnet_id = module.networking.public_subnet_id
-}

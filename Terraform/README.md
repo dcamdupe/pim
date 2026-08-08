@@ -1,9 +1,12 @@
 # Terraform
 
 Infrastructure as code for PIM's AWS deployment: a VPC with private subnets (NACLs, Security
-Groups, VPC endpoints), a CloudFront + S3 frontend, a DynamoDB users table, an HTTP API
-Gateway + Lambda backend, and a scheduled Fargate task (`FileDownloader`) that downloads a
-Westpac transaction export and uploads it to the API.
+Groups, VPC endpoints), a CloudFront + S3 frontend, a DynamoDB users table, and an HTTP API
+Gateway + Lambda backend.
+
+The `FileDownloader` Westpac export job no longer runs on AWS - it's deployed as a Docker
+container to a Raspberry Pi instead (see `FileDownloader/build-and-deploy-pi.sh`), so this
+Terraform doesn't manage it.
 
 ## Layout
 
@@ -13,13 +16,10 @@ Terraform/
                          # remote state it creates. No DynamoDB lock table: applies are
                          # done by one person, serially, so there's no locking need.
   modules/
-    networking/          # VPC, private subnets (one per AZ) + a single public subnet (for the
-                         # downloader task, below), NACLs, Security Groups, VPC endpoints
+    networking/          # VPC, private subnets (one per AZ), NACLs, Security Groups, VPC endpoints
     frontend/            # S3 + CloudFront (Origin Access Control restricts the bucket to CloudFront)
     data/                # DynamoDB table (id key, schemaless JSON `data` attribute)
     api/                 # Lambda (real Api project) + HTTP API Gateway + IAM role
-    downloader/          # ECR repo, ECS cluster + Fargate task def, IAM roles, EventBridge
-                         # Scheduler - runs the FileDownloader container daily
   main.tf, variables.tf, providers.tf, backend.tf, outputs.tf   # shared root config
   environments/
     production.tfvars    # the only thing that varies per environment
@@ -154,69 +154,6 @@ these aren't sensitive):
 
 It reuses the same `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` secrets as `terraform.yml` - no
 separate credentials needed.
-
-## The downloader (`modules/downloader`)
-
-Runs `FileDownloader`'s Docker image (see `FileDownloader/Dockerfile`) as a scheduled Fargate
-task - it downloads a Westpac transaction export and uploads it to the API, once a day.
-
-- **Networking**: unlike the Lambda (private subnets only, no internet access needed), this task
-  has to reach the bank's own site, not just AWS services - so it runs in the new public subnet
-  (`modules/networking`) with a public IP, egress-only security group, no NAT Gateway. That keeps
-  the recurring cost near zero (no NAT Gateway hourly charge) since it's a batch job that runs for
-  a couple of minutes once a day, not a listener.
-- **Config**: no `.env` is baked into the image - the app code (`FileDownloader/config.ts`) falls
-  back to AWS Secrets Manager (secret name `pim_data`, a JSON object shaped like `Config`) whenever
-  no `.env` file is present, which is always true inside the container. The task role is granted
-  `secretsmanager:GetSecretValue` scoped to that one secret.
-- **The `pim_data` secret itself is created by hand**, not by Terraform (`data
-  "aws_secretsmanager_secret"` looks it up by name) - same reasoning as the ACM certs below: its
-  value is real bank/login credentials that shouldn't pass through tfstate. Its keys are the same
-  PascalCase names as the `.env` variables (`FileDownloader/config.ts`'s `loadFromAwsSecrets` maps
-  them onto `Config`'s own camelCase fields), not `Config`'s field names directly:
-  ```json
-  {
-    "WestpacCustomerId": "",
-    "WestpacPassword": "",
-    "WestpacAccount": "",
-    "BaseUrl": "",
-    "PimLogin": "",
-    "PimPassword": "",
-    "PimAccount": ""
-  }
-  ```
-- **Scheduling**: an EventBridge **Scheduler** schedule (`aws_scheduler_schedule`), not a plain
-  EventBridge Rule - Scheduler supports `schedule_expression_timezone` (`Australia/Sydney`), so
-  "11pm Sydney time" stays correct across the AEST/AEDT daylight-saving transition without the
-  cron expression needing manual UTC-offset adjustment twice a year.
-- **ECR retention**: a lifecycle policy keeps only the 5 most-recently-pushed images.
-
-### Deploying the downloader
-
-`.github/workflows/downloader-deploy.yml` builds the Docker image, pushes it to ECR, and
-registers a new ECS task definition revision - manually triggered, same convention as
-`deploy.yml`. `aws_ecs_task_definition.this` has `lifecycle.ignore_changes` on
-`container_definitions` for the same reason the API Lambda's deployment package does: this
-workflow, not Terraform, is what updates the image day-to-day.
-
-The EventBridge Scheduler target references the task definition **family**, not a pinned
-revision - ECS resolves a bare family name to its latest `ACTIVE` revision at run time, so a newly
-registered revision takes effect on the next scheduled run automatically, with nothing else to
-update.
-
-One-time setup, after the first `apply`: create the `pim_data` secret by hand in Secrets Manager
-(see above), then run `terraform output` and copy three values into the repo as **variables**:
-
-- `DOWNLOADER_ECR_REPOSITORY_URL` ← `downloader_ecr_repository_url` output
-- `DOWNLOADER_ECS_CLUSTER` ← `downloader_ecs_cluster_name` output
-- `DOWNLOADER_TASK_FAMILY` ← `downloader_ecs_task_definition_family` output
-
-It reuses the same `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` secrets as the other deploy
-workflows - the CI IAM user needs `ecr:GetAuthorizationToken`/`ecr:BatchCheckLayerAvailability`/
-`ecr:PutImage`/`ecr:InitiateLayerUpload`/`ecr:UploadLayerPart`/`ecr:CompleteLayerUpload` on the
-downloader ECR repo, plus `ecs:DescribeTaskDefinition`/`ecs:RegisterTaskDefinition` and
-`iam:PassRole` on the task/execution roles, added by hand the same way the rest of that user's
-permissions are (see "Applying via GitHub Actions" above - its policy isn't Terraform-managed).
 
 ## Verification scope
 

@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-PI_HOST="pi@pi.uberconcept.com"
+PI_HOST="pi@192.168.68.51"
 IMAGE="downloader:latest"
 CONTROL_SOCKET="$(mktemp -u)"
 

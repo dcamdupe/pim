@@ -64,8 +64,12 @@ public sealed class TransactionsController : ControllerBase
         return Ok(new TransactionsResponse(transactions));
     }
 
+    // Returns the updated transactions (not NoContent) because UpdateTransactionsAsync can stamp
+    // Type/Ignore server-side from the category definition (Category.StampTransaction) whenever
+    // Category changes - the caller sent its own guess at those fields, but the server-derived
+    // values are authoritative, so the response is what callers should treat as the real result.
     [HttpPut("transactions")]
-    public async Task<IActionResult> UpdateTransactions(List<Transaction> transactions)
+    public async Task<ActionResult<TransactionsResponse>> UpdateTransactions(List<Transaction> transactions)
     {
         if (transactions.Count == 0)
         {
@@ -75,7 +79,7 @@ public sealed class TransactionsController : ControllerBase
         var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         await _transactionUpdateService.UpdateTransactionsAsync(email, transactions);
 
-        return NoContent();
+        return Ok(new TransactionsResponse(transactions));
     }
 
     [HttpGet("transactions/descriptions")]

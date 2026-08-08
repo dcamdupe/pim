@@ -1,6 +1,7 @@
 import type { RangeOption } from './transactionFilterStorage'
 import { formatDateForApi } from './dateFormat'
 import { MONTH_NAMES, monthKey, parseMonthKey } from './dashboardMetrics'
+import type { Transaction } from '../services/transactionsService'
 
 export interface DateRangeQuery {
   startDate: string | undefined
@@ -22,6 +23,13 @@ function calendarMonthRange(key: string): { start: Date; end: Date } {
   const start = parseMonthKey(key)
   const end = new Date(start.getFullYear(), start.getMonth() + 1, 0)
   return { start, end }
+}
+
+// Dates are ISO "YYYY-MM-DD" strings, so a plain string comparison sorts/bounds chronologically -
+// same trick computeRecentTransactions (dashboardMetrics.ts) relies on.
+export function filterByDateRange(transactions: Transaction[], option: RangeOption, today: Date): Transaction[] {
+  const { startDate, endDate } = computeRange(option, today)
+  return transactions.filter((t) => (!startDate || t.date >= startDate) && t.date <= endDate)
 }
 
 export function computeRange(option: RangeOption, today: Date): DateRangeQuery {

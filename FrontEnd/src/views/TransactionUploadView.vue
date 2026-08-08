@@ -4,8 +4,10 @@ import { useRouter } from 'vue-router'
 import { getSettings, type Account } from '../services/settingsService'
 import { refreshTransactionDescriptions } from '../services/transactionDescriptionsService'
 import { uploadTransactions } from '../services/transactionsService'
+import { useTransactionsStore } from '../stores/transactions'
 
 const router = useRouter()
+const transactionsStore = useTransactionsStore()
 
 const accounts = ref<Account[]>([])
 const selectedAccount = ref('')
@@ -57,9 +59,12 @@ async function onSave() {
   saving.value = true
   try {
     await uploadTransactions(selectedAccount.value, file.value)
-    // Best-effort cache refresh - the upload itself already succeeded, so a failure here
-    // shouldn't surface as an upload error.
-    await refreshTransactionDescriptions().catch(() => {})
+    // Both best-effort - the upload itself already succeeded, so a failure refreshing either
+    // cache shouldn't surface as an upload error. The transactions store refresh is a forced
+    // refresh() (not load()) since it needs to bypass the cache-freshness check - the newly
+    // uploaded rows must show up on /transactions immediately, not wait out however much of the
+    // expiry window happens to be left from an earlier, now-stale load elsewhere in the app.
+    await Promise.all([refreshTransactionDescriptions().catch(() => {}), transactionsStore.refresh().catch(() => {})])
     router.push('/transactions')
   } catch {
     saveError.value = 'Could not upload the file. Please try again.'

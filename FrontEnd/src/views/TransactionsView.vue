@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { categoryColor, categoryNames } from '../services/categoriesService'
 import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
-import { getTransactions, updateTransactions, saveDescriptionMapping, type Transaction } from '../services/transactionsService'
+import { saveDescriptionMapping, type Transaction } from '../services/transactionsService'
+import { useTransactionsStore } from '../stores/transactions'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions } from '../utils/transactionFilters'
 import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
-import { computeRange, pastSixMonthOptions } from '../utils/transactionDateRange'
+import { filterByDateRange, pastSixMonthOptions } from '../utils/transactionDateRange'
 import { nextVisibleCount, TRANSACTIONS_PAGE_SIZE } from '../utils/infiniteScroll'
 
 interface PendingCategoryChange {
@@ -20,7 +22,8 @@ const storedFilters = loadStoredTransactionFilters()
 const CATEGORIES = categoryNames()
 const PAST_SIX_MONTHS = pastSixMonthOptions(new Date())
 
-const transactions = ref<Transaction[]>([])
+const transactionsStore = useTransactionsStore()
+const { transactions } = storeToRefs(transactionsStore)
 const loading = ref(true)
 const loadError = ref('')
 const selectedRange = ref<RangeOption>(storedFilters?.range ?? 'month')
@@ -41,13 +44,17 @@ const visibleCount = ref(TRANSACTIONS_PAGE_SIZE)
 const scrollSentinel = ref<HTMLElement | null>(null)
 let scrollObserver: IntersectionObserver | null = null
 
-const accountOptions = computed(() => [...new Set(transactions.value.map((t) => t.account))].sort())
+// Filtered by the selected date range only - re-derived from the shared store's full history on
+// every read, so it stays in sync with background refreshes/updates without a fetch of its own.
+const rangeFilteredTransactions = computed(() => filterByDateRange(transactions.value, selectedRange.value, new Date()))
+
+const accountOptions = computed(() => [...new Set(rangeFilteredTransactions.value.map((t) => t.account))].sort())
 
 // Search/account/category applied, but not the needs-category toggle - this is what the
 // toggle's own count badge reflects, so it updates live as you type/pick a filter rather than
 // only ever showing the count for the unfiltered range.
 const searchedAndCategorised = computed(() =>
-  filterTransactions(transactions.value, {
+  filterTransactions(rangeFilteredTransactions.value, {
     search: searchQuery.value,
     account: selectedAccount.value,
     category: selectedCategory.value,
@@ -72,12 +79,11 @@ function formatAmount(amount: number): string {
   return `${sign}$${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-async function fetchTransactions() {
+async function loadTransactions() {
   loading.value = true
   loadError.value = ''
   try {
-    const { startDate, endDate } = computeRange(selectedRange.value, new Date())
-    transactions.value = await getTransactions(startDate, endDate)
+    await transactionsStore.load()
   } catch {
     loadError.value = 'Could not load transactions. Please try again later.'
   } finally {
@@ -89,8 +95,7 @@ async function applySingleCategory(transaction: Transaction, category: string) {
   categorySaveError.value = ''
   savingCategory.value = true
   try {
-    await updateTransactions([{ ...transaction, category }])
-    transaction.category = category
+    await transactionsStore.updateTransaction(transaction, { category })
   } catch {
     categorySaveError.value = 'Could not save the category. Please try again.'
   } finally {
@@ -121,7 +126,9 @@ async function confirmBulkApply() {
   savingCategory.value = true
   try {
     await saveDescriptionMapping(pending.match.descriptionStart, pending.category)
-    await fetchTransactions()
+    // A forced refresh, not load() - the mapping rule can retroactively recategorise many
+    // transactions server-side that we have no individual references to mutate locally.
+    await transactionsStore.refresh()
   } catch {
     categorySaveError.value = 'Could not save the category. Please try again.'
   } finally {
@@ -151,8 +158,7 @@ async function toggleIgnore(transaction: Transaction) {
   toggleIgnoreError.value = ''
   togglingIgnore.value = true
   try {
-    await updateTransactions([{ ...transaction, ignore: !transaction.ignore }])
-    await fetchTransactions()
+    await transactionsStore.updateTransaction(transaction, { ignore: !transaction.ignore })
   } catch {
     toggleIgnoreError.value = 'Could not update the transaction. Please try again.'
   } finally {
@@ -161,7 +167,7 @@ async function toggleIgnore(transaction: Transaction) {
 }
 
 onMounted(() => {
-  void fetchTransactions()
+  void loadTransactions()
   document.addEventListener('click', closeRowMenu)
 
   scrollObserver = new IntersectionObserver((entries) => {
@@ -182,7 +188,6 @@ watch(scrollSentinel, (el, previousEl) => {
     scrollObserver?.observe(el)
   }
 })
-watch(selectedRange, fetchTransactions)
 watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCategoryOnly], () => {
   visibleCount.value = TRANSACTIONS_PAGE_SIZE
   saveTransactionFilters({

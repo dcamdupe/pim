@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { computeRange, pastSixMonthOptions } from '../../FrontEnd/src/utils/transactionDateRange'
+import { computeRange, filterByDateRange, pastSixMonthOptions } from '../../FrontEnd/src/utils/transactionDateRange'
+import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
 const today = new Date(2026, 7, 5) // 5 Aug 2026
+
+function makeTransaction(date: string): Transaction {
+  return { account: 'Everyday', date, description: 'Coffee', category: 'Dining', amount: -5, ignore: false, type: 'Expense' }
+}
 
 describe('computeRange', () => {
   it('week: 7 days back from today', () => {
@@ -42,6 +47,23 @@ describe('computeRange', () => {
 
   it('month:YYYY-MM: resolves the correct last day for a shorter month', () => {
     expect(computeRange('month:2026-02', today)).toEqual({ startDate: '2026-02-01', endDate: '2026-02-28' })
+  })
+})
+
+describe('filterByDateRange', () => {
+  const transactions = [makeTransaction('2026-07-01'), makeTransaction('2026-07-29'), makeTransaction('2026-08-05')]
+
+  it('keeps only transactions within the resolved range (inclusive bounds)', () => {
+    expect(filterByDateRange(transactions, 'week', today).map((t) => t.date)).toEqual(['2026-07-29', '2026-08-05'])
+  })
+
+  it('allTime: no lower bound, still excludes anything after the endDate', () => {
+    const withFuture = [...transactions, makeTransaction('2026-08-06')]
+    expect(filterByDateRange(withFuture, 'allTime', today).map((t) => t.date)).toEqual([
+      '2026-07-01',
+      '2026-07-29',
+      '2026-08-05',
+    ])
   })
 })
 

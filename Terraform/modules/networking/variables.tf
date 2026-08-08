@@ -16,5 +16,5 @@ variable "vpc_cidr" {
 variable "az_count" {
   description = "Number of availability zones to spread the private subnets across."
   type        = number
-  default     = 2
+  default     = 3
 }

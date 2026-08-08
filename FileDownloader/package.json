@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsx Westpac.ts"
+    "start": "tsx download.ts"
   },
   "keywords": [],
   "author": "",

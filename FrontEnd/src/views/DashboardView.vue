@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { getTransactions, type Transaction } from '../services/transactionsService'
+import { storeToRefs } from 'pinia'
+import { useTransactionsStore } from '../stores/transactions'
 import { getSettings } from '../services/settingsService'
-import { formatDateForApi } from '../utils/dateFormat'
 import {
   computeDashboardTiles,
   computeExpensesByCategory,
@@ -13,81 +13,40 @@ import {
   formatSixMonthRangeLabel,
   parseMonthKey,
   computeRecentTransactions,
-  getCurrentMonthRange,
-  getPreviousSixMonthsRange,
 } from '../utils/dashboardMetrics'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
 import RecentTransactionsList from '../components/RecentTransactionsList.vue'
-import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 // The real "today", used as the upper bound for the month filter - distinct from `selectedMonth`,
 // which the user can wind back via the filter.
 const realToday = new Date()
 
-const transactions = ref<Transaction[]>([])
-// True only until the very first fetch (on mount) resolves - gates the full-page loading/error
-// state, since there's nothing to show yet. A later month-switch fetch uses chartsLoading/
-// chartsError instead, so it never blanks the page - see fetchTransactionsForSelectedMonth.
+const transactionsStore = useTransactionsStore()
+const { transactions } = storeToRefs(transactionsStore)
+
+// Only gates the very first render, while the shared store's initial load() is in flight - switching
+// the month filter afterwards is a synchronous recompute over the already-loaded data, not a fetch.
 const initialLoading = ref(true)
-const chartsLoading = ref(false)
 const loadError = ref('')
-const chartsError = ref('')
 const minTransactionDate = ref<Date | null>(null)
 const selectedMonthKey = ref(computeAvailableMonths(null, realToday)[0].value)
-// Only updates once the fetch for `selectedMonthKey` has resolved, so every tile/chart on screen
-// always reflects one single, consistent (month, transactions) pairing - never a half-updated mix
-// of the newly-picked month's label with the previous month's figures while a fetch is in flight.
-const appliedMonthKey = ref(selectedMonthKey.value)
 
 const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
-const appliedMonth = computed(() => parseMonthKey(appliedMonthKey.value))
-const isFetching = computed(() => initialLoading.value || chartsLoading.value)
+const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
 
-const tiles = computed(() => computeDashboardTiles(transactions.value, appliedMonth.value))
-const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, appliedMonth.value))
-const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, appliedMonth.value))
+const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
+const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, selectedMonth.value))
+const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value))
 const recentTransactions = computed(() => computeRecentTransactions(transactions.value))
-const selectedMonthLabel = computed(() => formatMonthYear(appliedMonth.value))
-const sixMonthRangeLabel = computed(() => formatSixMonthRangeLabel(appliedMonth.value))
+const selectedMonthLabel = computed(() => formatMonthYear(selectedMonth.value))
+const sixMonthRangeLabel = computed(() => formatSixMonthRangeLabel(selectedMonth.value))
 
 function formatCurrency(amount: number): string {
   const sign = amount < 0 ? '−' : ''
   return `${sign}$${Math.abs(amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 }
-
-async function fetchTransactionsForSelectedMonth() {
-  const monthKey = selectedMonthKey.value
-  const isInitial = initialLoading.value
-
-  if (isInitial) {
-    loadError.value = ''
-  } else {
-    chartsLoading.value = true
-    chartsError.value = ''
-  }
-
-  try {
-    const month = parseMonthKey(monthKey)
-    const { start } = getPreviousSixMonthsRange(month)
-    const { end } = getCurrentMonthRange(month)
-    transactions.value = await getTransactions(formatDateForApi(start), formatDateForApi(end))
-    appliedMonthKey.value = monthKey
-  } catch {
-    const message = 'Could not load your dashboard. Please try again later.'
-    if (isInitial) {
-      loadError.value = message
-    } else {
-      chartsError.value = message
-    }
-  } finally {
-    initialLoading.value = false
-    chartsLoading.value = false
-  }
-}
-
-watch(selectedMonthKey, fetchTransactionsForSelectedMonth)
 
 onMounted(async () => {
   // Non-fatal if this fails - the month filter just falls back to only the current month.
@@ -97,7 +56,13 @@ onMounted(async () => {
     })
     .catch(() => {})
 
-  await fetchTransactionsForSelectedMonth()
+  try {
+    await transactionsStore.load()
+  } catch {
+    loadError.value = 'Could not load your dashboard. Please try again later.'
+  } finally {
+    initialLoading.value = false
+  }
 })
 </script>
 
@@ -108,7 +73,7 @@ onMounted(async () => {
         <h1>Dashboard</h1>
         <p class="subtitle">Your financial overview.</p>
       </div>
-      <select v-model="selectedMonthKey" aria-label="Month filter" class="month-select" :disabled="isFetching">
+      <select v-model="selectedMonthKey" aria-label="Month filter" class="month-select" :disabled="initialLoading">
         <option v-for="m in availableMonths" :key="m.value" :value="m.value">{{ m.label }}</option>
       </select>
     </div>
@@ -117,7 +82,7 @@ onMounted(async () => {
     <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
 
     <template v-else>
-      <div class="kpi-row" :class="{ 'is-loading': chartsLoading }">
+      <div class="kpi-row">
         <DashboardTile
           kicker="Profit"
           :label="selectedMonthLabel"
@@ -148,21 +113,13 @@ onMounted(async () => {
         <div class="card">
           <h2>Spending by category</h2>
           <p class="card-sub">{{ selectedMonthLabel }} · {{ formatCurrency(tiles.currentMonthExpenses) }} total</p>
-          <LoadingSpinner v-if="chartsLoading" label="Loading spending by category" />
-          <p v-else-if="chartsError" class="status status-error chart-error">{{ chartsError }}</p>
-          <SpendingByCategoryChart
-            v-else
-            :expenses="expensesByCategory"
-            :center-value="formatCurrency(tiles.currentMonthExpenses)"
-          />
+          <SpendingByCategoryChart :expenses="expensesByCategory" :center-value="formatCurrency(tiles.currentMonthExpenses)" />
         </div>
 
         <div class="card">
           <h2>Income vs. expenses</h2>
           <p class="card-sub">{{ sixMonthRangeLabel }}</p>
-          <LoadingSpinner v-if="chartsLoading" label="Loading income vs. expenses" />
-          <p v-else-if="chartsError" class="status status-error chart-error">{{ chartsError }}</p>
-          <IncomeVsExpensesChart v-else :data="monthlyIncomeExpenses" />
+          <IncomeVsExpensesChart :data="monthlyIncomeExpenses" />
         </div>
       </div>
 
@@ -222,11 +179,6 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  transition: opacity 0.15s ease;
-}
-
-.kpi-row.is-loading {
-  opacity: 0.6;
 }
 
 @media (max-width: 720px) {
@@ -274,14 +226,6 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--text);
   margin: 0 0 16px;
-}
-
-.chart-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 220px;
-  text-align: center;
 }
 
 .recent-card {

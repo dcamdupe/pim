@@ -12,12 +12,15 @@ import {
   type CategoryType,
 } from '../services/settingsService'
 import { refreshCategories } from '../services/categoriesService'
+import { useTransactionsStore } from '../stores/transactions'
 import { COLOUR_PALETTE } from '../constants/colourPalette'
 
 interface PendingRemoval {
   account: Account
   index: number
 }
+
+const transactionsStore = useTransactionsStore()
 
 const INTERNAL_TRANSFER = 'Internal Transfer'
 const accountTypes: AccountType[] = ['Credit', 'Transaction', 'Savings']
@@ -97,6 +100,13 @@ async function confirmRemoveAccount() {
     await deleteAccount(pending.account.name)
     accounts.value.splice(pending.index, 1)
     isUnsaved.value.splice(pending.index, 1)
+    // Deleting an account deletes all of its transactions server-side (DeleteTransactionsForAccountAsync)
+    // - a forced refresh, not load(), since the shared cache has no way to know that happened. Closing
+    // the modal (pendingRemoval = null) only *after* this resolves - not before - keeps the modal's
+    // full-page backdrop blocking navigation for that brief window, so a user can't reload/navigate
+    // away before the refreshed data is persisted to localStorage and left showing stale, pre-delete
+    // transactions until the cache's next scheduled refresh.
+    await transactionsStore.refresh().catch(() => {})
     pendingRemoval.value = null
   } catch {
     deleteError.value = 'Could not remove the account. Please try again.'

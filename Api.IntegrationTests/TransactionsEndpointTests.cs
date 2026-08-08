@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Pim.Api.Auth;
 using Pim.Api.Controllers;
@@ -14,9 +15,13 @@ namespace Pim.Api.IntegrationTests;
 public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationFactory>, IAsyncLifetime
 {
     // ReadFromJsonAsync<T>() with no explicit options defaults to JsonSerializerDefaults.Web
-    // (case-insensitive, camelCase) - matching that here since the Api writes camelCase
-    // (Program.cs's controller JSON options).
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    // (case-insensitive, camelCase) - matching that here since we also need
+    // JsonStringEnumConverter to read the string Transaction.Type the Api writes (Program.cs),
+    // same as SettingsEndpointTests.cs's Account.AccountType.
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
 
     private const string ValidQif =
         "!Type:Bank\n" +
@@ -284,7 +289,9 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var updated = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
         var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { updated });
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
+        Assert.Equal("Dining", body!.Transactions.Single().Category);
         var month = await repository.GetAsync(monthId);
         Assert.Equal("Dining", month!.Transactions.Single().Category);
     }
@@ -307,7 +314,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         var setIgnore = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Ignore = true };
         var setIgnoreResponse = await client.PutAsJsonAsync("/transactions", new List<Transaction> { setIgnore });
-        Assert.Equal(HttpStatusCode.NoContent, setIgnoreResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, setIgnoreResponse.StatusCode);
 
         var getResponse = await client.GetAsync("/transactions?startDate=2026-06-01&endDate=2026-06-30");
         var body = await getResponse.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
@@ -315,7 +322,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         var setActive = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "", Amount = -4.50m, Ignore = false };
         var setActiveResponse = await client.PutAsJsonAsync("/transactions", new List<Transaction> { setActive });
-        Assert.Equal(HttpStatusCode.NoContent, setActiveResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, setActiveResponse.StatusCode);
 
         var month = await repository.GetAsync(monthId);
         Assert.False(month!.Transactions.Single().Ignore);
@@ -345,7 +352,14 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var updated = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m };
         var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { updated });
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // The response body is what UBE-82's FrontEnd store relies on to pick up the server-stamped
+        // Type/Ignore without a follow-up GET - assert on it directly, not just the stored record.
+        var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
+        var responseTransaction = body!.Transactions.Single();
+        Assert.Equal(Category.CategoryType.Ignore, responseTransaction.Type);
+        Assert.True(responseTransaction.Ignore);
+
         var month = await repository.GetAsync(monthId);
         var transaction = month!.Transactions.Single();
         Assert.Equal(Category.CategoryType.Ignore, transaction.Type);
@@ -382,7 +396,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var manuallyIgnore = new Transaction { Account = "Everyday", Date = new DateOnly(2026, 6, 10), Description = "Coffee Shop", Category = "Dining", Amount = -4.50m, Type = Category.CategoryType.Expense, Ignore = true };
         var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { manuallyIgnore });
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var month = await repository.GetAsync(monthId);
         var transaction = month!.Transactions.Single();
         Assert.True(transaction.Ignore);

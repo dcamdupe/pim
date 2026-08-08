@@ -2,9 +2,11 @@
 import { RouterView, useRoute } from 'vue-router'
 import NavBar from './components/NavBar.vue'
 import { useTokenRefresh } from './composables/useTokenRefresh'
+import { useTransactionsRefresh } from './composables/useTransactionsRefresh'
 
 const route = useRoute()
 useTokenRefresh()
+useTransactionsRefresh()
 </script>
 
 <template>

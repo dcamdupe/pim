@@ -75,7 +75,10 @@ export async function getTransactions(startDate: string | undefined, endDate: st
   return data.transactions
 }
 
-export async function updateTransactions(transactions: Transaction[]): Promise<void> {
+// Returns the server's updated transactions (not void) - PUT /transactions can stamp Type/Ignore
+// server-side from the category definition whenever Category changes, so the response, not the
+// request body, is the authoritative result (see stores/transactions.ts's updateTransaction).
+export async function updateTransactions(transactions: Transaction[]): Promise<Transaction[]> {
   const response = await fetch(`${API_BASE_URL}/transactions`, {
     method: 'PUT',
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -85,6 +88,9 @@ export async function updateTransactions(transactions: Transaction[]): Promise<v
   if (!response.ok) {
     throw new TransactionsUpdateFailedError()
   }
+
+  const data = (await response.json()) as { transactions: Transaction[] }
+  return data.transactions
 }
 
 export async function saveDescriptionMapping(descriptionStart: string, category: string): Promise<void> {

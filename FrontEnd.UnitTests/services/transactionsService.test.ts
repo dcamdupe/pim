@@ -99,7 +99,7 @@ describe('transactionsService', () => {
       const transactions: Transaction[] = [
         { account: 'Everyday', date: '2026-06-01', description: 'Coffee', category: 'Dining', amount: -4.5, ignore: null },
       ]
-      const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ transactions }) })
       vi.stubGlobal('fetch', fetchMock)
 
       await updateTransactions(transactions)
@@ -112,6 +112,21 @@ describe('transactionsService', () => {
           body: JSON.stringify(transactions),
         }),
       )
+    })
+
+    // The Api can stamp Type/Ignore server-side (from the category definition) as a side effect of
+    // a Category change, so the response body - not just an echo of the request - is what's
+    // returned, and callers (stores/transactions.ts) rely on that being the authoritative result.
+    it('returns the updated transactions from the response body, not just the request payload', async () => {
+      const sent: Transaction[] = [
+        { account: 'Everyday', date: '2026-06-01', description: 'Coffee', category: 'Dining', amount: -4.5, ignore: null, type: null },
+      ]
+      const stamped: Transaction[] = [{ ...sent[0], type: 'Expense' }]
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ transactions: stamped }) }))
+
+      const result = await updateTransactions(sent)
+
+      expect(result).toEqual(stamped)
     })
 
     it('throws TransactionsUpdateFailedError when the response is not ok', async () => {

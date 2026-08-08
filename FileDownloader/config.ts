@@ -45,7 +45,9 @@ function loadFromEnv(): Config {
   return assertComplete(values, '.env');
 }
 
-// Loads the Config from the JSON object stored in the AWS Secrets Manager secret "pim_data".
+// Loads the Config from the JSON object stored in the AWS Secrets Manager secret "pim_data" -
+// same PascalCase key names as the .env variables (WestpacCustomerId, BaseUrl, ...), not the
+// Config interface's own camelCase field names.
 async function loadFromAwsSecrets(): Promise<Config> {
   const client = new SecretsManagerClient({});
   const response = await client.send(new GetSecretValueCommand({ SecretId: 'pim_data' }));
@@ -53,7 +55,16 @@ async function loadFromAwsSecrets(): Promise<Config> {
     throw new Error('Secret "pim_data" has no SecretString value.');
   }
 
-  const values = JSON.parse(response.SecretString) as Partial<Config>;
+  const secret = JSON.parse(response.SecretString) as Record<string, string | undefined>;
+  const values = {
+    westpacCustomerId: secret.WestpacCustomerId,
+    westpacPassword: secret.WestpacPassword,
+    westpacAccount: secret.WestpacAccount,
+    pimBaseUrl: secret.BaseUrl,
+    pimLogin: secret.PimLogin,
+    pimPassword: secret.PimPassword,
+    pimAccount: secret.PimAccount,
+  };
 
   return assertComplete(values, 'AWS secret "pim_data"');
 }

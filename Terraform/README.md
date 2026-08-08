@@ -171,7 +171,20 @@ task - it downloads a Westpac transaction export and uploads it to the API, once
   `secretsmanager:GetSecretValue` scoped to that one secret.
 - **The `pim_data` secret itself is created by hand**, not by Terraform (`data
   "aws_secretsmanager_secret"` looks it up by name) - same reasoning as the ACM certs below: its
-  value is real bank/login credentials that shouldn't pass through tfstate. Its shape is {  "westpacCustomerId": "",  "westpacPassword": "",  "westpacAccount": "",  "pimBaseUrl": "",  "pimLogin": "",  "pimPassword": "",  "pimAccount": ""}
+  value is real bank/login credentials that shouldn't pass through tfstate. Its keys are the same
+  PascalCase names as the `.env` variables (`FileDownloader/config.ts`'s `loadFromAwsSecrets` maps
+  them onto `Config`'s own camelCase fields), not `Config`'s field names directly:
+  ```json
+  {
+    "WestpacCustomerId": "",
+    "WestpacPassword": "",
+    "WestpacAccount": "",
+    "BaseUrl": "",
+    "PimLogin": "",
+    "PimPassword": "",
+    "PimAccount": ""
+  }
+  ```
 - **Scheduling**: an EventBridge **Scheduler** schedule (`aws_scheduler_schedule`), not a plain
   EventBridge Rule - Scheduler supports `schedule_expression_timezone` (`Australia/Sydney`), so
   "11pm Sydney time" stays correct across the AEST/AEDT daylight-saving transition without the

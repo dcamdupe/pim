@@ -15,8 +15,6 @@ export interface Config {
   pimLogin: string;
   pimPassword: string;
   pimAccount: string;
-  startDate: string;
-  endDate: string;
 }
 
 // Fails fast (naming every missing one) rather than letting a blank value silently reach
@@ -42,8 +40,6 @@ function loadFromEnv(): Config {
     pimLogin: process.env.PimLogin,
     pimPassword: process.env.PimPassword,
     pimAccount: process.env.PimAccount,
-    startDate: process.env.StartDate,
-    endDate: process.env.EndDate,
   };
 
   return assertComplete(values, '.env');

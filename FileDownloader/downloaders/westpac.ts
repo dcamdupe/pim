@@ -4,7 +4,7 @@ import type { Config } from '../config';
 import type { Downloader } from './downloader';
 
 export class WestpacDownloader implements Downloader {
-  async download(config: Config): Promise<string> {
+  async download(config: Config, startDate: string, endDate: string): Promise<string> {
     const browser = await chromium.launch();
     const context = await browser.newContext({ ...devices['Desktop Chrome'] });
     const page = await context.newPage();
@@ -20,8 +20,8 @@ export class WestpacDownloader implements Downloader {
       await page.getByRole('link', { name: config.westpacAccount }).click();
       await page.goto('https://banking.westpac.com.au/secure/banking/reportsandexports/home');
       await page.getByRole('link', { name: 'Export Transactions' }).click();
-      await page.locator('input[name="DateRange.StartDate"]').fill(config.startDate);
-      await page.locator('input[name="DateRange.EndDate"]').fill(config.endDate);
+      await page.locator('input[name="DateRange.StartDate"]').fill(startDate);
+      await page.locator('input[name="DateRange.EndDate"]').fill(endDate);
       await page.getByRole('textbox', { name: 'Select accounts optional' }).click();
       await page.locator('#OpenAccounts').click();
       await page.getByRole('link', { name: 'Select dropdown' }).click();

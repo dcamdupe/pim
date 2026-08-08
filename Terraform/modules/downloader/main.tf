@@ -242,10 +242,12 @@ resource "aws_scheduler_schedule" "daily" {
     role_arn = aws_iam_role.scheduler.arn
 
     ecs_parameters {
-      # Family name, not a pinned revision - ECS's RunTask resolves a bare family to its latest
-      # ACTIVE revision, so a new image pushed via the deploy workflow takes effect on the very
-      # next scheduled run without needing to touch this schedule.
-      task_definition_arn = aws_ecs_task_definition.this.family
+      # arn_without_revision (not .arn, and not .family - Terraform validates this field as an
+      # ARN, a bare family name fails that check even though the raw ECS RunTask API itself
+      # would accept one) - ECS resolves this to the family's latest ACTIVE revision at run
+      # time, so a new image pushed via the deploy workflow takes effect on the very next
+      # scheduled run without needing to touch this schedule.
+      task_definition_arn = aws_ecs_task_definition.this.arn_without_revision
       launch_type         = "FARGATE"
 
       network_configuration {

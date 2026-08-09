@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-89/add-execution-time-to-dynamodb-logging
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/65
 
 ## Description (from Linear)
 

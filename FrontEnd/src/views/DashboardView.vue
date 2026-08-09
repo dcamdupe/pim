@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useTransactionsStore } from '../stores/transactions'
@@ -14,6 +14,7 @@ import {
   parseMonthKey,
   computeRecentTransactions,
 } from '../utils/dashboardMetrics'
+import { loadStoredDashboardFilters, saveDashboardFilters } from '../utils/dashboardFilterStorage'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
@@ -34,10 +35,15 @@ const loadError = ref('')
 const minTransactionDate = computed(() =>
   settingsStore.minTransactionDate ? new Date(`${settingsStore.minTransactionDate}T00:00:00`) : null,
 )
-const selectedMonthKey = ref(computeAvailableMonths(null, realToday)[0].value)
+const storedFilters = loadStoredDashboardFilters()
+const selectedMonthKey = ref(storedFilters?.month ?? computeAvailableMonths(null, realToday)[0].value)
 
 const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
 const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
+
+watch(selectedMonthKey, (month) => {
+  saveDashboardFilters({ month })
+})
 
 const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
 const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, selectedMonth.value))

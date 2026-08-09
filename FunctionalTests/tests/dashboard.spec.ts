@@ -207,8 +207,9 @@ test.describe('Month filter', () => {
 
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
-    // The filter resets to the current month on navigation - re-select the target month.
-    await selectMonth(page, targetMonth);
+    // The filter is remembered across navigation (UBE-86) - no need to re-select it; assert the
+    // <select> itself still shows the previously-chosen month, not just the tiles it drove.
+    await expect(page.getByLabel('Month filter')).toHaveValue(monthOptionValue(targetMonth));
     // Tile 0's label is just "<Month> <Year>" now (UBE-73 dropped the "profit" suffix - the tile's
     // "Profit" kicker carries that instead), so wait for it specifically rather than by full text.
     await expect(page.locator('.kpi-row .kpi').nth(0).locator('.label')).toHaveText(monthYearLabel(targetMonth));

@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { useSettingsStore } from '../../FrontEnd/src/stores/settings'
 import {
   getCurrentMonthRange,
   getPreviousSixMonthsRange,
@@ -163,15 +165,16 @@ describe('computeDashboardTiles', () => {
 
 describe('computeExpensesByCategory', () => {
   beforeEach(() => {
-    localStorage.setItem(
-      'pim.categories',
-      JSON.stringify([
-        { name: 'Housing', colour: '#2a78d6' },
-        { name: 'Groceries', colour: '#eb6834' },
-        { name: 'Dining', colour: '#eda100' },
-        { name: 'Shopping', colour: '#e87ba4' },
-      ]),
-    )
+    // categoryColor() (dashboardMetrics.ts -> categoriesService.ts) reads the shared settings store
+    // directly (UBE-87), not its own localStorage cache anymore - seed the store's state directly
+    // rather than simulating a full load().
+    setActivePinia(createPinia())
+    useSettingsStore().categories = [
+      { name: 'Housing', colour: '#2a78d6', type: 'Expense' },
+      { name: 'Groceries', colour: '#eb6834', type: 'Expense' },
+      { name: 'Dining', colour: '#eda100', type: 'Expense' },
+      { name: 'Shopping', colour: '#e87ba4', type: 'Expense' },
+    ]
   })
 
   it('sums expenses per category, sorted highest-spend first', () => {

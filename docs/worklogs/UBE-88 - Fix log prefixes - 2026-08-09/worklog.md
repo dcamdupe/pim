@@ -3,6 +3,7 @@
 ## Description
 
 Linear issue: https://linear.app/uberconcept/issue/UBE-88/fix-the-log-prefixes-based-on-logs-see-in-aws
+PR: https://github.com/dcamdupe/pim/pull/64
 
 Log lines seen in real AWS (CloudWatch) output look like:
 

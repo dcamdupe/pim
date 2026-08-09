@@ -1,6 +1,7 @@
 # UBE-86 — Remember the dashboard month filter
 
 Linear issue: https://linear.app/uberconcept/issue/UBE-86/remember-the-dashboard-month-filter
+PR: https://github.com/dcamdupe/pim/pull/66
 
 ## Description
 

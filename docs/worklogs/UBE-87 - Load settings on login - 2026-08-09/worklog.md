@@ -2,6 +2,7 @@
 
 Linear: https://linear.app/uberconcept/issue/UBE-87/load-settings-on-login-similar-to-transactions
 Status: In Progress · Priority: No priority
+PR: https://github.com/dcamdupe/pim/pull/63
 
 ## Description (from Linear)
 

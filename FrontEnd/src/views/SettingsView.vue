@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import {
-  getSettings,
   saveSettings,
   deleteAccount,
   addCategory,
@@ -11,8 +10,8 @@ import {
   type CategoryDefinition,
   type CategoryType,
 } from '../services/settingsService'
-import { refreshCategories } from '../services/categoriesService'
 import { useTransactionsStore } from '../stores/transactions'
+import { useSettingsStore } from '../stores/settings'
 import { COLOUR_PALETTE } from '../constants/colourPalette'
 
 interface PendingRemoval {
@@ -21,6 +20,7 @@ interface PendingRemoval {
 }
 
 const transactionsStore = useTransactionsStore()
+const settingsStore = useSettingsStore()
 
 const INTERNAL_TRANSFER = 'Internal Transfer'
 const accountTypes: AccountType[] = ['Credit', 'Transaction', 'Savings']
@@ -63,10 +63,14 @@ const hasDuplicateNames = computed(() => {
 
 onMounted(async () => {
   try {
-    const settings = await getSettings()
-    accounts.value = settings.accounts
+    await settingsStore.load()
+    // Copied, not assigned by reference - accounts/categories below are a local edit buffer
+    // (addAccount/onAddCategory push into them directly before anything is saved), so they must not
+    // share array/object identity with the store or an unsaved edit would mutate shared state that
+    // other pages read.
+    accounts.value = settingsStore.accounts.map((a) => ({ ...a }))
     isUnsaved.value = accounts.value.map(() => false)
-    categories.value = settings.categories
+    categories.value = settingsStore.categories.map((c) => ({ ...c }))
   } catch {
     loadError.value = 'Could not load your accounts. Please try again later.'
   } finally {
@@ -101,12 +105,12 @@ async function confirmRemoveAccount() {
     accounts.value.splice(pending.index, 1)
     isUnsaved.value.splice(pending.index, 1)
     // Deleting an account deletes all of its transactions server-side (DeleteTransactionsForAccountAsync)
-    // - a forced refresh, not load(), since the shared cache has no way to know that happened. Closing
-    // the modal (pendingRemoval = null) only *after* this resolves - not before - keeps the modal's
-    // full-page backdrop blocking navigation for that brief window, so a user can't reload/navigate
-    // away before the refreshed data is persisted to localStorage and left showing stale, pre-delete
-    // transactions until the cache's next scheduled refresh.
-    await transactionsStore.refresh().catch(() => {})
+    // and removes the account itself - forced refreshes, not load(), since the shared caches have no
+    // way to know that happened. Closing the modal (pendingRemoval = null) only *after* these resolve -
+    // not before - keeps the modal's full-page backdrop blocking navigation for that brief window, so a
+    // user can't reload/navigate away before the refreshed data is persisted to localStorage and left
+    // showing stale, pre-delete data until the caches' next scheduled refresh.
+    await Promise.all([transactionsStore.refresh().catch(() => {}), settingsStore.refresh().catch(() => {})])
     pendingRemoval.value = null
   } catch {
     deleteError.value = 'Could not remove the account. Please try again.'
@@ -127,6 +131,7 @@ async function onSave() {
     await saveSettings(accounts.value)
     saved.value = true
     isUnsaved.value = accounts.value.map(() => false)
+    await settingsStore.refresh().catch(() => {})
   } catch {
     saveError.value = 'Could not save your changes. Please try again.'
   } finally {
@@ -160,7 +165,7 @@ async function onAddCategory() {
   try {
     await addCategory(category)
     categories.value.push(category)
-    await refreshCategories()
+    await settingsStore.refresh().catch(() => {})
     newCategoryName.value = ''
     newCategoryColour.value = COLOUR_PALETTE[27]
     newCategoryType.value = 'Expense'
@@ -201,7 +206,7 @@ async function confirmRemoveCategory() {
   try {
     await deleteCategory(pending)
     categories.value = categories.value.filter((c) => c.name !== pending.name)
-    await refreshCategories()
+    await settingsStore.refresh().catch(() => {})
     pendingCategoryRemoval.value = null
   } catch {
     deleteCategoryError.value = 'Could not remove the category. Please try again.'

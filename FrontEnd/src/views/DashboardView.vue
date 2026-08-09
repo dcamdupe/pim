@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useTransactionsStore } from '../stores/transactions'
-import { getSettings } from '../services/settingsService'
+import { useSettingsStore } from '../stores/settings'
 import {
   computeDashboardTiles,
   computeExpensesByCategory,
@@ -25,12 +25,15 @@ const realToday = new Date()
 
 const transactionsStore = useTransactionsStore()
 const { transactions } = storeToRefs(transactionsStore)
+const settingsStore = useSettingsStore()
 
 // Only gates the very first render, while the shared store's initial load() is in flight - switching
 // the month filter afterwards is a synchronous recompute over the already-loaded data, not a fetch.
 const initialLoading = ref(true)
 const loadError = ref('')
-const minTransactionDate = ref<Date | null>(null)
+const minTransactionDate = computed(() =>
+  settingsStore.minTransactionDate ? new Date(`${settingsStore.minTransactionDate}T00:00:00`) : null,
+)
 const selectedMonthKey = ref(computeAvailableMonths(null, realToday)[0].value)
 
 const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
@@ -50,11 +53,7 @@ function formatCurrency(amount: number): string {
 
 onMounted(async () => {
   // Non-fatal if this fails - the month filter just falls back to only the current month.
-  getSettings()
-    .then((settings) => {
-      minTransactionDate.value = settings.minTransactionDate ? new Date(`${settings.minTransactionDate}T00:00:00`) : null
-    })
-    .catch(() => {})
+  void settingsStore.load().catch(() => {})
 
   try {
     await transactionsStore.load()

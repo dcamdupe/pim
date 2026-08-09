@@ -2,14 +2,17 @@
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTransactionsStore } from '../stores/transactions'
+import { useSettingsStore } from '../stores/settings'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const transactionsStore = useTransactionsStore()
+const settingsStore = useSettingsStore()
 
 function onLogout() {
   authStore.clearToken()
   transactionsStore.clear()
+  settingsStore.clear()
   router.push('/login')
 }
 </script>

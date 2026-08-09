@@ -2,12 +2,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '../services/authService'
-import { refreshCategories } from '../services/categoriesService'
 import { refreshTransactionDescriptions } from '../services/transactionDescriptionsService'
 import { useAuthStore } from '../stores/auth'
+import { useSettingsStore } from '../stores/settings'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 
 const email = ref('')
 const password = ref('')
@@ -40,9 +41,11 @@ async function onSubmit() {
     const token = await login(email.value, password.value)
     authStore.setToken(token)
     // Best-effort cache warm - a failure here shouldn't block login, the category-matching UI
-    // just falls back to an empty cache until the next successful refresh.
+    // just falls back to an empty cache until the next successful refresh. A forced refresh(), not
+    // load() - the settings/transactions storage keys aren't scoped per-user, so a stale cache left
+    // behind by a previous session in this browser must not be trusted just because it exists.
     void refreshTransactionDescriptions().catch(() => {})
-    void refreshCategories().catch(() => {})
+    void settingsStore.refresh().catch(() => {})
     router.push('/dashboard')
   } catch {
     formError.value = 'Invalid login or password.'

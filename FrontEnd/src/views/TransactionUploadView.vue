@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getSettings, type Account } from '../services/settingsService'
+import { storeToRefs } from 'pinia'
 import { refreshTransactionDescriptions } from '../services/transactionDescriptionsService'
 import { uploadTransactions } from '../services/transactionsService'
 import { useTransactionsStore } from '../stores/transactions'
+import { useSettingsStore } from '../stores/settings'
 
 const router = useRouter()
 const transactionsStore = useTransactionsStore()
+const settingsStore = useSettingsStore()
+const { accounts } = storeToRefs(settingsStore)
 
-const accounts = ref<Account[]>([])
 const selectedAccount = ref('')
 const file = ref<File | null>(null)
 const isDragging = ref(false)
@@ -20,12 +22,22 @@ const saveError = ref('')
 
 onMounted(async () => {
   try {
-    accounts.value = (await getSettings()).accounts
+    await settingsStore.load()
     selectedAccount.value = accounts.value[0]?.name ?? ''
   } catch {
     loadError.value = 'Could not load your accounts. Please try again later.'
   } finally {
     loading.value = false
+  }
+})
+
+// The store's accounts can change under this view (e.g. the 1-minute background refresh) after the
+// initial default was already picked - if the previously-selected account disappears (deleted
+// elsewhere), fall back to the first remaining one rather than leaving a stale, now-invalid
+// selection in the dropdown.
+watch(accounts, (current) => {
+  if (!current.some((a) => a.name === selectedAccount.value)) {
+    selectedAccount.value = current[0]?.name ?? ''
   }
 })
 

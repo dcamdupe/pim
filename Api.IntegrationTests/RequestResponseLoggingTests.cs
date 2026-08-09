@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Pim.Api.Auth;
 using Pim.Api.Controllers;
 using Pim.Api.Data;
+using Pim.Api.IntegrationTests.Helpers;
 using Pim.Api.Repository;
 
 namespace Pim.Api.IntegrationTests;
@@ -113,29 +114,5 @@ public sealed class RequestResponseLoggingTests : IClassFixture<ApiWebApplicatio
         var token = tokenGenerator.GenerateToken(_email);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;
-    }
-
-    private sealed class CapturingLoggerProvider(List<string> sink) : ILoggerProvider
-    {
-        public ILogger CreateLogger(string categoryName) => new CapturingLogger(sink);
-
-        public void Dispose()
-        {
-        }
-
-        private sealed class CapturingLogger(List<string> sink) : ILogger
-        {
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            {
-                lock (sink)
-                {
-                    sink.Add(formatter(state, exception));
-                }
-            }
-        }
     }
 }

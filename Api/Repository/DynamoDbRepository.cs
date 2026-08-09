@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -38,14 +39,20 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
     public async Task<T?> GetAsync(string id)
     {
         _logger.LogInformation("DynamoDB GetAsync request: table={Table} id={Id}", _tableName, id);
+        var stopwatch = Stopwatch.StartNew();
         var response = await _client.GetItemAsync(_tableName, IdKey(id));
+        stopwatch.Stop();
         if (!response.IsItemSet)
         {
-            _logger.LogInformation("DynamoDB GetAsync response: table={Table} id={Id} found=false", _tableName, id);
+            _logger.LogInformation(
+                "DynamoDB GetAsync response: table={Table} id={Id} found=false elapsedMs={ElapsedMs}",
+                _tableName, id, stopwatch.ElapsedMilliseconds);
             return null;
         }
 
-        _logger.LogInformation("DynamoDB GetAsync response: table={Table} id={Id} found=true", _tableName, id);
+        _logger.LogInformation(
+            "DynamoDB GetAsync response: table={Table} id={Id} found=true elapsedMs={ElapsedMs}",
+            _tableName, id, stopwatch.ElapsedMilliseconds);
         return JsonSerializer.Deserialize<T>(response.Item[DataAttribute].S, JsonOptions);
     }
 
@@ -56,19 +63,27 @@ public sealed class DynamoDbRepository<T> : IRepository<T> where T : class
     public async Task DeleteAsync(string id)
     {
         _logger.LogInformation("DynamoDB DeleteAsync request: table={Table} id={Id}", _tableName, id);
+        var stopwatch = Stopwatch.StartNew();
         await _client.DeleteItemAsync(_tableName, IdKey(id));
-        _logger.LogInformation("DynamoDB DeleteAsync response: table={Table} id={Id}", _tableName, id);
+        stopwatch.Stop();
+        _logger.LogInformation(
+            "DynamoDB DeleteAsync response: table={Table} id={Id} elapsedMs={ElapsedMs}",
+            _tableName, id, stopwatch.ElapsedMilliseconds);
     }
 
     private async Task PutAsync(string operation, string id, T entity)
     {
         _logger.LogInformation("DynamoDB {Operation} request: table={Table} id={Id}", operation, _tableName, id);
+        var stopwatch = Stopwatch.StartNew();
         await _client.PutItemAsync(_tableName, new Dictionary<string, AttributeValue>
         {
             [IdAttribute] = new(id),
             [DataAttribute] = new(JsonSerializer.Serialize(entity, JsonOptions)),
         });
-        _logger.LogInformation("DynamoDB {Operation} response: table={Table} id={Id}", operation, _tableName, id);
+        stopwatch.Stop();
+        _logger.LogInformation(
+            "DynamoDB {Operation} response: table={Table} id={Id} elapsedMs={ElapsedMs}",
+            operation, _tableName, id, stopwatch.ElapsedMilliseconds);
     }
 
     private static Dictionary<string, AttributeValue> IdKey(string id) =>

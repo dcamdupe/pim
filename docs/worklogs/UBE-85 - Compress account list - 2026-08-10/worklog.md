@@ -1,6 +1,7 @@
 # UBE-85 — Compress the bank account list in settings
 
 Linear issue: https://linear.app/uberconcept/issue/UBE-85/compress-the-bank-account-list-in-settings
+PR: https://github.com/dcamdupe/pim/pull/67
 
 ## Description
 

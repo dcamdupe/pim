@@ -17,6 +17,7 @@ export class WestpacDownloader implements Downloader {
       await page.getByRole('textbox', { name: 'Password' }).click();
       await page.getByRole('textbox', { name: 'Password' }).fill(config.westpacPassword);
       await page.getByRole('button', { name: 'Sign in' }).click();
+      console.log('Signed in to Westpac Online');
       await page.getByRole('link', { name: config.westpacAccount }).click();
       await page.goto('https://banking.westpac.com.au/secure/banking/reportsandexports/home');
       await page.getByRole('link', { name: 'Export Transactions' }).click();
@@ -29,6 +30,7 @@ export class WestpacDownloader implements Downloader {
       await page.locator('label').filter({ hasText: /^QIF$/ }).click();
       await page.getByRole('link', { name: 'Select dropdown' }).click();
       await page.locator('#spoke-2-template').click();
+      console.log('Export form filled in');
       const downloadPromise = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Export' }).click();
       const download = await downloadPromise;

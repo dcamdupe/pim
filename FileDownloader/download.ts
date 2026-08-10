@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { loadConfig } from './config';
 import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
@@ -11,9 +12,12 @@ async function main() {
     throw new Error('Missing required StartDate/EndDate environment variables.');
   }
 
+  console.log(`Downloading transactions from ${startDate} to ${endDate}`);
+
   const downloader = new WestpacDownloader();
   const savedPath = await downloader.download(config, startDate, endDate);
-  console.log(`Saved: ${savedPath}`);
+  const { size } = fs.statSync(savedPath);
+  console.log(`Saved: ${savedPath} (${size} bytes)`);
 
   const pim = new PimClient(config);
   await pim.uploadFile(savedPath);

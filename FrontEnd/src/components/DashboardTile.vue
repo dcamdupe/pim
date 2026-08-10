@@ -6,10 +6,12 @@ withDefaults(
     value: string
     showDelta?: boolean
     deltaPct?: number | null
+    loading?: boolean
   }>(),
   {
     showDelta: false,
     deltaPct: null,
+    loading: false,
   },
 )
 
@@ -35,12 +37,12 @@ function deltaClass(pct: number | null): string {
       <!-- Always renders a same-sized .delta-pill, visible or not, so tiles with and without a
            real delta stay pixel-identical above the label/value - a reserved-but-empty div can't
            guarantee that since its height isn't tied to the pill's actual font/padding. -->
-      <span class="delta-pill" :class="showDelta ? deltaClass(deltaPct) : 'placeholder'">
-        {{ showDelta ? formatDelta(deltaPct) : '—' }}
+      <span class="delta-pill" :class="showDelta && !loading ? deltaClass(deltaPct) : 'placeholder'">
+        {{ showDelta && !loading ? formatDelta(deltaPct) : '—' }}
       </span>
     </div>
     <div class="label">{{ label }}</div>
-    <div class="value">{{ value }}</div>
+    <div class="value" :class="{ loading }">{{ loading ? '···' : value }}</div>
   </div>
 </template>
 
@@ -111,5 +113,9 @@ function deltaClass(pct: number | null): string {
   font-size: 26px;
   font-weight: 800;
   color: var(--text-h);
+}
+
+.kpi .value.loading {
+  color: var(--text);
 }
 </style>

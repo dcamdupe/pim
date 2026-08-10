@@ -429,10 +429,22 @@ function cancelRemoveCategory() {
   display: grid;
   grid-template-columns: 2fr 1.3fr auto;
   gap: 12px;
-  align-items: end;
+  align-items: center;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.account-row .field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-row .field input,
+.account-row .field select {
+  flex: 1;
+  min-width: 0;
 }
 
 .field {

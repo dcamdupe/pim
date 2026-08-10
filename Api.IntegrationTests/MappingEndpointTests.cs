@@ -25,7 +25,12 @@ public sealed class MappingEndpointTests : IClassFixture<ApiWebApplicationFactor
     {
         using var scope = _factory.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
-        await users.AddAsync(new User { Email = _email, PasswordHash = "unused-in-these-tests" });
+        await users.AddAsync(new User
+        {
+            Email = _email,
+            PasswordHash = "unused-in-these-tests",
+            Accounts = [new Account { Name = "Everyday", Type = Account.AccountType.Transaction }],
+        });
     }
 
     public async Task DisposeAsync()

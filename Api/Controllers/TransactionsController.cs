@@ -15,17 +15,20 @@ public sealed class TransactionsController : ControllerBase
     private readonly ITransactionQueryService _transactionQueryService;
     private readonly ITransactionUpdateService _transactionUpdateService;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
+    private readonly IRepository<User> _users;
 
     public TransactionsController(
         IFileProcessor fileProcessor,
         ITransactionQueryService transactionQueryService,
         ITransactionUpdateService transactionUpdateService,
-        IRepository<TransactionDescriptions> transactionDescriptions)
+        IRepository<TransactionDescriptions> transactionDescriptions,
+        IRepository<User> users)
     {
         _fileProcessor = fileProcessor;
         _transactionQueryService = transactionQueryService;
         _transactionUpdateService = transactionUpdateService;
         _transactionDescriptions = transactionDescriptions;
+        _users = users;
     }
 
     [HttpPost("transactions/file")]
@@ -37,6 +40,12 @@ public sealed class TransactionsController : ControllerBase
         }
 
         var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var user = await _users.GetAsync(email);
+        if (user is null || !user.Accounts.Any(a => a.Name == request.Account))
+        {
+            return BadRequest("Account does not exist.");
+        }
 
         try
         {

@@ -47,7 +47,16 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     {
         using var scope = _factory.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
-        await users.AddAsync(new User { Email = _email, PasswordHash = "unused-in-these-tests" });
+        await users.AddAsync(new User
+        {
+            Email = _email,
+            PasswordHash = "unused-in-these-tests",
+            Accounts =
+            [
+                new Account { Name = "Everyday", Type = Account.AccountType.Transaction },
+                new Account { Name = "Savings", Type = Account.AccountType.Savings },
+            ],
+        });
     }
 
     public async Task DisposeAsync()
@@ -121,6 +130,17 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     {
         var client = AuthenticatedClient();
         using var content = BuildMultipartContent("Everyday", "!Type:Bank\nDnot-a-date\nMCoffee\nT-4.50\n^\n");
+
+        var response = await client.PostAsync("/transactions/file", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_ReturnsBadRequest_WhenTheAccountDoesNotExist()
+    {
+        var client = AuthenticatedClient();
+        using var content = BuildMultipartContent("NoSuchAccount", ValidQif);
 
         var response = await client.PostAsync("/transactions/file", content);
 

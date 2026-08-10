@@ -30,7 +30,12 @@ public sealed class RequestResponseLoggingTests : IClassFixture<ApiWebApplicatio
         using var scope = _factory.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(Password);
-        await users.AddAsync(new User { Email = _email, PasswordHash = passwordHash });
+        await users.AddAsync(new User
+        {
+            Email = _email,
+            PasswordHash = passwordHash,
+            Accounts = [new Account { Name = "Everyday", Type = Account.AccountType.Transaction }],
+        });
     }
 
     public async Task DisposeAsync()

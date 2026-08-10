@@ -28,8 +28,9 @@ const transactionsStore = useTransactionsStore()
 const { transactions } = storeToRefs(transactionsStore)
 const settingsStore = useSettingsStore()
 
-// Only gates the very first render, while the shared store's initial load() is in flight - switching
-// the month filter afterwards is a synchronous recompute over the already-loaded data, not a fetch.
+// Gates each section's own loading state (not the page shell, which always renders) while the
+// shared store's initial load() is in flight - switching the month filter afterwards is a
+// synchronous recompute over the already-loaded data, not a fetch.
 const initialLoading = ref(true)
 const loadError = ref('')
 const minTransactionDate = computed(() =>
@@ -83,59 +84,67 @@ onMounted(async () => {
       </select>
     </div>
 
-    <p v-if="initialLoading" class="status">Loading dashboard…</p>
-    <p v-else-if="loadError" class="status status-error">{{ loadError }}</p>
+    <p v-if="loadError" class="status status-error">{{ loadError }}</p>
 
-    <template v-else>
-      <div class="kpi-row">
-        <DashboardTile
-          kicker="Profit"
-          :label="selectedMonthLabel"
-          :value="formatCurrency(tiles.currentMonthProfit)"
-          show-delta
-          :delta-pct="tiles.currentMonthProfitDeltaPct"
-        />
-        <DashboardTile
-          kicker="Profit"
-          :label="`Average · ${sixMonthRangeLabel}`"
-          :value="formatCurrency(tiles.previousSixMonthsProfitAverage)"
-        />
-        <DashboardTile
-          kicker="Expenses"
-          :label="selectedMonthLabel"
-          :value="formatCurrency(tiles.currentMonthExpenses)"
-          show-delta
-          :delta-pct="tiles.currentMonthExpensesDeltaPct"
-        />
-        <DashboardTile
-          kicker="Expenses"
-          :label="`Average · ${sixMonthRangeLabel}`"
-          :value="formatCurrency(tiles.previousSixMonthsExpensesAverage)"
-        />
-      </div>
+    <div class="kpi-row">
+      <DashboardTile
+        kicker="Profit"
+        :label="selectedMonthLabel"
+        :value="formatCurrency(tiles.currentMonthProfit)"
+        show-delta
+        :delta-pct="tiles.currentMonthProfitDeltaPct"
+        :loading="initialLoading"
+      />
+      <DashboardTile
+        kicker="Profit"
+        :label="`Average · ${sixMonthRangeLabel}`"
+        :value="formatCurrency(tiles.previousSixMonthsProfitAverage)"
+        :loading="initialLoading"
+      />
+      <DashboardTile
+        kicker="Expenses"
+        :label="selectedMonthLabel"
+        :value="formatCurrency(tiles.currentMonthExpenses)"
+        show-delta
+        :delta-pct="tiles.currentMonthExpensesDeltaPct"
+        :loading="initialLoading"
+      />
+      <DashboardTile
+        kicker="Expenses"
+        :label="`Average · ${sixMonthRangeLabel}`"
+        :value="formatCurrency(tiles.previousSixMonthsExpensesAverage)"
+        :loading="initialLoading"
+      />
+    </div>
 
-      <div class="charts-row">
-        <div class="card">
-          <h2>Spending by category</h2>
+    <div class="charts-row">
+      <div class="card">
+        <h2>Spending by category</h2>
+        <p v-if="initialLoading" class="card-sub status">Loading…</p>
+        <template v-else>
           <p class="card-sub">{{ selectedMonthLabel }} · {{ formatCurrency(tiles.currentMonthExpenses) }} total</p>
           <SpendingByCategoryChart :expenses="expensesByCategory" :center-value="formatCurrency(tiles.currentMonthExpenses)" />
-        </div>
+        </template>
+      </div>
 
-        <div class="card">
-          <h2>Income vs. expenses</h2>
+      <div class="card">
+        <h2>Income vs. expenses</h2>
+        <p v-if="initialLoading" class="card-sub status">Loading…</p>
+        <template v-else>
           <p class="card-sub">{{ sixMonthRangeLabel }}</p>
           <IncomeVsExpensesChart :data="monthlyIncomeExpenses" />
-        </div>
+        </template>
       </div>
+    </div>
 
-      <div class="card recent-card">
-        <div class="recent-head">
-          <h2>Recent transactions</h2>
-          <RouterLink to="/transactions" class="view-all">View all →</RouterLink>
-        </div>
-        <RecentTransactionsList :transactions="recentTransactions" />
+    <div class="card recent-card">
+      <div class="recent-head">
+        <h2>Recent transactions</h2>
+        <RouterLink to="/transactions" class="view-all">View all →</RouterLink>
       </div>
-    </template>
+      <p v-if="initialLoading" class="status">Loading…</p>
+      <RecentTransactionsList v-else :transactions="recentTransactions" />
+    </div>
   </div>
 </template>
 

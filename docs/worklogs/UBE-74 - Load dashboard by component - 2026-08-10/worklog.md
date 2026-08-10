@@ -1,6 +1,7 @@
 # UBE-74 — Change dashboard initial load to load by component
 
 Linear issue: https://linear.app/uberconcept/issue/UBE-74/change-dashboard-initial-load-to-load-by-component
+PR: https://github.com/dcamdupe/pim/pull/69
 
 ## Description
 

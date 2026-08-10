@@ -1,6 +1,7 @@
 # UBE-83 — Validate account name when importing files
 
 Linear issue: https://linear.app/uberconcept/issue/UBE-83/validate-account-name-when-importing-files
+PR: https://github.com/dcamdupe/pim/pull/68
 
 ## Description
 

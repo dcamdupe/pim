@@ -1,6 +1,4 @@
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import dotenv from 'dotenv';
-import fs from 'fs';
 import path from 'path';
 
 const ENV_PATH = path.resolve(__dirname, '.env');
@@ -31,7 +29,7 @@ function assertComplete(values: Partial<Config>, source: string): Config {
 }
 
 // Loads every environment variable this script needs into a single typed object.
-function loadFromEnv(): Config {
+export function loadConfig(): Config {
   const values = {
     westpacCustomerId: process.env.WestpacCustomerId,
     westpacPassword: process.env.WestpacPassword,
@@ -43,38 +41,4 @@ function loadFromEnv(): Config {
   };
 
   return assertComplete(values, '.env');
-}
-
-// Loads the Config from the JSON object stored in the AWS Secrets Manager secret "pim_data" -
-// same PascalCase key names as the .env variables (WestpacCustomerId, BaseUrl, ...), not the
-// Config interface's own camelCase field names.
-async function loadFromAwsSecrets(): Promise<Config> {
-  const client = new SecretsManagerClient({});
-  const response = await client.send(new GetSecretValueCommand({ SecretId: 'pim_data' }));
-  if (!response.SecretString) {
-    throw new Error('Secret "pim_data" has no SecretString value.');
-  }
-
-  const secret = JSON.parse(response.SecretString) as Record<string, string | undefined>;
-  const values = {
-    westpacCustomerId: secret.WestpacCustomerId,
-    westpacPassword: secret.WestpacPassword,
-    westpacAccount: secret.WestpacAccount,
-    pimBaseUrl: secret.BaseUrl,
-    pimLogin: secret.PimLogin,
-    pimPassword: secret.PimPassword,
-    pimAccount: secret.PimAccount,
-  };
-
-  return assertComplete(values, 'AWS secret "pim_data"');
-}
-
-export async function loadConfig(): Promise<Config> {
-  if (fs.existsSync(ENV_PATH)) {
-    console.log(`Found ${ENV_PATH} - loading config from .env`);
-    return loadFromEnv();
-  }
-
-  console.log(`No .env found at ${ENV_PATH} - loading config from AWS Secrets Manager ("pim_data")`);
-  return loadFromAwsSecrets();
 }

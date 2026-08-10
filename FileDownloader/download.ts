@@ -3,7 +3,7 @@ import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
 
 async function main() {
-  const config = await loadConfig();
+  const config = loadConfig();
 
   const startDate = process.env.StartDate;
   const endDate = process.env.EndDate;

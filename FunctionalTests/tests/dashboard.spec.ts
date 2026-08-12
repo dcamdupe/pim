@@ -291,3 +291,65 @@ test.describe('Recent transactions', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 });
+
+test.describe('Category chart', () => {
+  test('center label shows the selected month, and clicking a segment filters Transactions to it', async ({ page }) => {
+    const runId = Date.now();
+    const today = new Date();
+    const description = `DoughnutClick${runId}`;
+
+    const qif = '!Type:Bank\n' + qifRecord(today, description, '-50.00');
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill(`DoughnutAccount${runId}`);
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(`DoughnutAccount${runId}`);
+    await page.locator('#file-input').setInputFiles({ name: 'doughnut.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await page.getByLabel('Date range').selectOption('allTime');
+    await page.locator('tr', { hasText: description }).locator('.category-select').selectOption('Groceries');
+    // Leave the filter bar with a search/account filter set - the "other filters cleared" check
+    // below is meaningless unless there was something to clear.
+    await page.getByLabel('Search description').fill('leftover-filter-probe');
+    await page.getByLabel('Account filter').selectOption(`DoughnutAccount${runId}`);
+
+    await page.getByRole('link', { name: 'Dashboard' }).click();
+    // Not the literal "this month" - the doughnut's center label now tracks the selected month.
+    await expect(page.locator('.doughnut-center-label')).toHaveText(monthYearLabel(today));
+
+    // A default click targets the element's bounding-box center - for this fixture, the only
+    // category is 100% of expenses, so the wedge's bbox spans the whole ring and its center is
+    // the doughnut's middle hole (under the center-value/label text), not the ring itself. Click
+    // a point on the ring's right side (3 o'clock, within its 52-76 radius band) instead - not the
+    // top (12 o'clock), which is where a same-100%-sweep wedge's tiny seam gap sits.
+    await page.locator('.doughnut-seg', { hasText: 'Groceries' }).first().click({ position: { x: 140, y: 76 } });
+    await expect(page).toHaveURL(/\/transactions\?/);
+
+    await expect(page.getByLabel('Date range')).toHaveValue(`month:${monthOptionValue(today)}`);
+    await expect(page.getByLabel('Category filter')).toHaveValue('Groceries');
+    await expect(page.getByLabel('Search description')).toHaveValue('');
+    await expect(page.getByLabel('Account filter')).toHaveValue('');
+    await expect(page.locator('tr', { hasText: description })).toBeVisible();
+
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal (UBE-57), not deferred to Save.
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});

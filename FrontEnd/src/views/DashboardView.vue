@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useTransactionsStore } from '../stores/transactions'
 import { useSettingsStore } from '../stores/settings'
@@ -24,6 +24,7 @@ import RecentTransactionsList from '../components/RecentTransactionsList.vue'
 // which the user can wind back via the filter.
 const realToday = new Date()
 
+const router = useRouter()
 const transactionsStore = useTransactionsStore()
 const { transactions } = storeToRefs(transactionsStore)
 const settingsStore = useSettingsStore()
@@ -52,6 +53,10 @@ const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transa
 const recentTransactions = computed(() => computeRecentTransactions(transactions.value))
 const selectedMonthLabel = computed(() => formatMonthYear(selectedMonth.value))
 const sixMonthRangeLabel = computed(() => formatSixMonthRangeLabel(selectedMonth.value))
+
+function onSelectCategory(category: string) {
+  router.push({ path: '/transactions', query: { range: `month:${selectedMonthKey.value}`, category } })
+}
 
 function formatCurrency(amount: number): string {
   const sign = amount < 0 ? '−' : ''
@@ -123,7 +128,12 @@ onMounted(async () => {
         <p v-if="initialLoading" class="card-sub status">Loading…</p>
         <template v-else>
           <p class="card-sub">{{ selectedMonthLabel }} · {{ formatCurrency(tiles.currentMonthExpenses) }} total</p>
-          <SpendingByCategoryChart :expenses="expensesByCategory" :center-value="formatCurrency(tiles.currentMonthExpenses)" />
+          <SpendingByCategoryChart
+            :expenses="expensesByCategory"
+            :center-value="formatCurrency(tiles.currentMonthExpenses)"
+            :center-label="selectedMonthLabel"
+            @select="onSelectCategory"
+          />
         </template>
       </div>
 

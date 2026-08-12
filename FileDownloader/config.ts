@@ -9,6 +9,9 @@ export interface Config {
   westpacCustomerId: string;
   westpacPassword: string;
   westpacAccount: string;
+  tmbankMemberNumber: string;
+  tmbankPassword: string;
+  tmbankAccount: string;
   pimBaseUrl: string;
   pimLogin: string;
   pimPassword: string;
@@ -34,6 +37,9 @@ export function loadConfig(): Config {
     westpacCustomerId: process.env.WestpacCustomerId,
     westpacPassword: process.env.WestpacPassword,
     westpacAccount: process.env.WestpacAccount,
+    tmbankMemberNumber: process.env.TmbankMemberNumber,
+    tmbankPassword: process.env.TmbankPassword,
+    tmbankAccount: process.env.TmbankAccount,
     pimBaseUrl: process.env.BaseUrl,
     pimLogin: process.env.PimLogin,
     pimPassword: process.env.PimPassword,

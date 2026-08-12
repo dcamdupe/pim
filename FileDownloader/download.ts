@@ -1,7 +1,11 @@
 import fs from 'fs';
 import { loadConfig } from './config';
+import type { Downloader } from './downloaders/downloader';
+import { TmbankDownloader } from './downloaders/tmbank';
 import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
+
+const downloaders: Downloader[] = [new WestpacDownloader(), new TmbankDownloader()];
 
 async function main() {
   const config = loadConfig();
@@ -14,14 +18,17 @@ async function main() {
 
   console.log(`Downloading transactions from ${startDate} to ${endDate}`);
 
-  const downloader = new WestpacDownloader();
-  const savedPath = await downloader.download(config, startDate, endDate);
-  const { size } = fs.statSync(savedPath);
-  console.log(`Saved: ${savedPath} (${size} bytes)`);
-
   const pim = new PimClient(config);
-  await pim.uploadFile(savedPath);
-  console.log(`Uploaded to PIM account: ${config.pimAccount}`);
+
+  for (const downloader of downloaders) {
+    console.log(`Running ${downloader.constructor.name}`);
+    const savedPath = await downloader.download(config, startDate, endDate);
+    const { size } = fs.statSync(savedPath);
+    console.log(`Saved: ${savedPath} (${size} bytes)`);
+
+    await pim.uploadFile(savedPath);
+    console.log(`Uploaded to PIM account: ${config.pimAccount}`);
+  }
 }
 
 if (require.main === module) {

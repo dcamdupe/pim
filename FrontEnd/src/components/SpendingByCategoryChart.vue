@@ -2,23 +2,23 @@
 import { computed } from 'vue'
 import type { CategoryExpense } from '../utils/dashboardMetrics'
 
-const props = withDefaults(
-  defineProps<{
-    expenses: CategoryExpense[]
-    centerValue: string
-    centerLabel?: string
-  }>(),
-  {
-    centerLabel: 'this month',
-  },
-)
+const props = defineProps<{
+  expenses: CategoryExpense[]
+  centerValue: string
+  centerLabel: string
+}>()
+
+const emit = defineEmits<{
+  select: [category: string]
+}>()
 
 // Ported from docs/design/dashboard-mockup-calm.html's buildDoughnut() arc math.
 const CX = 84
 const CY = 84
 const R = 64
 const THICKNESS = 24
-const GAP = 2.6
+const R_OUTER = R + THICKNESS / 2
+const R_INNER = R - THICKNESS / 2
 const FALLBACK_COLOR = '#9093a3'
 
 function polar(cx: number, cy: number, r: number, angle: number): { x: number; y: number } {
@@ -26,11 +26,22 @@ function polar(cx: number, cy: number, r: number, angle: number): { x: number; y
   return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }
 }
 
-function arcPath(cx: number, cy: number, r: number, start: number, end: number): string {
-  const s = polar(cx, cy, r, end)
-  const e = polar(cx, cy, r, start)
+// A filled wedge (outer arc, straight line in, inner arc back, straight line out) rather than a
+// stroked arc - segments touch with a straight radial line between them, like a standard doughnut
+// chart, instead of a rounded-cap gap.
+function wedgePath(cx: number, cy: number, rOuter: number, rInner: number, start: number, end: number): string {
+  const outerStart = polar(cx, cy, rOuter, start)
+  const outerEnd = polar(cx, cy, rOuter, end)
+  const innerEnd = polar(cx, cy, rInner, end)
+  const innerStart = polar(cx, cy, rInner, start)
   const large = end - start <= 180 ? 0 : 1
-  return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y}`
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${rOuter} ${rOuter} 0 ${large} 1 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerEnd.x} ${innerEnd.y}`,
+    `A ${rInner} ${rInner} 0 ${large} 0 ${innerStart.x} ${innerStart.y}`,
+    'Z',
+  ].join(' ')
 }
 
 interface DoughnutSegment {
@@ -41,19 +52,23 @@ interface DoughnutSegment {
   path: string
 }
 
+// A full 360° sweep (a single category at 100%) has coincident start/end points, which SVG treats
+// as a degenerate, invisible arc - nudge just short of a full circle so it always renders.
+const MAX_SWEEP = 359.99
+
 const segments = computed<DoughnutSegment[]>(() => {
   let acc = 0
   return props.expenses.map((e) => {
-    const sweep = e.pct * 3.6
-    const start = acc + GAP / 2
-    const end = acc + sweep - GAP / 2
+    const sweep = Math.min(e.pct * 3.6, MAX_SWEEP)
+    const start = acc
+    const end = acc + sweep
     acc += sweep
     return {
       category: e.category,
       amount: e.amount,
       pct: e.pct,
       color: e.color ?? FALLBACK_COLOR,
-      path: arcPath(CX, CY, R, start, end),
+      path: wedgePath(CX, CY, R_OUTER, R_INNER, start, end),
     }
   })
 })
@@ -70,11 +85,9 @@ function displayName(category: string): string {
         v-for="seg in segments"
         :key="seg.category"
         :d="seg.path"
-        :stroke="seg.color"
-        :stroke-width="THICKNESS"
-        stroke-linecap="round"
-        fill="none"
+        :fill="seg.color"
         class="doughnut-seg"
+        @click="emit('select', seg.category)"
       >
         <title>{{ displayName(seg.category) }} ${{ seg.amount.toLocaleString() }} · {{ Math.round(seg.pct) }}%</title>
       </path>

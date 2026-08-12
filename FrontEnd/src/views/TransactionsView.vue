@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { categoryColor, categoryNames } from '../services/categoriesService'
 import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
@@ -9,7 +9,8 @@ import { useTransactionsStore } from '../stores/transactions'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions } from '../utils/transactionFilters'
 import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
-import { filterByDateRange, pastSixMonthOptions } from '../utils/transactionDateRange'
+import { filterByDateRange, pastSixMonthOptions, type MonthRangeOption } from '../utils/transactionDateRange'
+import { MONTH_NAMES, parseMonthKey } from '../utils/dashboardMetrics'
 import { nextVisibleCount, TRANSACTIONS_PAGE_SIZE } from '../utils/infiniteScroll'
 
 interface PendingCategoryChange {
@@ -18,23 +19,55 @@ interface PendingCategoryChange {
   match: ApproximateMatch
 }
 
+const route = useRoute()
 const storedFilters = loadStoredTransactionFilters()
+// A category chart segment on the dashboard links here with `?range=month:YYYY-MM&category=...`
+// to pre-filter to that month/category - takes priority over stored filters, and clears every
+// other filter rather than layering on top of whatever was previously set.
+const queryRange = typeof route.query.range === 'string' ? route.query.range : null
+const queryCategory = typeof route.query.category === 'string' ? route.query.category : null
+const queryFilters = queryRange && queryCategory ? { range: queryRange as RangeOption, category: queryCategory } : null
+
 const CATEGORIES = categoryNames()
 const PAST_SIX_MONTHS = pastSixMonthOptions(new Date())
+
+// `pastSixMonthOptions` deliberately excludes the current month (it's "the 6 completed months
+// before this one") - but a dashboard doughnut segment click can carry `range=month:<current>`,
+// which then wouldn't match any <option>, leaving the Date range <select> showing blank. Splice
+// that month in as an option too when that's the case.
+function monthRangeOption(key: string): MonthRangeOption {
+  const date = parseMonthKey(key)
+  return { value: `month:${key}`, label: `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}` }
+}
+
+const DATE_RANGE_MONTH_OPTIONS: MonthRangeOption[] =
+  queryFilters?.range.startsWith('month:') && !PAST_SIX_MONTHS.some((m) => m.value === queryFilters.range)
+    ? [monthRangeOption(queryFilters.range.slice('month:'.length)), ...PAST_SIX_MONTHS]
+    : PAST_SIX_MONTHS
 
 const transactionsStore = useTransactionsStore()
 const { transactions } = storeToRefs(transactionsStore)
 const loading = ref(true)
 const loadError = ref('')
-const selectedRange = ref<RangeOption>(storedFilters?.range ?? 'month')
+const selectedRange = ref<RangeOption>(queryFilters?.range ?? storedFilters?.range ?? 'month')
 const pendingCategoryChange = ref<PendingCategoryChange | null>(null)
 const savingCategory = ref(false)
 const categorySaveError = ref('')
 
-const searchQuery = ref(storedFilters?.search ?? '')
-const selectedAccount = ref(storedFilters?.account ?? '')
-const selectedCategory = ref(storedFilters?.category ?? '')
-const needsCategoryOnly = ref(storedFilters?.needsCategoryOnly ?? false)
+const searchQuery = ref(queryFilters ? '' : storedFilters?.search ?? '')
+const selectedAccount = ref(queryFilters ? '' : storedFilters?.account ?? '')
+const selectedCategory = ref(queryFilters?.category ?? storedFilters?.category ?? '')
+const needsCategoryOnly = ref(queryFilters ? false : storedFilters?.needsCategoryOnly ?? false)
+
+if (queryFilters) {
+  saveTransactionFilters({
+    range: selectedRange.value,
+    search: searchQuery.value,
+    account: selectedAccount.value,
+    category: selectedCategory.value,
+    needsCategoryOnly: needsCategoryOnly.value,
+  })
+}
 
 const openMenuIndex = ref<number | null>(null)
 const togglingIgnore = ref(false)
@@ -212,7 +245,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
         <option value="week">Last week</option>
         <option value="month">Last month</option>
         <option value="threeMonths">Last 3 months</option>
-        <option v-for="m in PAST_SIX_MONTHS" :key="m.value" :value="m.value">{{ m.label }}</option>
+        <option v-for="m in DATE_RANGE_MONTH_OPTIONS" :key="m.value" :value="m.value">{{ m.label }}</option>
         <option value="year">Last year</option>
         <option value="financialYear">Last financial year</option>
         <option value="allTime">All time</option>

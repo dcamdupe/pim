@@ -52,7 +52,11 @@ vulnerabilities.
 - [x] YAML reviewed for correctness (trigger syntax, matrix `working-directory`, cache keys) -
       parses cleanly (`Ruby YAML.load_file`); no `actionlint`/`act` available locally for a deeper
       check
-- [ ] Pushed and manually dispatched via `gh workflow run --ref` to confirm a real run passes
+- [ ] Manually dispatched via `gh workflow run` to confirm a real run passes - blocked: GitHub
+      only registers a `workflow_dispatch` workflow once its file exists on the *default* branch
+      (confirmed: `gh workflow run library-check.yml --ref <this branch>` → 404 "not found on the
+      default branch"; `gh workflow list` doesn't show it either). Can't be verified until after
+      this merges to `main` - flagged to the user rather than merging/dispatching unprompted.
 
 ## Prompt log
 

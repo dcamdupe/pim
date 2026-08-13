@@ -1,0 +1,41 @@
+name: Library vulnerability check
+
+# Runs daily (independent of any code change) so a newly-disclosed CVE against an unchanged
+# dependency still gets caught - unlike dotnet.yml/frontend.yml's existing push/pull_request-only
+# checks. workflow_dispatch is also enabled so this can be run on demand.
+on:
+  schedule:
+    - cron: "0 18 * * *" # 6pm UTC daily (4am AEST)
+  workflow_dispatch:
+
+jobs:
+  dotnet:
+    name: NuGet packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet restore Pim.sln
+      - name: Fail on high/critical vulnerable NuGet packages
+        run: "! dotnet list Pim.sln package --vulnerable --include-transitive | grep -qiE 'high|critical'"
+
+  npm:
+    name: npm packages (${{ matrix.directory }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: [FrontEnd, FrontEnd.UnitTests, FunctionalTests, FileDownloader]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - run: npm ci
+        working-directory: ${{ matrix.directory }}
+      - run: npm audit --audit-level=high
+        working-directory: ${{ matrix.directory }}

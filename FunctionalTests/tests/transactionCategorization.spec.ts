@@ -286,4 +286,207 @@ test.describe('Transaction categorization', () => {
     await page.getByRole('button', { name: 'Yes' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
+
+  test('shows a spinner on the row being saved while there is no similar-description match (UBE-93)', async ({ page }) => {
+    const runId = Date.now();
+    const target = `SpinnerTarget${runId} MERCHANT`;
+    const other = `SpinnerOther${runId} MERCHANT`;
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const dateForUpload = `${day}/${month}/${year}`;
+
+    const qif = '!Type:Bank\n' + `D${dateForUpload}\nM${target}\nT-20.00\n^\n` + `D${dateForUpload}\nM${other}\nT-5.00\n^\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill('Playwright Spinner Account');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption('Playwright Spinner Account');
+    await page.locator('#file-input').setInputFiles({ name: 'transactions.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page.getByText(target)).toBeVisible();
+
+    // Delay the PUT the direct (no-modal) save makes so the spinner's mid-flight visibility is
+    // deterministic, rather than racing a real (usually near-instant on local DynamoDB) response.
+    await page.route('**/transactions', async (route) => {
+      if (route.request().method() === 'PUT') {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      await route.continue();
+    });
+
+    const targetRow = page.locator('tr', { hasText: target });
+    const otherRow = page.locator('tr', { hasText: other });
+    await targetRow.locator('.category-select').selectOption('Shopping');
+
+    // No modal for this one (no similar description) - the row's own spinner is the only feedback.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(targetRow.locator('.spinner')).toBeVisible();
+    // Every row's select is disabled while any save is in flight - not just the one being saved.
+    await expect(otherRow.locator('.category-select')).toBeDisabled();
+
+    await expect(targetRow.locator('.spinner')).toHaveCount(0);
+    await expect(targetRow.locator('.category-select')).toHaveValue('Shopping');
+    await expect(otherRow.locator('.category-select')).toBeEnabled();
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    const addedRow = page.locator('.account-row').last();
+    await addedRow.getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('keeps the bulk-apply modal open with a spinner while "Just this one" saves (UBE-93)', async ({ page }) => {
+    const runId = Date.now();
+    const colesA = `SpinnerDecline${runId} 0717 TURRAMURRA AUS`;
+    const colesB = `SpinnerDecline${runId} 0760 ASQUITH AUS`;
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const dateForUpload = `${day}/${month}/${year}`;
+
+    const qif = '!Type:Bank\n' + `D${dateForUpload}\nM${colesA}\nT-20.00\n^\n` + `D${dateForUpload}\nM${colesB}\nT-15.00\n^\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill('Playwright Decline Spinner Account');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption('Playwright Decline Spinner Account');
+    await page.locator('#file-input').setInputFiles({ name: 'transactions.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page.getByText(colesA)).toBeVisible();
+
+    // "Just this one" saves via the same PUT /transactions as the direct (no-modal) path.
+    await page.route('**/transactions', async (route) => {
+      if (route.request().method() === 'PUT') {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      await route.continue();
+    });
+
+    await page.locator('tr', { hasText: colesA }).locator('.category-select').selectOption('Groceries');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    const declineButton = page.getByRole('button', { name: 'Just this one' });
+    const confirmButton = page.getByRole('button', { name: /Apply to 1 similar transactions/ });
+    await declineButton.click();
+
+    // The modal stays open (not dismissed immediately) with the clicked button's spinner showing
+    // and every button disabled, while the save is still in flight.
+    await expect(dialog).toBeVisible();
+    await expect(declineButton.locator('.spinner')).toBeVisible();
+    await expect(declineButton).toBeDisabled();
+    await expect(confirmButton).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator('tr', { hasText: colesA }).locator('.category-select')).toHaveValue('Groceries');
+    // "Just this one" - the other matching row is untouched.
+    await expect(page.locator('tr', { hasText: colesB }).locator('.category-select')).toHaveValue('');
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    const addedRow = page.locator('.account-row').last();
+    await addedRow.getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('keeps the bulk-apply modal open with a spinner while "Apply to N similar" saves (UBE-93)', async ({ page }) => {
+    const runId = Date.now();
+    const colesA = `SpinnerConfirm${runId} 0717 TURRAMURRA AUS`;
+    const colesB = `SpinnerConfirm${runId} 0760 ASQUITH AUS`;
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const dateForUpload = `${day}/${month}/${year}`;
+
+    const qif = '!Type:Bank\n' + `D${dateForUpload}\nM${colesA}\nT-20.00\n^\n` + `D${dateForUpload}\nM${colesB}\nT-15.00\n^\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill('Playwright Confirm Spinner Account');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption('Playwright Confirm Spinner Account');
+    await page.locator('#file-input').setInputFiles({ name: 'transactions.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page.getByText(colesA)).toBeVisible();
+
+    // "Apply to N similar" saves via POST /mapping/description, then a GET /transactions refresh -
+    // delaying the first is enough to keep the whole operation pending for the assertions below.
+    await page.route('**/mapping/description', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.continue();
+    });
+
+    await page.locator('tr', { hasText: colesA }).locator('.category-select').selectOption('Groceries');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    const declineButton = page.getByRole('button', { name: 'Just this one' });
+    const confirmButton = page.getByRole('button', { name: /Apply to 1 similar transactions/ });
+    await confirmButton.click();
+
+    await expect(dialog).toBeVisible();
+    await expect(confirmButton.locator('.spinner')).toBeVisible();
+    await expect(confirmButton).toBeDisabled();
+    await expect(declineButton).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator('tr', { hasText: colesA }).locator('.category-select')).toHaveValue('Groceries');
+    await expect(page.locator('tr', { hasText: colesB }).locator('.category-select')).toHaveValue('Groceries');
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    const addedRow = page.locator('.account-row').last();
+    await addedRow.getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
 });

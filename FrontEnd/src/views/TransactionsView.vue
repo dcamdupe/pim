@@ -52,6 +52,12 @@ const loadError = ref('')
 const selectedRange = ref<RangeOption>(queryFilters?.range ?? storedFilters?.range ?? 'month')
 const pendingCategoryChange = ref<PendingCategoryChange | null>(null)
 const savingCategory = ref(false)
+// Which button in the "Apply to similar transactions?" modal is the one actually saving - both
+// share `savingCategory` to disable all three buttons, but only the clicked one shows a spinner.
+const modalAction = ref<'confirm' | 'decline' | null>(null)
+// The row being saved via a direct category change (no modal - no description match) - shows a
+// small spinner on that row only, distinct from the modal's own spinner.
+const directSaveTransaction = ref<Transaction | null>(null)
 const categorySaveError = ref('')
 
 const searchQuery = ref(queryFilters ? '' : storedFilters?.search ?? '')
@@ -136,7 +142,7 @@ async function applySingleCategory(transaction: Transaction, category: string) {
   }
 }
 
-function onCategoryChange(transaction: Transaction, event: Event) {
+async function onCategoryChange(transaction: Transaction, event: Event) {
   const category = (event.target as HTMLSelectElement).value
   const otherDescriptions = getCachedTransactionDescriptions()
   const match = findApproximateMatch(transaction.description, otherDescriptions)
@@ -144,7 +150,12 @@ function onCategoryChange(transaction: Transaction, event: Event) {
   if (match) {
     pendingCategoryChange.value = { transaction, category, match }
   } else {
-    void applySingleCategory(transaction, category)
+    directSaveTransaction.value = transaction
+    try {
+      await applySingleCategory(transaction, category)
+    } finally {
+      directSaveTransaction.value = null
+    }
   }
 }
 
@@ -153,10 +164,10 @@ async function confirmBulkApply() {
   if (!pending) {
     return
   }
-  pendingCategoryChange.value = null
 
   categorySaveError.value = ''
   savingCategory.value = true
+  modalAction.value = 'confirm'
   try {
     await saveDescriptionMapping(pending.match.descriptionStart, pending.category)
     // A forced refresh, not load() - the mapping rule can retroactively recategorise many
@@ -166,16 +177,23 @@ async function confirmBulkApply() {
     categorySaveError.value = 'Could not save the category. Please try again.'
   } finally {
     savingCategory.value = false
+    modalAction.value = null
+    pendingCategoryChange.value = null
   }
 }
 
-function declineBulkApply() {
+async function declineBulkApply() {
   const pending = pendingCategoryChange.value
   if (!pending) {
     return
   }
-  pendingCategoryChange.value = null
-  void applySingleCategory(pending.transaction, pending.category)
+  modalAction.value = 'decline'
+  try {
+    await applySingleCategory(pending.transaction, pending.category)
+  } finally {
+    modalAction.value = null
+    pendingCategoryChange.value = null
+  }
 }
 
 function cancelCategoryChange() {
@@ -311,6 +329,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
                   <option value="" disabled>+ Add category</option>
                   <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
                 </select>
+                <span v-if="directSaveTransaction === t" class="spinner" aria-label="Saving…"></span>
               </div>
             </td>
             <td class="actions">
@@ -357,9 +376,13 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
           as <strong>{{ pendingCategoryChange.category }}</strong>.
         </p>
         <div class="modal-actions">
-          <button type="button" class="modal-button secondary" @click="cancelCategoryChange">Cancel</button>
-          <button type="button" class="modal-button secondary" @click="declineBulkApply">Just this one</button>
-          <button type="button" class="modal-button primary" @click="confirmBulkApply">
+          <button type="button" class="modal-button secondary" :disabled="savingCategory" @click="cancelCategoryChange">Cancel</button>
+          <button type="button" class="modal-button secondary" :disabled="savingCategory" @click="declineBulkApply">
+            <span v-if="modalAction === 'decline'" class="spinner" aria-label="Saving…"></span>
+            Just this one
+          </button>
+          <button type="button" class="modal-button primary" :disabled="savingCategory" @click="confirmBulkApply">
+            <span v-if="modalAction === 'confirm'" class="spinner" aria-label="Saving…"></span>
             Apply to {{ pendingCategoryChange.match.matchingTransactionCount }} similar transactions
           </button>
         </div>
@@ -634,6 +657,25 @@ th.actions-header {
   color: var(--text);
 }
 
+/* currentColor so it matches whatever text colour it's placed in - the category cell's default
+   text colour, or a modal button's own (contrasting) label colour. */
+.spinner {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .scroll-sentinel {
   height: 1px;
 }
@@ -674,11 +716,19 @@ th.actions-header {
 }
 
 .modal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
   font-weight: 500;
   border: 1px solid var(--border);
   cursor: pointer;
+}
+
+.modal-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .modal-button.secondary {

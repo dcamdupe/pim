@@ -61,7 +61,7 @@ transaction set — the Api only supports `startDate`/`endDate`):
 - [x] Update/add unit tests in `FrontEnd.UnitTests`
 - [x] Extend Playwright functional test coverage
 - [x] Run `npm run lint`, `FrontEnd.UnitTests` (`npm run test`), and Playwright suite for the affected spec
-- [ ] Review diff and open PR
+- [x] Review diff and open PR
 
 ## Session log
 
@@ -81,4 +81,4 @@ transaction set — the Api only supports `startDate`/`endDate`):
 - Extended `FunctionalTests/tests/transactionListing.spec.ts`'s combined filter test to cover the
   +/- filter and the ignore/needs-a-category fix; ran it plus `transactionIgnore.spec.ts` against
   the real local stack (DynamoDB Local + Api + FrontEnd already running) - all pass.
-- Remaining: review the diff and open the PR.
+- Committed and pushed; opened PR #73: https://github.com/dcamdupe/pim/pull/73

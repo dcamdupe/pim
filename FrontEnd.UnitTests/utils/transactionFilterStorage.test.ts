@@ -13,6 +13,7 @@ const filters: TransactionFiltersState = {
   account: 'Everyday',
   category: 'Dining',
   needsCategoryOnly: true,
+  amountSign: 'negative',
 }
 
 describe('transactionFilterStorage', () => {
@@ -64,6 +65,18 @@ describe('transactionFilterStorage', () => {
     it('returns null when a required field is missing', () => {
       const { search: _search, ...rest } = filters
       localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
+
+      expect(loadStoredTransactionFilters()).toBeNull()
+    })
+
+    it.each(['', 'positive', 'negative'])('accepts amountSign "%s"', (amountSign) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, amountSign }))
+
+      expect(loadStoredTransactionFilters()).toEqual({ ...filters, amountSign })
+    })
+
+    it('returns null when amountSign is not a recognised option', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, amountSign: 'zero' }))
 
       expect(loadStoredTransactionFilters()).toBeNull()
     })

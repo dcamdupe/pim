@@ -42,7 +42,7 @@ directly.)
 - [x] Update `FrontEnd.UnitTests/utils/transactionDateRange.test.ts`
 - [x] Run `npm run lint`, `npm run build`, and `FrontEnd.UnitTests` (`npm run test`)
 - [x] Manually verify the current month appears and filters correctly in the running app
-- [ ] Review diff and open PR
+- [x] Review diff and open PR
 
 ## Session log
 
@@ -61,4 +61,4 @@ directly.)
 - Extended `FunctionalTests/tests/transactionListing.spec.ts`'s "Expanded date filters (UBE-78)"
   test with a case selecting the new current-month dropdown option; ran it against the real local
   stack (DynamoDB Local + Api + FrontEnd already running) - all 4 tests in the file pass.
-- Remaining: review the diff and open the PR.
+- Committed and pushed; opened PR #74: https://github.com/dcamdupe/pim/pull/74

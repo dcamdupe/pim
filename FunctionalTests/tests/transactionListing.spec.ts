@@ -286,6 +286,10 @@ test.describe('Expanded date filters (UBE-78)', () => {
     const targetMonthDesc = `UBE78 TargetMonth ${runId}`;
     const targetMonthOptionValue = `month:${targetMonthDate.getFullYear()}-${String(targetMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
+    // Today - the current, still-in-progress month, selectable as its own dropdown option (UBE-95).
+    const currentMonthDesc = `UBE95 CurrentMonth ${runId}`;
+    const currentMonthOptionValue = `month:${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
     // Inside the rolling 12-month "Last year" window, but outside the past-6-months options.
     const elevenMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 11, 10);
     const elevenMonthsAgoDesc = `UBE78 ElevenMonths ${runId}`;
@@ -306,6 +310,7 @@ test.describe('Expanded date filters (UBE-78)', () => {
     const qif =
       '!Type:Bank\n' +
       `D${formatForUpload(targetMonthDate)}\nM${targetMonthDesc}\nT-1.00\n^\n` +
+      `D${formatForUpload(today)}\nM${currentMonthDesc}\nT-1.00\n^\n` +
       `D${formatForUpload(elevenMonthsAgo)}\nM${elevenMonthsAgoDesc}\nT-1.00\n^\n` +
       `D${formatForUpload(thirteenMonthsAgo)}\nM${thirteenMonthsAgoDesc}\nT-1.00\n^\n` +
       `D${formatForUpload(lastFinancialYearDate)}\nM${lastFinancialYearDesc}\nT-1.00\n^\n` +
@@ -340,10 +345,17 @@ test.describe('Expanded date filters (UBE-78)', () => {
     // Selecting a specific past month shows only that month's row.
     await page.getByLabel('Date range').selectOption(targetMonthOptionValue);
     await expect(page.getByText(targetMonthDesc)).toBeVisible();
+    await expect(page.getByText(currentMonthDesc)).not.toBeVisible();
     await expect(page.getByText(elevenMonthsAgoDesc)).not.toBeVisible();
     await expect(page.getByText(thirteenMonthsAgoDesc)).not.toBeVisible();
     await expect(page.getByText(lastFinancialYearDesc)).not.toBeVisible();
     await expect(page.getByText(currentFinancialYearDesc)).not.toBeVisible();
+
+    // The current, still-in-progress month is itself selectable as a dropdown option (UBE-95),
+    // showing only today's row.
+    await page.getByLabel('Date range').selectOption(currentMonthOptionValue);
+    await expect(page.getByText(currentMonthDesc)).toBeVisible();
+    await expect(page.getByText(targetMonthDesc)).not.toBeVisible();
 
     // "Last year" is a rolling 12 months - the 11-months-ago row is inside it, the
     // 13-months-ago row isn't.

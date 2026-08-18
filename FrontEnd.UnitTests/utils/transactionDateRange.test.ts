@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeRange, filterByDateRange, pastSixMonthOptions } from '../../FrontEnd/src/utils/transactionDateRange'
+import { computeRange, filterByDateRange, recentMonthOptions } from '../../FrontEnd/src/utils/transactionDateRange'
 import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
 const today = new Date(2026, 7, 5) // 5 Aug 2026
@@ -67,9 +67,10 @@ describe('filterByDateRange', () => {
   })
 })
 
-describe('pastSixMonthOptions', () => {
-  it('lists the 6 full calendar months before the current one, newest first', () => {
-    expect(pastSixMonthOptions(today)).toEqual([
+describe('recentMonthOptions', () => {
+  it('lists the current month plus the 6 full calendar months before it, newest first (UBE-95)', () => {
+    expect(recentMonthOptions(today)).toEqual([
+      { value: 'month:2026-08', label: 'August 2026' },
       { value: 'month:2026-07', label: 'July 2026' },
       { value: 'month:2026-06', label: 'June 2026' },
       { value: 'month:2026-05', label: 'May 2026' },
@@ -80,7 +81,8 @@ describe('pastSixMonthOptions', () => {
   })
 
   it('crosses a year boundary correctly', () => {
-    expect(pastSixMonthOptions(new Date(2026, 1, 15)).map((m) => m.value)).toEqual([
+    expect(recentMonthOptions(new Date(2026, 1, 15)).map((m) => m.value)).toEqual([
+      'month:2026-02',
       'month:2026-01',
       'month:2025-12',
       'month:2025-11',

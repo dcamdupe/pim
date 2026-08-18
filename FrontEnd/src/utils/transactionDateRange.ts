@@ -72,13 +72,15 @@ export interface MonthRangeOption {
   label: string
 }
 
-// The 6 full calendar months immediately before the current one (excludes the current month),
-// newest first - mirrors the dashboard's getPreviousSixMonthsRange convention.
-export function pastSixMonthOptions(today: Date): MonthRangeOption[] {
+// The current calendar month plus the 6 full calendar months before it, newest first (UBE-95) -
+// the past-six-months portion mirrors the dashboard's getPreviousSixMonthsRange convention.
+export function recentMonthOptions(today: Date): MonthRangeOption[] {
   const options: MonthRangeOption[] = []
 
   let year = today.getFullYear()
   let month = today.getMonth()
+
+  options.push({ value: `month:${monthKey(year, month)}`, label: `${MONTH_NAMES[month]} ${year}` })
 
   for (let i = 0; i < 6; i++) {
     month -= 1

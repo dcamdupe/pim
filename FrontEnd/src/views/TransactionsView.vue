@@ -9,7 +9,7 @@ import { useTransactionsStore } from '../stores/transactions'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions, type AmountSign } from '../utils/transactionFilters'
 import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
-import { filterByDateRange, pastSixMonthOptions, type MonthRangeOption } from '../utils/transactionDateRange'
+import { filterByDateRange, recentMonthOptions, type MonthRangeOption } from '../utils/transactionDateRange'
 import { MONTH_NAMES, parseMonthKey } from '../utils/dashboardMetrics'
 import { nextVisibleCount, TRANSACTIONS_PAGE_SIZE } from '../utils/infiniteScroll'
 
@@ -29,21 +29,21 @@ const queryCategory = typeof route.query.category === 'string' ? route.query.cat
 const queryFilters = queryRange && queryCategory ? { range: queryRange as RangeOption, category: queryCategory } : null
 
 const CATEGORIES = categoryNames()
-const PAST_SIX_MONTHS = pastSixMonthOptions(new Date())
+const RECENT_MONTHS = recentMonthOptions(new Date())
 
-// `pastSixMonthOptions` deliberately excludes the current month (it's "the 6 completed months
-// before this one") - but a dashboard doughnut segment click can carry `range=month:<current>`,
-// which then wouldn't match any <option>, leaving the Date range <select> showing blank. Splice
-// that month in as an option too when that's the case.
+// `recentMonthOptions` covers the current month plus the 6 before it (UBE-95) - but a dashboard
+// doughnut segment click can in principle carry `range=month:<older>` for a month further back
+// than that, which then wouldn't match any <option>, leaving the Date range <select> showing
+// blank. Splice that month in as an option too when that's the case.
 function monthRangeOption(key: string): MonthRangeOption {
   const date = parseMonthKey(key)
   return { value: `month:${key}`, label: `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}` }
 }
 
 const DATE_RANGE_MONTH_OPTIONS: MonthRangeOption[] =
-  queryFilters?.range.startsWith('month:') && !PAST_SIX_MONTHS.some((m) => m.value === queryFilters.range)
-    ? [monthRangeOption(queryFilters.range.slice('month:'.length)), ...PAST_SIX_MONTHS]
-    : PAST_SIX_MONTHS
+  queryFilters?.range.startsWith('month:') && !RECENT_MONTHS.some((m) => m.value === queryFilters.range)
+    ? [monthRangeOption(queryFilters.range.slice('month:'.length)), ...RECENT_MONTHS]
+    : RECENT_MONTHS
 
 const transactionsStore = useTransactionsStore()
 const { transactions } = storeToRefs(transactionsStore)

@@ -2,8 +2,8 @@ import type { AmountSign } from './transactionFilters'
 
 const STORAGE_KEY = 'pim.transactionFilters'
 
-// `month:YYYY-MM` is a dynamic option (one per past-6-months entry, e.g. "month:2026-06") - see
-// transactionDateRange.ts's pastSixMonthOptions().
+// `month:YYYY-MM` is a dynamic option (one per recent-month entry, e.g. "month:2026-06") - see
+// transactionDateRange.ts's recentMonthOptions().
 export type RangeOption = 'week' | 'month' | 'threeMonths' | 'year' | 'financialYear' | 'allTime' | `month:${string}`
 
 const FIXED_RANGE_OPTIONS: RangeOption[] = ['week', 'month', 'threeMonths', 'year', 'financialYear', 'allTime']

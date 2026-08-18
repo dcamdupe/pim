@@ -1,3 +1,5 @@
+import type { AmountSign } from './transactionFilters'
+
 const STORAGE_KEY = 'pim.transactionFilters'
 
 // `month:YYYY-MM` is a dynamic option (one per past-6-months entry, e.g. "month:2026-06") - see
@@ -11,12 +13,19 @@ function isRangeOption(value: unknown): value is RangeOption {
   return typeof value === 'string' && (FIXED_RANGE_OPTIONS.includes(value as RangeOption) || MONTH_RANGE_OPTION.test(value))
 }
 
+const AMOUNT_SIGN_OPTIONS: AmountSign[] = ['', 'positive', 'negative']
+
+function isAmountSign(value: unknown): value is AmountSign {
+  return typeof value === 'string' && AMOUNT_SIGN_OPTIONS.includes(value as AmountSign)
+}
+
 export interface TransactionFiltersState {
   range: RangeOption
   search: string
   account: string
   category: string
   needsCategoryOnly: boolean
+  amountSign: AmountSign
 }
 
 function isTransactionFiltersState(value: unknown): value is TransactionFiltersState {
@@ -29,7 +38,8 @@ function isTransactionFiltersState(value: unknown): value is TransactionFiltersS
     typeof v.search === 'string' &&
     typeof v.account === 'string' &&
     typeof v.category === 'string' &&
-    typeof v.needsCategoryOnly === 'boolean'
+    typeof v.needsCategoryOnly === 'boolean' &&
+    isAmountSign(v.amountSign)
   )
 }
 

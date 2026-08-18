@@ -7,7 +7,7 @@ import { getCachedTransactionDescriptions } from '../services/transactionDescrip
 import { saveDescriptionMapping, type Transaction } from '../services/transactionsService'
 import { useTransactionsStore } from '../stores/transactions'
 import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
-import { filterTransactions } from '../utils/transactionFilters'
+import { filterTransactions, type AmountSign } from '../utils/transactionFilters'
 import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
 import { filterByDateRange, pastSixMonthOptions, type MonthRangeOption } from '../utils/transactionDateRange'
 import { MONTH_NAMES, parseMonthKey } from '../utils/dashboardMetrics'
@@ -64,6 +64,7 @@ const searchQuery = ref(queryFilters ? '' : storedFilters?.search ?? '')
 const selectedAccount = ref(queryFilters ? '' : storedFilters?.account ?? '')
 const selectedCategory = ref(queryFilters?.category ?? storedFilters?.category ?? '')
 const needsCategoryOnly = ref(queryFilters ? false : storedFilters?.needsCategoryOnly ?? false)
+const selectedAmountSign = ref<AmountSign>(queryFilters ? '' : storedFilters?.amountSign ?? '')
 
 if (queryFilters) {
   saveTransactionFilters({
@@ -72,6 +73,7 @@ if (queryFilters) {
     account: selectedAccount.value,
     category: selectedCategory.value,
     needsCategoryOnly: needsCategoryOnly.value,
+    amountSign: selectedAmountSign.value,
   })
 }
 
@@ -98,11 +100,13 @@ const searchedAndCategorised = computed(() =>
     account: selectedAccount.value,
     category: selectedCategory.value,
     needsCategoryOnly: false,
+    amountSign: selectedAmountSign.value,
   }),
 )
-const needsCategoryCount = computed(() => searchedAndCategorised.value.filter((t) => !t.category).length)
+// Ignored transactions never get (or need) a category, so they don't count towards "needs a category".
+const needsCategoryCount = computed(() => searchedAndCategorised.value.filter((t) => !t.category && !t.ignore).length)
 const filteredTransactions = computed(() =>
-  needsCategoryOnly.value ? searchedAndCategorised.value.filter((t) => !t.category) : searchedAndCategorised.value,
+  needsCategoryOnly.value ? searchedAndCategorised.value.filter((t) => !t.category && !t.ignore) : searchedAndCategorised.value,
 )
 // Renders only the first page of the (already fully-loaded, single-API-call) filtered set - the
 // scrollObserver below grows visibleCount as the sentinel after the table comes into view.
@@ -239,7 +243,7 @@ watch(scrollSentinel, (el, previousEl) => {
     scrollObserver?.observe(el)
   }
 })
-watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCategoryOnly], () => {
+watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCategoryOnly, selectedAmountSign], () => {
   visibleCount.value = TRANSACTIONS_PAGE_SIZE
   saveTransactionFilters({
     range: selectedRange.value,
@@ -247,6 +251,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
     account: selectedAccount.value,
     category: selectedCategory.value,
     needsCategoryOnly: needsCategoryOnly.value,
+    amountSign: selectedAmountSign.value,
   })
 })
 </script>
@@ -276,6 +281,11 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
       <select v-model="selectedCategory" aria-label="Category filter">
         <option value="">All categories</option>
         <option v-for="c in CATEGORIES" :key="c" :value="c">{{ c }}</option>
+      </select>
+      <select v-model="selectedAmountSign" aria-label="Amount filter">
+        <option value="">All amounts</option>
+        <option value="positive">Positive (+)</option>
+        <option value="negative">Negative (−)</option>
       </select>
       <button
         type="button"

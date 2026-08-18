@@ -1,10 +1,13 @@
 import type { Transaction } from '../services/transactionsService'
 
+export type AmountSign = '' | 'positive' | 'negative'
+
 export interface TransactionFilters {
   search: string
   account: string
   category: string
   needsCategoryOnly: boolean
+  amountSign: AmountSign
 }
 
 // account/category are the empty string for "All accounts"/"All categories" (no filtering on
@@ -22,7 +25,14 @@ export function filterTransactions(transactions: Transaction[], filters: Transac
     if (filters.category && t.category !== filters.category) {
       return false
     }
-    if (filters.needsCategoryOnly && t.category) {
+    // Ignored transactions never get (or need) a category, so they shouldn't count as "needing" one.
+    if (filters.needsCategoryOnly && (t.category || t.ignore)) {
+      return false
+    }
+    if (filters.amountSign === 'positive' && t.amount <= 0) {
+      return false
+    }
+    if (filters.amountSign === 'negative' && t.amount >= 0) {
       return false
     }
     return true

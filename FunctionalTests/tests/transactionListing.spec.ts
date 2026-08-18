@@ -174,15 +174,34 @@ test.describe('Transaction listing', () => {
     await expect(page.getByText(groceriesDesc)).not.toBeVisible();
     await page.getByLabel('Category filter').selectOption('');
 
-    // Needs-a-category toggle shows only the still-uncategorised rows, with an accurate count -
-    // scoped to this test's own rows via the runId search, since other tests' leftover
-    // (never-cleaned-up) transactions also contribute to the count otherwise.
+    // Amount (+/-) filter narrows to positive or negative amounts (UBE-94).
+    await page.getByLabel('Amount filter').selectOption('positive');
+    await expect(page.getByText(salaryDesc)).toBeVisible();
+    await expect(page.getByText(coffeeDesc)).not.toBeVisible();
+    await expect(page.getByText(rentDesc)).not.toBeVisible();
+    await expect(page.getByText(groceriesDesc)).not.toBeVisible();
+    await page.getByLabel('Amount filter').selectOption('negative');
+    await expect(page.getByText(salaryDesc)).not.toBeVisible();
+    await expect(page.getByText(coffeeDesc)).toBeVisible();
+    await expect(page.getByText(rentDesc)).toBeVisible();
+    await expect(page.getByText(groceriesDesc)).toBeVisible();
+    await page.getByLabel('Amount filter').selectOption('');
+
+    // Ignoring the remaining uncategorised groceries row (UBE-94) removes it from the
+    // needs-a-category count/filter, since an ignored transaction never needs a category.
+    await page.locator('tr', { hasText: groceriesDesc }).getByRole('button', { name: `Actions for ${groceriesDesc}` }).click();
+    await page.locator('tr', { hasText: groceriesDesc }).getByRole('menuitem', { name: 'Ignore', exact: true }).click();
+    await expect(page.locator('tr', { hasText: groceriesDesc }).locator('.chip')).toHaveText('Ignore');
+
+    // Needs-a-category toggle shows only the still-uncategorised, non-ignored rows, with an
+    // accurate count - scoped to this test's own rows via the runId search, since other tests'
+    // leftover (never-cleaned-up) transactions also contribute to the count otherwise.
     await page.getByLabel('Search description').fill(String(runId));
     const needsToggle = page.locator('.chip-toggle');
-    await expect(needsToggle.locator('.chip-toggle-count')).toHaveText('2');
+    await expect(needsToggle.locator('.chip-toggle-count')).toHaveText('1');
     await needsToggle.click();
-    await expect(page.getByText(groceriesDesc)).toBeVisible();
     await expect(page.getByText(salaryDesc)).toBeVisible();
+    await expect(page.getByText(groceriesDesc)).not.toBeVisible();
     await expect(page.getByText(coffeeDesc)).not.toBeVisible();
     await expect(page.getByText(rentDesc)).not.toBeVisible();
     await needsToggle.click();

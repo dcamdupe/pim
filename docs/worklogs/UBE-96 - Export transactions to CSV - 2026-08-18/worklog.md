@@ -50,7 +50,7 @@ there is a rendering optimisation, not a user-chosen filter.
 - [x] Add Playwright `transactionExport.spec.ts`
 - [x] Run `npm run lint`, `npm run build`, and `FrontEnd.UnitTests` (`npm run test`)
 - [x] Run the new/affected Playwright spec(s) against the local stack
-- [ ] Review diff and open PR
+- [x] Review diff and open PR
 
 ## Session log
 
@@ -75,4 +75,4 @@ there is a rendering optimisation, not a user-chosen filter.
   with no filter matches. Ran it plus `transactionListing`, `transactionUpload`,
   `transactionIgnore`, and `transactionCategorization` specs (13 tests total) against the real
   local stack - all pass, confirming no regressions from the filter-bar/CSS changes.
-- Remaining: review the diff and open the PR.
+- Committed and pushed; opened PR #75: https://github.com/dcamdupe/pim/pull/75

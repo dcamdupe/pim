@@ -12,6 +12,8 @@ import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption 
 import { filterByDateRange, recentMonthOptions, type MonthRangeOption } from '../utils/transactionDateRange'
 import { MONTH_NAMES, parseMonthKey } from '../utils/dashboardMetrics'
 import { nextVisibleCount, TRANSACTIONS_PAGE_SIZE } from '../utils/infiniteScroll'
+import { buildTransactionsCsv } from '../utils/transactionsCsv'
+import { formatDateForApi } from '../utils/dateFormat'
 
 interface PendingCategoryChange {
   transaction: Transaction
@@ -120,6 +122,16 @@ function formatDisplayDate(isoDate: string): string {
 function formatAmount(amount: number): string {
   const sign = amount > 0 ? '+' : '−'
   return `${sign}$${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function exportCsv() {
+  const csv = buildTransactionsCsv(filteredTransactions.value)
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `transactions-${formatDateForApi(new Date())}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 async function loadTransactions() {
@@ -295,7 +307,10 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
       >
         <span class="chip-toggle-count">{{ needsCategoryCount }}</span> need a category
       </button>
-      <RouterLink to="/transactions/upload" class="upload-button">Upload</RouterLink>
+      <div class="filter-bar-actions">
+        <button type="button" class="export-button" :disabled="filteredTransactions.length === 0" @click="exportCsv">Export</button>
+        <RouterLink to="/transactions/upload" class="upload-button">Upload</RouterLink>
+      </div>
     </div>
 
     <p v-if="loading" class="status">Loading transactions…</p>
@@ -470,8 +485,14 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
   color: var(--bg);
 }
 
-.upload-button {
+.filter-bar-actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-button {
   display: inline-block;
   padding: 10px 16px;
   border-radius: 8px;
@@ -484,6 +505,25 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
 .upload-button:hover,
 .upload-button:focus-visible {
   filter: brightness(0.94);
+}
+
+.export-button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--field-bg);
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.export-button:hover,
+.export-button:focus-visible {
+  filter: brightness(0.94);
+}
+
+.export-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .table-card {

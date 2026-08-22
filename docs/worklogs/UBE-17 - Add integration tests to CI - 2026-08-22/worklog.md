@@ -73,8 +73,8 @@ calls directly in the CI YAML - so local dev and CI provision the exact same sch
 - [x] Add `Api.IntegrationTests/**` to the workflow's path filters
 - [x] Add the `integration-test` job with the DynamoDB Local service container
 - [x] Validate the workflow YAML (actionlint if available, otherwise careful manual review)
-- [ ] Push the branch and confirm the new job runs green on GitHub Actions
-- [ ] Review diff and open PR
+- [x] Push the branch and confirm the new job runs green on GitHub Actions
+- [x] Review diff and open PR
 
 ## Session log
 
@@ -107,4 +107,7 @@ calls directly in the CI YAML - so local dev and CI provision the exact same sch
   pre-existing tables, mirroring a brand-new GH Actions service container) and ran
   `create_dynamodb_tables.sh` against it directly - confirmed the wait-loop and table creation work
   from a cold start, not just against the already-warm local dev instance.
-- Remaining: push the branch, confirm the new job goes green on GitHub Actions, then open the PR.
+- User committed and pushed the branch directly; opened PR #76:
+  https://github.com/dcamdupe/pim/pull/76. Watched the triggered `pull_request` run - all three
+  jobs (Build, Integration test, Unit test) passed green, confirming the new `integration-test` job
+  works end-to-end on GitHub Actions, not just in the local simulation.

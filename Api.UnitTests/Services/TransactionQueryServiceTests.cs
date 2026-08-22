@@ -71,6 +71,31 @@ public class TransactionQueryServiceTests
     }
 
     [Fact]
+    public async Task GetTransactionsAsync_CombinesTransactionsAcrossMoreMonthsThanTheParallelismLimit()
+    {
+        // 8 months > the 5-way MaxDegreeOfParallelism the fetch loop is capped at (UBE-91) - checks
+        // correctness still holds once Parallel.ForEachAsync has to queue bodies beyond that cap.
+        var months = Enumerable.Range(1, 8)
+            .Select(month => new TransactionMonth
+            {
+                Email = Email,
+                Year = 2026,
+                Month = month,
+                Transactions = [Transaction($"Month {month}", new DateOnly(2026, month, 15))],
+            })
+            .ToList();
+        var sut = CreateService(months);
+
+        var result = await sut.GetTransactionsAsync(Email, new DateOnly(2026, 1, 1), new DateOnly(2026, 8, 31));
+
+        Assert.Equal(8, result.Count);
+        foreach (var month in Enumerable.Range(1, 8))
+        {
+            Assert.Contains(result, t => t.Description == $"Month {month}");
+        }
+    }
+
+    [Fact]
     public async Task GetTransactionsAsync_HandlesMissingMonthInTheMiddleOfTheRange()
     {
         var june = new TransactionMonth

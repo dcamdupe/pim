@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1169 610" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#333333" />
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1169" height="610" fill="#ffffff" />
+
+  <!-- Browser -->
+  <rect x="40" y="380" width="150" height="60" rx="8" fill="#f5f5f5" stroke="#666666" />
+  <text x="115" y="415" text-anchor="middle">Browser (User)</text>
+
+  <!-- FrontEnd group -->
+  <rect x="260" y="180" width="240" height="320" rx="8" fill="#dae8fc" stroke="#6c8ebf" />
+  <text x="380" y="200" text-anchor="middle" font-weight="bold">FrontEnd &#8212; Vue 3 + TypeScript SPA</text>
+  <rect x="290" y="230" width="180" height="40" rx="6" fill="#ffffff" stroke="#6c8ebf" />
+  <text x="380" y="254" text-anchor="middle">vue-router</text>
+  <rect x="290" y="290" width="180" height="50" rx="6" fill="#ffffff" stroke="#6c8ebf" />
+  <text x="380" y="311" text-anchor="middle">Pinia stores</text>
+  <text x="380" y="327" text-anchor="middle" font-size="10">(incl. auth / JWT token)</text>
+  <rect x="290" y="360" width="180" height="40" rx="6" fill="#ffffff" stroke="#6c8ebf" />
+  <text x="380" y="384" text-anchor="middle">Views / Components</text>
+  <rect x="290" y="420" width="180" height="40" rx="6" fill="#ffffff" stroke="#6c8ebf" />
+  <text x="380" y="444" text-anchor="middle">HTTP client (fetch)</text>
+
+  <!-- Api group -->
+  <rect x="580" y="140" width="280" height="420" rx="8" fill="#d5e8d4" stroke="#82b366" />
+  <text x="720" y="160" text-anchor="middle" font-weight="bold">Api &#8212; .NET Core Web API (Pim.Api)</text>
+  <rect x="610" y="190" width="220" height="40" rx="6" fill="#ffffff" stroke="#82b366" />
+  <text x="720" y="214" text-anchor="middle">Auth / JWT validation middleware</text>
+  <rect x="610" y="250" width="220" height="40" rx="6" fill="#ffffff" stroke="#82b366" />
+  <text x="720" y="274" text-anchor="middle">Controllers</text>
+  <rect x="610" y="310" width="220" height="40" rx="6" fill="#ffffff" stroke="#82b366" />
+  <text x="720" y="334" text-anchor="middle">Services (business logic)</text>
+  <rect x="610" y="370" width="220" height="50" rx="6" fill="#ffffff" stroke="#82b366" />
+  <text x="720" y="391" text-anchor="middle">IRepository&lt;T&gt; /</text>
+  <text x="720" y="406" text-anchor="middle">DynamoDbRepository&lt;T&gt;</text>
+
+  <!-- Internal flow arrows -->
+  <line x1="720" y1="230" x2="720" y2="250" stroke="#82b366" stroke-dasharray="4,3" marker-end="url(#arrow)" />
+  <line x1="720" y1="290" x2="720" y2="310" stroke="#82b366" marker-end="url(#arrow)" />
+  <line x1="720" y1="350" x2="720" y2="370" stroke="#82b366" marker-end="url(#arrow)" />
+
+  <!-- DynamoDB -->
+  <g stroke="#d79b00" fill="#ffe6cc">
+    <path d="M940,352 a90,12 0 0 1 180,0 v70 a90,12 0 0 1 -180,0 z" />
+    <ellipse cx="1030" cy="352" rx="90" ry="12" />
+  </g>
+  <svg x="926" y="326" width="28" height="28" viewBox="0 0 64 64"><title>Icon-Architecture/48/Arch_Amazon-DynamoDB_48</title><g fill="none" fill-rule="evenodd"><path fill="#c925d1" d="M0 0h64v64H0z"/><path fill="#fff" d="M46.586 25.25H43a1 1 0 0 1-.822-.435 1.02 1.02 0 0 1-.114-.931l2.493-6.722h-8.913l-4.091 9.098H36c.32 0 .623.156.812.42.187.264.239.602.136.91l-3.66 11.101zm3.12-.297L31.709 43.15a.99.99 0 0 1-1.232.146 1.014 1.014 0 0 1-.423-1.18l4.56-13.833H30a1 1 0 0 1-.841-.463 1.02 1.02 0 0 1-.07-.966l5-11.12a1 1 0 0 1 .91-.593h11c.329 0 .636.163.823.435.187.273.23.62.115.931l-2.494 6.721H49a1 1 0 0 1 .924.624c.155.378.069.813-.217 1.102M41.002 44.22c-2.71 1.886-7.687 2.882-12.468 2.882-4.816 0-9.837-1.01-12.533-2.924l.001 3.816c0 1.664 4.768 3.984 12.532 3.984 7.495 0 12.468-2.702 12.468-4.49zm2.064-3.27c0 .187-.032.367-.064.546v5.993C43 51.079 36.51 54 28.533 54c-6.903 0-13.871-1.89-14.473-5.5h-.059L14 43.445V16.151h.001c0-3.996 7.487-6.151 14.532-6.151 3.94 0 7.73.64 10.397 1.756l-.766 1.868c-2.432-1.019-5.943-1.602-9.631-1.602-7.764 0-12.532 2.405-12.532 4.13 0 1.724 4.768 4.129 12.532 4.129.195 0 .399 0 .596-.007l.078 2.02c-.225.009-.45.009-.674.009-4.817 0-9.837-1.01-12.533-2.924v4.358h.001v.017c.005.53.489 1.143 1.364 1.72 1.982 1.288 5.55 2.168 9.539 2.351l-.091 2.02c-4.126-.19-7.75-1.069-10.086-2.416-.31.298-.726 1.056-.726 1.467 0 1.724 4.768 4.129 12.532 4.129.738 0 1.465-.025 2.162-.075l.14 2.017c-.743.054-1.518.08-2.302.08-4.817 0-9.837-1.009-12.533-2.924v3.67h.001c.005.547.489 1.16 1.364 1.737 2.268 1.474 6.549 2.393 11.168 2.393h.33v2.022h-.33c-4.778 0-9.86-1.008-12.532-2.543-.322.298 0 1.01 0 1.548 0 1.725 4.768 4.13 12.532 4.13s12.532-2.405 12.532-4.13c0-.61-.6-1.174-1.092-1.538-.41.247-.86.483-1.372.7l-.768-1.868c.53-.223.99-.463 1.364-.711 1.1-.734 1.804-1.779 1.804-2.175h2c0 .94-.621 1.947-1.417 2.775 1.192 1.04 1.48 2.078 1.48 2.817M17.142 48.39c.791.408 1.716.772 2.752 1.08l.564-1.94a14 14 0 0 1-2.406-.94zm2.752-11.05.564-1.94c-.916-.272-1.726-.589-2.406-.94l-.91 1.799c.791.41 1.716.772 2.752 1.08m-2.752-13.21.91-1.801c.68.352 1.49.668 2.406.94l-.564 1.94a16 16 0 0 1-2.752-1.08"/></g></svg>
+  <text x="1030" y="390" text-anchor="middle">DynamoDB</text>
+  <text x="1030" y="405" text-anchor="middle" font-size="10">(DynamoDB Local in dev,</text>
+  <text x="1030" y="418" text-anchor="middle" font-size="10">real DynamoDB in AWS)</text>
+
+  <!-- Edges -->
+  <line x1="190" y1="410" x2="258" y2="345" stroke="#333333" marker-end="url(#arrow)" />
+  <text x="200" y="380" font-size="11">HTTPS</text>
+
+  <line x1="500" y1="340" x2="578" y2="345" stroke="#333333" marker-end="url(#arrow)" />
+  <text x="505" y="110" font-size="11">HTTPS REST/JSON</text>
+  <text x="505" y="124" font-size="11">Authorization: Bearer &lt;JWT&gt;</text>
+  <line x1="620" y1="130" x2="700" y2="140" stroke="none" />
+
+  <line x1="830" y1="395" x2="938" y2="395" stroke="#333333" marker-end="url(#arrow)" />
+  <text x="855" y="385" font-size="11">AWS SDK for .NET</text>
+
+  <text x="260" y="545" font-style="italic" font-size="11">POST /login &#8594; issues JWT; FrontEnd stores it in a Pinia store and attaches it as a</text>
+  <text x="260" y="560" font-style="italic" font-size="11">Bearer token on every subsequent request. See AuthorizationTests.cs / ProtectedEndpoints().</text>
+</svg>

@@ -78,7 +78,7 @@ in AWS from scratch, since that currently only documents local dev.
 - [x] Add a "Deploying to AWS" overview section to the root `README.md`
 - [x] Update `terraform.yml` and `deploy.yml` to use `role-to-assume` + `id-token: write`
 - [x] Validate workflow YAML
-- [ ] Review diff and open PR
+- [x] Review diff and open PR
 
 ## Session log
 
@@ -116,4 +116,6 @@ in AWS from scratch, since that currently only documents local dev.
   the AWS Console: create the OIDC identity provider" / "...create the IAM role" / "In GitHub: add
   the role ARN as a repo variable" / cleanup), matching the level of detail given in chat rather
   than the terser original bullets.
-- Remaining: review the diff and open the PR.
+- Committed and pushed; opened PR #80: https://github.com/dcamdupe/pim/pull/80. Actual verification
+  against real AWS needs the manual Console + GitHub repo variable setup done first, per the
+  README - not run from this environment (no AWS credentials here).

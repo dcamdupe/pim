@@ -36,3 +36,22 @@ This creates a Personal Financial Manager specifically for one user.
 
 - Email: `testuser@example.com`
 - Password: `TestPassword123!`
+
+# Deploying to AWS
+
+Production runs on AWS (VPC, CloudFront + S3, DynamoDB, Lambda + API Gateway), provisioned via
+Terraform - see `Terraform/README.md` for full details. Setting this up from scratch in a new AWS
+account, in order:
+
+1. AWS credentials for a human to run Terraform locally with (**never root account credentials**
+   for day-to-day use).
+2. Bootstrap the remote state S3 bucket (`Terraform/bootstrap`).
+3. `terraform apply` the main config for the first time - creates the VPC, CloudFront/S3 frontend,
+   DynamoDB table, and Lambda + API Gateway.
+4. ACM certificates for the custom domains, requested and DNS-validated by hand in the ACM console
+   (not Terraform-managed).
+5. DNS records pointed at the Terraform outputs.
+6. An OIDC identity provider + IAM role created by hand in the AWS Console, so GitHub Actions can
+   run `terraform.yml`/`deploy.yml` without long-lived credentials.
+
+See `Terraform/README.md` for the exact steps for each.

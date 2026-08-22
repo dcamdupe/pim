@@ -83,7 +83,14 @@ test.describe('Exporting transactions', () => {
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByLabel('Search description').fill(`NoSuchTransaction${runId}`);
-    await expect(page.getByText('No transactions match your filters.')).toBeVisible();
+    // The status text depends on whether the store's own (separately-loading) all-time transaction
+    // fetch has resolved yet: "No transactions in this range." if it's still empty at this instant,
+    // "No transactions match your filters." once it's populated but this search matches nothing -
+    // both mean zero rows are showing, which is all this test cares about. That fetch spans every
+    // month back to MinTransactionDate, so on a slow/cold backend it can legitimately take a while -
+    // a longer timeout than the suite's default guards against that, independent of which message
+    // happens to be showing.
+    await expect(page.getByText(/No transactions (in this range|match your filters)\./)).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeDisabled();
   });
 });

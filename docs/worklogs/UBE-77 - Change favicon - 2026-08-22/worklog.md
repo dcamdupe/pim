@@ -39,7 +39,7 @@ dog-eared receipt/ticket-stub shape with a checkmark cut through it, on the app'
 - [x] Replace `FrontEnd/public/favicon.svg` with the Ledger check mark
 - [x] Run the FrontEnd dev server and verify the tab icon in a real browser
 - [x] `npm run build` to confirm the favicon still resolves/builds cleanly
-- [ ] Review diff and open PR
+- [x] Review diff and open PR
 
 ## Session log
 
@@ -56,4 +56,4 @@ dog-eared receipt/ticket-stub shape with a checkmark cut through it, on the app'
 - Verified visually rather than just trusting valid markup: screenshotted the SVG served by the
   running dev server at full size, then rendered it at actual 16px/32px favicon scale in a test
   page and screenshotted that too - the checkmark stays legible even at 16px.
-- Remaining: review the diff and open the PR.
+- Committed and pushed; opened PR #79: https://github.com/dcamdupe/pim/pull/79

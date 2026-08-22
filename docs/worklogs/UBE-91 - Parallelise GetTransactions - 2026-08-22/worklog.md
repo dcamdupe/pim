@@ -45,7 +45,7 @@ is the direct fit for "task.parallel...with 5 parallelisation" here.
 - [x] Add a unit test spanning more months than the parallelism cap
 - [x] Run `dotnet build` and `dotnet test Api.UnitTests`
 - [x] Run `dotnet test Api.IntegrationTests` (covers `TransactionsEndpointTests`, real DynamoDB Local)
-- [ ] Review diff and open PR
+- [x] Review diff and open PR
 
 ## Session log
 
@@ -63,4 +63,4 @@ is the direct fit for "task.parallel...with 5 parallelisation" here.
 - `dotnet test Api.UnitTests` - 86 passed (85 existing + the new test).
 - `dotnet test Api.IntegrationTests` against real DynamoDB Local - 59 passed (22 of them
   `TransactionsEndpointTests`, exercising `GetTransactionsAsync` end-to-end through the real Api).
-- Remaining: review the diff and open the PR.
+- Committed and pushed; opened PR #78: https://github.com/dcamdupe/pim/pull/78

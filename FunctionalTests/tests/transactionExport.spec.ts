@@ -83,7 +83,9 @@ test.describe('Exporting transactions', () => {
 
     await page.getByRole('link', { name: 'Transactions' }).click();
     await page.getByLabel('Search description').fill(`NoSuchTransaction${runId}`);
-    await expect(page.getByText('No transactions match your filters.')).toBeVisible();
+    // Either empty-state message is fine here - which one shows just depends on whether the
+    // store's own all-time fetch (back to MinTransactionDate, can be slow) has resolved yet.
+    await expect(page.getByText(/No transactions (in this range|match your filters)\./)).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeDisabled();
   });
 });

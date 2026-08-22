@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Starts (or reuses) the local DynamoDB Local emulator, creates its tables via
-# scripts/create_dynamodb_tables.sh (shared with the CI integration-test job, UBE-17), and
-# seeds a test login for the
-# Login API (UBE-10) - also copies the local FrontEnd .env template into place (UBE-26),
-# and sets ASPNETCORE_ENVIRONMENT=Local for the Api (UBE-23).
+# scripts/create_dynamodb_tables.sh, and seeds a test login via scripts/seed_test_login.sh (both
+# shared with the CI jobs added in UBE-17/UBE-18) - also copies the local FrontEnd .env template
+# into place (UBE-26), and sets ASPNETCORE_ENVIRONMENT=Local for the Api (UBE-23).
 # Safe to re-run: reuses an already-running/existing container, skips table creation
 # and the login insert if they already exist (the .env copy always overwrites, to keep
 # FrontEnd/.env in sync with the template).
+#
+# Requires docker, the aws CLI, jq, and htpasswd on PATH (jq/htpasswd used by
+# seed_test_login.sh).
 #
 # Must be sourced, not executed, for the ASPNETCORE_ENVIRONMENT export to
 # persist in your shell - works from bash or zsh:
@@ -21,8 +23,6 @@ setup_local() {
 
   command -v docker >/dev/null 2>&1 || { echo "error: docker is required but was not found on PATH" >&2; return 1; }
   command -v aws >/dev/null 2>&1 || { echo "error: aws CLI is required but was not found on PATH" >&2; return 1; }
-  command -v jq >/dev/null 2>&1 || { echo "error: jq is required but was not found on PATH" >&2; return 1; }
-  command -v htpasswd >/dev/null 2>&1 || { echo "error: htpasswd is required but was not found on PATH" >&2; return 1; }
 
   local dynamo_container="dynamodb-local"
   local dynamo_port=8000
@@ -43,53 +43,8 @@ setup_local() {
   DYNAMO_ENDPOINT="$dynamo_endpoint" DYNAMO_REGION="$dynamo_region" \
     "$repo_root/scripts/create_dynamodb_tables.sh" || return 1
 
-  local test_email="testuser@example.com"
-  local test_password="TestPassword123!"
-
-  local password_hash
-  password_hash="$(htpasswd -bnBC 10 "$test_email" "$test_password" | cut -d: -f2)" || return 1
-
-  if AWS_ACCESS_KEY_ID=local AWS_SECRET_ACCESS_KEY=local \
-     aws dynamodb get-item --table-name User --key "{\"id\":{\"S\":\"$test_email\"}}" \
-       --endpoint-url "$dynamo_endpoint" --region "$dynamo_region" 2>/dev/null | jq -e '.Item' >/dev/null 2>&1; then
-    echo "Test login \"$test_email\" already exists, skipping."
-  else
-    # Type set "based on the original meaning" (UBE-75): every spend category is an Expense; Income
-    # is Income; Internal Transfer is the Ignore type (UBE-76) so its transactions still drop out of
-    # dashboard sums once stamped, replacing the old hardcoded category-name check.
-    local default_categories
-    default_categories='[
-      {"Name": "Housing", "Colour": "#2a78d6", "Type": "Expense"},
-      {"Name": "Groceries", "Colour": "#eb6834", "Type": "Expense"},
-      {"Name": "Transport", "Colour": "#1baf7a", "Type": "Expense"},
-      {"Name": "Dining", "Colour": "#eda100", "Type": "Expense"},
-      {"Name": "Shopping", "Colour": "#e87ba4", "Type": "Expense"},
-      {"Name": "Utilities", "Colour": "#008300", "Type": "Expense"},
-      {"Name": "Entertainment", "Colour": "#4a3aa7", "Type": "Expense"},
-      {"Name": "Medical", "Colour": "#0891b2", "Type": "Expense"},
-      {"Name": "Subscriptions", "Colour": "#c026d3", "Type": "Expense"},
-      {"Name": "Income", "Colour": "#0f766e", "Type": "Income"},
-      {"Name": "Other", "Colour": "#e34948", "Type": "Expense"},
-      {"Name": "Internal Transfer", "Colour": "#6b7280", "Type": "Ignore"}
-    ]'
-
-    # A fresh user with no MinTransactionDate makes GetTransactionsAsync's null-startDate fallback
-    # (used by account/category deletion cascades and description-mapping bulk-apply) return no
-    # transactions at all until their first upload sets it - seeding a far-past date here avoids
-    # that cold-start gap for local dev/testing.
-    local user_data item
-    user_data="$(jq -nc --arg email "$test_email" --arg hash "$password_hash" --argjson categories "$default_categories" \
-      '{Email: $email, PasswordHash: $hash, Accounts: [], Categories: $categories, MinTransactionDate: "2020-01-01"}')"
-    item="$(jq -nc --arg id "$test_email" --arg data "$user_data" \
-      '{id: {S: $id}, data: {S: $data}}')"
-
-    AWS_ACCESS_KEY_ID=local AWS_SECRET_ACCESS_KEY=local \
-      aws dynamodb put-item --table-name User --item "$item" \
-        --endpoint-url "$dynamo_endpoint" --region "$dynamo_region" || return 1
-    echo "Inserted test login \"$test_email\"."
-  fi
-
-  echo "Test login: $test_email / $test_password"
+  DYNAMO_ENDPOINT="$dynamo_endpoint" DYNAMO_REGION="$dynamo_region" \
+    "$repo_root/scripts/seed_test_login.sh" || return 1
 }
 
 if setup_local; then

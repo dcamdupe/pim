@@ -3,9 +3,8 @@ name: Deploy platform
 # Manual only. Deploys the app (API Lambda code + FrontEnd static assets) to
 # already-provisioned infrastructure - it doesn't touch Terraform at all.
 #
-# Requires the same AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY repo secrets as
-# terraform.yml, plus three repo variables copied by hand from `terraform
-# output` after applying (see Terraform/README.md):
+# Authenticates via the same AWS_ROLE_ARN OIDC role as terraform.yml, plus three repo variables
+# copied by hand from `terraform output` after applying (see Terraform/README.md):
 #   FRONTEND_BUCKET_NAME, API_LAMBDA_FUNCTION_NAME, CLOUDFRONT_DISTRIBUTION_ID
 #
 # The API Lambda's aws_lambda_function.api resource has
@@ -24,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 env:
   AWS_REGION: ap-southeast-2
@@ -41,8 +41,7 @@ jobs:
       - run: (cd build && zip -r -X ../lambda.zip .)
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - run: aws lambda update-function-code --function-name "${{ vars.API_LAMBDA_FUNCTION_NAME }}" --zip-file fileb://lambda.zip
       - run: aws lambda wait function-updated --function-name "${{ vars.API_LAMBDA_FUNCTION_NAME }}"
@@ -68,8 +67,7 @@ jobs:
       - run: npm run build
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - run: aws s3 sync dist "s3://${{ vars.FRONTEND_BUCKET_NAME }}" --delete
       - run: aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*"

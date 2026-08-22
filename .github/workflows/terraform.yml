@@ -4,10 +4,10 @@ name: Deploy Terraform
 # Choose `action: plan` to just see what would change, or `action: apply` to
 # also apply it (in the same run, using the exact plan just produced).
 #
-# Requires two repo secrets: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, for a
-# dedicated least-privilege IAM user (never root credentials - see
-# Terraform/README.md). Also requires the state bucket in Terraform/backend.tf
-# to already exist (via Terraform/bootstrap) with its placeholder replaced.
+# Authenticates to AWS via OIDC federation (role-to-assume), not long-lived access keys - requires
+# the AWS_ROLE_ARN repo variable, pointing at an IAM role created by hand in the AWS Console
+# (never root credentials - see Terraform/README.md). Also requires the state bucket in
+# Terraform/backend.tf to already exist (via Terraform/bootstrap) with its placeholder replaced.
 #
 # No environment/required-reviewers gate: that GitHub feature needs a paid
 # plan on a private repo. The deliberate action: apply choice at trigger
@@ -32,6 +32,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 env:
   AWS_REGION: ap-southeast-2
@@ -64,8 +65,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - run: terraform init
       - run: terraform workspace select -or-create=true ${{ inputs.environment }}
@@ -96,8 +96,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - uses: actions/download-artifact@v4
         with:

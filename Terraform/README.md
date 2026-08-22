@@ -102,16 +102,77 @@ this project's existing "one person, applies done serially" model (see
 `backend.tf`/`bootstrap/main.tf`'s notes on skipping state locking for the
 same reason).
 
-One-time setup before the workflow can be used:
+Authenticates to AWS via OIDC federation (`role-to-assume`), not long-lived access keys - no
+secrets to rotate or leak. The OIDC provider and IAM role are created by hand in the AWS Console
+(**never root credentials**), not by Terraform: unlike the resources these modules manage, this
+role's whole purpose is letting CI authenticate at all, so Terraform-managing it wouldn't remove
+the manual step - a human still has to create it first either way, and it would just be a second
+piece of state to keep in sync. One-time setup before the workflow can be used:
 
-- Create a dedicated IAM user for CI (**never root credentials**) with
-  least-privilege permissions covering the resources these modules manage
-  (VPC/networking, the frontend S3 bucket + CloudFront, the DynamoDB table,
-  the Lambda + its execution role, and API Gateway), generate an access key,
-  and add it to the repo as the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
-  secrets.
-- Make sure `backend.tf`'s bucket placeholder has already been replaced (see
-  bootstrap step above).
+### 1. In the AWS Console: create the OIDC identity provider
+
+Sign in with an IAM user/role that has IAM admin permissions (not root).
+
+- Search **IAM** in the top search bar to open the IAM service.
+- Left sidebar, under **Access management** → **Identity providers**.
+- Check whether `token.actions.githubusercontent.com` is already listed - AWS allows only one
+  provider per URL per account, and it's shared across every role/repo that uses it. If it's
+  already there, skip to step 2.
+- Otherwise, **Add provider**:
+  - Provider type: **OpenID Connect**
+  - Provider URL: `https://token.actions.githubusercontent.com`, then click **Get thumbprint**
+    (AWS fetches and verifies GitHub's certificate automatically)
+  - Audience: `sts.amazonaws.com`
+  - **Add provider**
+
+### 2. In the AWS Console: create the IAM role
+
+- Left sidebar → **Roles** → **Create role**.
+- Trusted entity type: **Web identity**.
+- Identity provider: the `token.actions.githubusercontent.com` provider from step 1.
+- Audience: `sts.amazonaws.com`.
+- AWS then shows GitHub-specific fields - fill in:
+  - GitHub organization: `dcamdupe`
+  - GitHub repository: `pim`
+  - GitHub branch: `main`
+
+  These get written into the role's trust policy as a condition on the OIDC token's `sub` claim,
+  so only a workflow run against this exact repo+branch can assume the role (matches the "one
+  person, applies done serially, the deliberate trigger is the only gate" model used elsewhere in
+  this project).
+- **Next** → on the **Add permissions** page, search for `AdministratorAccess`, check it →
+  **Next** (this matches what the CI identity has always had - tightening it to least-privilege is
+  a separate, not-yet-done concern).
+- Role name: e.g. `pim-github-actions` → optionally a description → **Create role**.
+- Open the new role (its summary page, or IAM → Roles → search the name), and copy its **ARN**
+  from near the top - it looks like `arn:aws:iam::<account-id>:role/pim-github-actions`.
+
+### 3. In GitHub: add the role ARN as a repo variable
+
+- On `github.com/dcamdupe/pim`, go to **Settings** (repo settings - needs admin access on the
+  repo, not just write access).
+- Left sidebar → **Secrets and variables** → **Actions**.
+- Click the **Variables** tab (not **Secrets** - the ARN isn't sensitive; the trust policy from
+  step 2 is what actually gates access, same reasoning as `FRONTEND_BUCKET_NAME` etc. already
+  being variables, not secrets).
+- **New repository variable** → name `AWS_ROLE_ARN` → value: the ARN copied in step 2 → **Add
+  variable**.
+
+No other GitHub-side configuration is needed - both workflows already reference
+`${{ vars.AWS_ROLE_ARN }}` and have `permissions: id-token: write` set.
+
+### 4. Make sure the state bucket already exists
+
+`backend.tf`'s bucket placeholder needs to already be replaced (see the bootstrap step above) -
+this is unrelated to OIDC, but `terraform init` fails without it either way.
+
+### Cleaning up the old static-key setup
+
+Once a real `terraform.yml`/`deploy.yml` run has been verified working with the new role, remove
+what's no longer used:
+- The `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` repo secrets (Settings → Secrets and
+  variables → Actions → **Secrets** tab).
+- The IAM user they belonged to (IAM → **Users** in the AWS Console).
 
 ## Custom domains
 
@@ -152,8 +213,8 @@ these aren't sensitive):
 - `API_LAMBDA_FUNCTION_NAME` ← `api_lambda_function_name` output
 - `CLOUDFRONT_DISTRIBUTION_ID` ← `cloudfront_distribution_id` output
 
-It reuses the same `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` secrets as `terraform.yml` - no
-separate credentials needed.
+It reuses the same `AWS_ROLE_ARN` variable and OIDC role as `terraform.yml` - no separate
+credentials needed.
 
 ## Verification scope
 

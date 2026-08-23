@@ -330,3 +330,64 @@ earlier FrontEnd smoke test - no `rsvg-convert`/`cairosvg` available locally to 
 directly) and inspecting the screenshot: clean layout, no crossing lines, all icons rendering
 correctly. Also updated the README's "AWS infrastructure" section to describe the new Auth
 bullet and mention the `cognito` module. `xmllint` confirms both files stay well-formed XML.
+
+### Prompt 7
+
+> restart the work on this worklog, but note that there are TF changes on main that impact this.
+> Specifically moving the lambda out of VPC.
+
+Between this session and the last, [UBE-98](../UBE-98%20-%20Move%20Lambda%20out%20of%20VPC%20-%202026-08-23/worklog.md)
+merged to `main` (PR #82): the API Lambda is no longer VPC-attached, and the entire `networking`
+module (VPC, private subnets, route table, NACLs, Lambda security group, DynamoDB gateway
+endpoint) was deleted, since nothing else used it. This branch had diverged from `main` *before*
+that merge, so its own `networking/main.tf` changes (the Cognito IDP VPC interface endpoint from
+Prompt 6, built specifically to solve "Lambda has no route to Cognito's public JWKS endpoint
+without one") were now based on infrastructure that no longer exists on `main`.
+
+Rebased `UBE-39/cognito-auth` onto the post-UBE-98 `main` (`git rebase origin/main`). Conflicts
+and how each was resolved:
+
+- **`Terraform/modules/networking/main.tf`** - deleted upstream, modified here (added the Cognito
+  interface endpoint + its security group). Deleted it outright rather than restoring it: since
+  the Lambda isn't VPC-attached any more, the entire reason that endpoint existed - giving a
+  VPC-confined Lambda a private path to Cognito's public API - no longer applies. A non-VPC Lambda
+  reaches Cognito's JWKS the same way it already reaches DynamoDB post-UBE-98: directly, over the
+  public AWS API, no endpoint needed.
+- **`Terraform/main.tf`, `modules/api/{main,variables}.tf`, `variables.tf`,
+  `environments/production.tfvars`** - all auto-merged cleanly; double-checked afterwards with a
+  grep for `vpc|VPC|subnet|security_group` across `modules/cognito` and `modules/api` to confirm
+  no dangling references survived either side of the merge.
+- **`docs/design/architecture/README.md`** - merged the UBE-98 wording (Lambda not VPC-attached,
+  calls DynamoDB directly) with a new Auth bullet, rewritten so Cognito is reached the same
+  direct way rather than through a VPC interface endpoint. Dropped "networking" from the module
+  list and added "Cognito" to the icon list.
+- **`docs/design/architecture/aws-infrastructure.drawio`/`.svg`** - the bigger one: combined
+  UBE-98's layout (S3 next to CloudFront, no VPC box, Lambda direct to DynamoDB) with this
+  branch's new Cognito box, but dropped the VPC Interface Endpoint (Cognito IDP) and VPC Gateway
+  Endpoint (DynamoDB) boxes entirely and drew a single direct Lambda→Cognito line instead (same
+  pattern as the existing direct Lambda→DynamoDB line) - since neither endpoint has anything to
+  attach to any more. Cognito sits in the same left-hand column as CloudFront/API Gateway
+  (browser reaches it directly for the Hosted UI redirect), placed below API Gateway.
+
+After resolving, ran `terraform fmt -recursive` (no changes) and `terraform validate` (success),
+then `git rebase --continue`. Confirmed nothing broke: `dotnet build` (0 warnings/errors, still
+`TreatWarningsAsErrors`), `dotnet test Api.UnitTests` (88/88), `FrontEnd` `npm run build` (clean),
+`FrontEnd.UnitTests` `npm run test` (204/204) - all pass unchanged post-rebase, since none of the
+Cognito/Api/FrontEnd code itself touched anything VPC-related; only the Terraform and diagrams
+needed reconciling.
+
+### Prompt 8
+
+> why do I still see conflicts
+
+The rebase above rewrote this branch's commit locally (`a8ebb49` → `3dad6a5`) but it was never
+pushed, so `origin/UBE-39/cognito-auth` was still on the old pre-rebase commit. A `git pull` run
+locally in between merged that stale remote commit into the new rebased one, and git flagged the
+same files as conflicting again even though there was no real divergence in intent - the classic
+"rebased but not pushed" trap. That merge also silently dropped this worklog's uncommitted Prompt
+7 addition (this section had to be re-added from scratch afterwards).
+
+Fix: `git merge --abort` (the merge's conflicts were already resolved to match the rebased content,
+so nothing was lost by aborting) followed by `git push --force-with-lease origin
+UBE-39/cognito-auth` to make origin match the already-correct local rebase. Confirmed
+`git status` shows no divergence and `origin/UBE-39/cognito-auth` now points at `3dad6a5`.

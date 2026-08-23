@@ -70,6 +70,13 @@ jobs:
       - run: terraform init
       - run: terraform workspace select -or-create=true ${{ inputs.environment }}
       - run: terraform plan -var-file=environments/${{ inputs.environment }}.tfvars -out=tfplan
+        env:
+          # Google OAuth client for Cognito's Google IdP (UBE-39) - deliberately not in a
+          # committed tfvars file, same "outside Terraform state's committed inputs" pattern as
+          # the UBE-22 OIDC role. Only needed at plan time: apply runs from the saved tfplan
+          # artifact, which already has these resolved, so the apply job below doesn't need them.
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       - uses: actions/upload-artifact@v4
         with:
           name: tfplan

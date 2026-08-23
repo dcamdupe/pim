@@ -34,14 +34,12 @@ resource "aws_iam_role" "lambda" {
   tags = local.common_tags
 }
 
-# AWS-managed policy: CloudWatch Logs writes + the EC2 ENI permissions a
-# VPC-attached Lambda must have to create/manage its network interfaces.
-# The ENI permissions are a hard AWS requirement for VPC attachment, not
-# optional - see the worklog for why this goes slightly beyond the ticket's
-# literal "just logs and DynamoDB" wording.
-resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+# AWS-managed policy: CloudWatch Logs writes only. The Lambda isn't
+# VPC-attached, so it doesn't need the EC2 ENI permissions that
+# AWSLambdaVPCAccessExecutionRole adds on top of this.
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   role       = aws_iam_role.lambda.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 data "aws_iam_policy_document" "dynamodb_access" {
@@ -98,11 +96,6 @@ resource "aws_lambda_function" "api" {
     variables = {
       ASPNETCORE_ENVIRONMENT = "Production"
     }
-  }
-
-  vpc_config {
-    subnet_ids         = var.private_subnet_ids
-    security_group_ids = [var.lambda_security_group_id]
   }
 
   tags = local.common_tags

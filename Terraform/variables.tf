@@ -15,11 +15,6 @@ variable "environment" {
   type        = string
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for this environment's VPC. No default - set explicitly per environment (in environments/<name>.tfvars) so environments never collide if they're ever peered/connected."
-  type        = string
-}
-
 variable "frontend_domain_name" {
   description = "Custom domain for the FrontEnd CloudFront distribution (e.g. pim.uberconcept.com)."
   type        = string

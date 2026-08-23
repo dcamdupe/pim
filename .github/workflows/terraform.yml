@@ -87,6 +87,14 @@ jobs:
           name: api-lambda-build
           path: Terraform/modules/api/build.zip
           retention-days: 1
+      # Same reasoning as api-lambda-build above, for modules/cognito's
+      # data.archive_file.pre_signup - it's zipped at plan time too, and the
+      # apply job is a fresh runner that never ran that data source itself.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cognito-pre-signup-build
+          path: Terraform/modules/cognito/pre_signup.zip
+          retention-days: 1
 
   apply:
     name: Apply
@@ -109,6 +117,10 @@ jobs:
         with:
           name: api-lambda-build
           path: Terraform/modules/api
+      - uses: actions/download-artifact@v4
+        with:
+          name: cognito-pre-signup-build
+          path: Terraform/modules/cognito
       - run: terraform init
       - run: terraform workspace select ${{ inputs.environment }}
       - uses: actions/download-artifact@v4

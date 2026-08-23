@@ -68,8 +68,14 @@ async function onGoogleLogin() {
     <div v-if="authProvider === 'cognito'" class="login-form">
       <h1>Log in</h1>
       <p v-if="formError" class="form-error">{{ formError }}</p>
-      <button type="button" :disabled="isSubmitting" @click="onGoogleLogin">
-        {{ isSubmitting ? 'Redirecting…' : 'Sign in with Google' }}
+      <button type="button" class="google-btn" :disabled="isSubmitting" @click="onGoogleLogin">
+        <svg class="google-btn-icon" viewBox="0 0 20 20" aria-hidden="true">
+          <path fill="#4285F4" d="M19.6 10.23c0-.82-.1-1.42-.25-2.05H10v3.72h5.5c-.15.96-.74 2.31-2.04 3.22v2.45h3.16c1.89-1.73 2.98-4.3 2.98-7.34z" />
+          <path fill="#34A853" d="M10 20c2.7 0 4.96-.89 6.62-2.42l-3.16-2.45c-.87.59-2 .94-3.46.94-2.66 0-4.92-1.79-5.73-4.2H1.02v2.53A9.99 9.99 0 0010 20z" />
+          <path fill="#FBBC05" d="M4.27 11.87A5.99 5.99 0 013.96 10c0-.65.11-1.29.31-1.87V5.6H1.02A9.99 9.99 0 000 10c0 1.61.39 3.14 1.02 4.4l3.25-2.53z" />
+          <path fill="#EA4335" d="M10 3.96c1.47 0 2.79.51 3.83 1.5l2.87-2.87C14.95.99 12.7 0 10 0 6.09 0 2.7 2.24 1.02 5.6l3.25 2.53C5.08 5.73 7.34 3.96 10 3.96z" />
+        </svg>
+        <span>{{ isSubmitting ? 'Redirecting…' : 'Sign in with Google' }}</span>
       </button>
     </div>
 
@@ -141,5 +147,33 @@ label {
 
 button {
   width: 100%;
+}
+
+/* Google's standard "Sign in with Google" branded button spec. */
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 40px;
+  background: #fff;
+  border: 1px solid #747775;
+  border-radius: 4px;
+  font-family: Roboto, arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f1f1f;
+  cursor: pointer;
+}
+
+.google-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.google-btn-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 </style>

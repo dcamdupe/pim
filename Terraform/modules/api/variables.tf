@@ -37,3 +37,13 @@ variable "certificate_arn" {
   description = "ACM certificate ARN for domain_name. Must be a regional cert in the API's own region - API Gateway v2 custom domains don't support edge-optimized certs."
   type        = string
 }
+
+variable "cognito_authority" {
+  description = "Cognito User Pool issuer URL - passed to the Lambda as CognitoSettings__Authority (see Api/Auth/CognitoSettings.cs)."
+  type        = string
+}
+
+variable "cognito_app_client_id" {
+  description = "Cognito App Client id - passed to the Lambda as CognitoSettings__AppClientId (see Api/Auth/CognitoSettings.cs)."
+  type        = string
+}

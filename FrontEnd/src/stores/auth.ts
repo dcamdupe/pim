@@ -6,6 +6,9 @@ const STORAGE_KEY = 'pim.auth'
 interface StoredAuth {
   token: string
   expiresAt: number
+  // Only present for Cognito sessions (see cognitoAuthService.ts) - the local email/password flow
+  // has no refresh token of its own, /login/refresh just re-signs against the current bearer token.
+  refreshToken?: string
 }
 
 function base64UrlDecode(input: string): string {
@@ -43,17 +46,29 @@ export const useAuthStore = defineStore('auth', () => {
   const stored = loadStored()
   const token = ref<string | null>(stored?.token ?? null)
   const expiresAt = ref<number | null>(stored?.expiresAt ?? null)
+  const refreshTokenValue = ref<string | null>(stored?.refreshToken ?? null)
 
   const isAuthenticated = computed(
     () => token.value !== null && expiresAt.value !== null && expiresAt.value > Date.now(),
   )
 
-  function setToken(value: string) {
+  function setToken(value: string, refreshToken?: string) {
     const expiry = decodeExpiry(value)
     token.value = value
     expiresAt.value = expiry
+    // A Cognito refresh only re-issues the ID token, not a new refresh token (see
+    // refreshCognitoToken) - falling back to the previously-stored one keeps it around across
+    // refreshes instead of dropping it the moment refreshToken isn't passed.
+    refreshTokenValue.value = refreshToken ?? refreshTokenValue.value
     if (expiry !== null) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: value, expiresAt: expiry } satisfies StoredAuth))
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          token: value,
+          expiresAt: expiry,
+          refreshToken: refreshTokenValue.value ?? undefined,
+        } satisfies StoredAuth),
+      )
     } else {
       localStorage.removeItem(STORAGE_KEY)
     }
@@ -62,8 +77,9 @@ export const useAuthStore = defineStore('auth', () => {
   function clearToken() {
     token.value = null
     expiresAt.value = null
+    refreshTokenValue.value = null
     localStorage.removeItem(STORAGE_KEY)
   }
 
-  return { token, expiresAt, isAuthenticated, setToken, clearToken }
+  return { token, expiresAt, refreshTokenValue, isAuthenticated, setToken, clearToken }
 })

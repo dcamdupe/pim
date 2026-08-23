@@ -92,4 +92,35 @@ describe('useAuthStore', () => {
     expect(store.isAuthenticated).toBe(false)
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
+
+  it('setToken stores and restores an optional refresh token', () => {
+    const store = useAuthStore()
+    const expSeconds = Math.floor(Date.now() / 1000) + 3600
+    const token = makeToken({ sub: 'user@example.com', exp: expSeconds })
+
+    store.setToken(token, 'cognito-refresh-token')
+
+    expect(store.refreshTokenValue).toBe('cognito-refresh-token')
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
+    expect(stored).toEqual({ token, expiresAt: expSeconds * 1000, refreshToken: 'cognito-refresh-token' })
+  })
+
+  it('setToken keeps the previous refresh token when a new one is not provided', () => {
+    const store = useAuthStore()
+    const expSeconds = Math.floor(Date.now() / 1000) + 3600
+    store.setToken(makeToken({ sub: 'user@example.com', exp: expSeconds }), 'original-refresh-token')
+
+    store.setToken(makeToken({ sub: 'user@example.com', exp: expSeconds + 60 }))
+
+    expect(store.refreshTokenValue).toBe('original-refresh-token')
+  })
+
+  it('clearToken also clears the stored refresh token', () => {
+    const store = useAuthStore()
+    store.setToken(makeToken({ sub: 'user@example.com', exp: Math.floor(Date.now() / 1000) + 3600 }), 'a-refresh-token')
+
+    store.clearToken()
+
+    expect(store.refreshTokenValue).toBeNull()
+  })
 })

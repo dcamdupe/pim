@@ -94,7 +94,9 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      ASPNETCORE_ENVIRONMENT = "Production"
+      ASPNETCORE_ENVIRONMENT       = "Production"
+      CognitoSettings__Authority   = var.cognito_authority
+      CognitoSettings__AppClientId = var.cognito_app_client_id
     }
   }
 

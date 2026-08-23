@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
+import AuthCallbackView from '../views/AuthCallbackView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import TransactionsView from '../views/TransactionsView.vue'
@@ -18,6 +19,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+    },
+    {
+      path: '/auth/callback',
+      name: 'authCallback',
+      component: AuthCallbackView,
     },
     {
       path: '/dashboard',

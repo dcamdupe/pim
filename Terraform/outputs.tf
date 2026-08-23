@@ -32,3 +32,13 @@ output "api_custom_domain_target" {
   description = "Target domain name for the API's custom domain - point api_domain_name's DNS record (CNAME/ALIAS) at this."
   value       = module.api.custom_domain_target
 }
+
+output "cognito_hosted_ui_domain" {
+  description = "Cognito Hosted UI domain. Copy into the FrontEnd's VITE_COGNITO_DOMAIN build-time env var."
+  value       = module.cognito.hosted_ui_domain
+}
+
+output "cognito_app_client_id" {
+  description = "Cognito App Client id. Copy into the FrontEnd's VITE_COGNITO_CLIENT_ID build-time env var."
+  value       = module.cognito.app_client_id
+}

@@ -3,6 +3,8 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTransactionsStore } from '../stores/transactions'
 import { useSettingsStore } from '../stores/settings'
+import { authProvider } from '../config/auth'
+import { buildLogoutUrl } from '../services/auth/cognitoAuthService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -13,6 +15,15 @@ function onLogout() {
   authStore.clearToken()
   transactionsStore.clear()
   settingsStore.clear()
+
+  if (authProvider === 'cognito') {
+    // Ends the Hosted UI's own session too (not just this app's stored token), so a later
+    // "Sign in with Google" doesn't silently re-authenticate without going through Google again.
+    // Cognito's logout endpoint itself redirects back to /login (logout_uri) once done.
+    window.location.assign(buildLogoutUrl())
+    return
+  }
+
   router.push('/login')
 }
 </script>

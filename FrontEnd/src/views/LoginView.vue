@@ -2,13 +2,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '../services/authService'
-import { refreshTransactionDescriptions } from '../services/transactionDescriptionsService'
+import { beginGoogleLogin } from '../services/auth/cognitoAuthService'
+import { warmCachesAfterLogin } from '../services/auth/postLogin'
+import { authProvider } from '../config/auth'
 import { useAuthStore } from '../stores/auth'
-import { useSettingsStore } from '../stores/settings'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const settingsStore = useSettingsStore()
 
 const email = ref('')
 const password = ref('')
@@ -40,12 +40,7 @@ async function onSubmit() {
   try {
     const token = await login(email.value, password.value)
     authStore.setToken(token)
-    // Best-effort cache warm - a failure here shouldn't block login, the category-matching UI
-    // just falls back to an empty cache until the next successful refresh. A forced refresh(), not
-    // load() - the settings/transactions storage keys aren't scoped per-user, so a stale cache left
-    // behind by a previous session in this browser must not be trusted just because it exists.
-    void refreshTransactionDescriptions().catch(() => {})
-    void settingsStore.refresh().catch(() => {})
+    warmCachesAfterLogin()
     router.push('/dashboard')
   } catch {
     formError.value = 'Invalid login or password.'
@@ -53,11 +48,32 @@ async function onSubmit() {
     isSubmitting.value = false
   }
 }
+
+async function onGoogleLogin() {
+  formError.value = ''
+  isSubmitting.value = true
+  try {
+    // Navigates away to the Hosted UI - isSubmitting/formError never get to matter beyond a
+    // failure to even start the redirect (e.g. a Web Crypto API issue).
+    await beginGoogleLogin()
+  } catch {
+    formError.value = 'Could not start sign-in. Please try again.'
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
   <div class="login-page">
-    <form class="login-form" novalidate @submit.prevent="onSubmit">
+    <div v-if="authProvider === 'cognito'" class="login-form">
+      <h1>Log in</h1>
+      <p v-if="formError" class="form-error">{{ formError }}</p>
+      <button type="button" :disabled="isSubmitting" @click="onGoogleLogin">
+        {{ isSubmitting ? 'Redirecting…' : 'Sign in with Google' }}
+      </button>
+    </div>
+
+    <form v-else class="login-form" novalidate @submit.prevent="onSubmit">
       <h1>Log in</h1>
 
       <div class="field">

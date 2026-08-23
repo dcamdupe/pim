@@ -39,6 +39,18 @@ module "frontend" {
   certificate_arn = var.frontend_certificate_arn
 }
 
+module "cognito" {
+  source = "./modules/cognito"
+
+  application          = var.application
+  environment          = var.environment
+  frontend_domain_name = var.frontend_domain_name
+  domain_prefix        = var.cognito_domain_prefix
+  allowed_emails       = var.cognito_allowed_emails
+  google_client_id     = var.google_client_id
+  google_client_secret = var.google_client_secret
+}
+
 module "api" {
   source = "./modules/api"
 
@@ -50,4 +62,6 @@ module "api" {
   description_mapping_dynamodb_table_arn      = module.description_mapping_data.table_arn
   domain_name                                 = var.api_domain_name
   certificate_arn                             = var.api_certificate_arn
+  cognito_authority                           = module.cognito.authority
+  cognito_app_client_id                       = module.cognito.app_client_id
 }

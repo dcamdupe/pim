@@ -1,6 +1,6 @@
 # Architecture diagrams
 
-Two diagrams covering the overall structure of PIM, per [UBE-12](https://linear.app/uberconcept/issue/UBE-12/create-basic-documentation).
+Two diagrams covering the overall structure of PIM.
 
 **Format:** [draw.io / diagrams.net](https://www.diagrams.net/) XML (`.drawio`). Each diagram has a
 matching `.svg` export in this folder so it's viewable directly on GitHub/in an editor without the
@@ -38,7 +38,7 @@ Derived from `Terraform/main.tf` and its modules (`Terraform/modules/{frontend,a
   so no ENI cold-start cost), logging to CloudWatch and calling DynamoDB directly over the public
   AWS API. Inbound is restricted independently of a VPC/security group, via the Lambda's resource
   policy scoping invocation to this API Gateway only.
-- **Auth** (UBE-39) — Amazon Cognito (a User Pool federated to Google, Google-only sign-in) issues
+- **Auth** — Amazon Cognito (a User Pool federated to Google, Google-only sign-in) issues
   the tokens the Api validates. The browser reaches Cognito's Hosted UI directly; the Lambda, also
   not VPC-attached, validates tokens against Cognito's JWKS over the same public AWS API path it
   already uses for DynamoDB.

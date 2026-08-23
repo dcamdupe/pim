@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace Pim.Api.IntegrationTests;
 
 // Hosts the Api under a non-Local environment name (matching Production's auth wiring - see
-// ServiceMapping.AddCognitoAuthentication) so environment-gated behavior (UBE-39: LoginController
+// ServiceMapping.AddCognitoAuthentication) so environment-gated behavior (LoginController
 // only exists in Local) can be exercised without needing a real Cognito user pool. The
 // CognitoSettings values here are never actually validated against - the tests using this factory
 // only need the host to start, not a real token to be presented.

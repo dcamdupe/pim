@@ -60,9 +60,8 @@ jobs:
           cache: "npm"
           cache-dependency-path: FrontEnd/package-lock.json
       - run: npm ci
-      # Same "copy the right env file into .env" pattern as scripts/setup_local.sh
-      # uses locally with .env.local, so the app always just reads .env regardless
-      # of which environment it's built for.
+      # Same "copy the right env file into .env" pattern as scripts/setup_local.sh uses locally,
+      # so the app always just reads .env regardless of which environment it's built for.
       - run: cp .env.production .env
       - run: npm run build
       - uses: aws-actions/configure-aws-credentials@v4

@@ -8,9 +8,8 @@ const categories = [
   { name: 'Dining', colour: '#eda100', type: 'Expense' as const },
 ]
 
-// categoryNames()/categoryColor() just read the shared settings store now (UBE-87) - its own
-// load/refresh/persist/cache behavior is covered by stores/settings.test.ts, so these tests only
-// need to check the lookup logic against a pre-populated store.
+// categoryNames()/categoryColor() just read the shared settings store now - its own
+// load/refresh/persist/cache behavior is covered by stores/settings.test.ts.
 describe('categoriesService', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

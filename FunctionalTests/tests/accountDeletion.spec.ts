@@ -16,9 +16,8 @@ async function addAccount(page: import('@playwright/test').Page, name: string, t
   return row;
 }
 
-// Playwright has no built-in "find the row whose input has this value" locator (that's a Testing
-// Library concept, not Playwright's) - the account name input's DOM `value` is set via v-model,
-// not a static `value` attribute, so a `input[value=...]` CSS selector wouldn't match it either.
+// Playwright has no built-in "find the row whose input has this value" locator - the account name
+// input's DOM `value` is set via v-model, not a static `value` attribute a CSS selector could match.
 async function findAccountRow(page: import('@playwright/test').Page, name: string) {
   const rows = page.locator('.account-row');
   await rows.first().waitFor();

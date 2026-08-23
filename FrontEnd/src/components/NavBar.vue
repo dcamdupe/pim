@@ -18,8 +18,7 @@ function onLogout() {
 
   if (authProvider === 'cognito') {
     // Ends the Hosted UI's own session too (not just this app's stored token), so a later
-    // "Sign in with Google" doesn't silently re-authenticate without going through Google again.
-    // Cognito's logout endpoint itself redirects back to /login (logout_uri) once done.
+    // "Sign in with Google" doesn't silently re-authenticate. Cognito's logout redirects to /login.
     window.location.assign(buildLogoutUrl())
     return
   }

@@ -13,8 +13,7 @@ namespace Pim.Api.IntegrationTests;
 
 public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFactory>, IAsyncLifetime
 {
-    // ReadFromJsonAsync<T>() with no explicit options defaults to JsonSerializerDefaults.Web
-    // (case-insensitive, camelCase) - matching that here since we also need
+    // Matches ReadFromJsonAsync<T>()'s default (Web: case-insensitive, camelCase), plus
     // JsonStringEnumConverter to read the string Account.AccountType the Api writes (Program.cs).
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -123,10 +122,8 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         Assert.Equal("Everyday", body.Accounts[0].Name);
     }
 
-    // Name is the account's key (UBE-58) - a rename looks structurally identical to removing the old
-    // name and adding a new one, which RemovesAnExistingAccount already rejects. Distinct test from
-    // Put_RejectsRemovingAnExistingAccount above so the ticket's specific "name can't be edited"
-    // requirement has its own direct coverage, even though today it's the same code path.
+    // A rename looks structurally identical to removing the old name and adding a new one, which
+    // RemovesAnExistingAccount already rejects - distinct test so "name can't be edited" has direct coverage.
     [Fact]
     public async Task Put_RejectsRenamingAnExistingAccount()
     {

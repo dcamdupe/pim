@@ -4,13 +4,8 @@ import { useTransactionsStore } from '../stores/transactions'
 
 export const REFRESH_INTERVAL_MS = 5 * 60 * 1000
 
-// Keeps the shared transactions cache warm for the app's whole lifetime (App.vue calls this once,
-// same convention as useTokenRefresh) - load() on mount hydrates/fetches as needed (see
-// stores/transactions.ts's own EXPIRY_MS check), then the interval unconditionally re-fetches every
-// 5 minutes so a long-open session doesn't go stale. Guarded on isAuthenticated (checked fresh each
-// tick, same as useTokenRefresh) so it doesn't fetch before login or keep polling after logout - a
-// single interval that no-ops while unauthenticated is simpler than starting/stopping one on auth
-// changes.
+// Keeps the shared transactions cache warm for the app's lifetime, same convention as
+// useTokenRefresh - see that for the full rationale.
 export function useTransactionsRefresh(intervalMs = REFRESH_INTERVAL_MS): void {
   const authStore = useAuthStore()
   const transactionsStore = useTransactionsStore()

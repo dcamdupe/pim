@@ -4,11 +4,7 @@ using System.Text.RegularExpressions;
 namespace Pim.Api.Middleware;
 
 // Logs every request's verb/URL(+querystring)/body and every response's status code/body, at
-// Information level - UBE-33's own explicit ask, a deliberate departure from UBE-32's more
-// conservative "metadata only" DB-logging default. Two exceptions are redacted: the /login
-// password (any "password" JSON key, generically - not hardcoded to that one route) and the
-// /transactions/file upload's raw file content (a multipart body isn't meaningful text to log
-// anyway, so its non-file form fields are logged individually instead).
+// Information level. Redacts the /login password field and the /transactions/file upload's raw content.
 public sealed partial class RequestResponseLoggingMiddleware
 {
     private readonly RequestDelegate _next;

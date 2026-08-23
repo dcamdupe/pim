@@ -49,9 +49,8 @@ test.describe('Ignoring transactions', () => {
     // fixture ("Ignore Test ...") would otherwise collide with a plain substring text search.
     await expect(row.locator('.chip')).toHaveCount(0);
 
-    // Only one row's menu is open at a time - opening this row's menu first, then clicking
-    // elsewhere on the page (the page heading), confirms the outside-click-closes behaviour
-    // before actually exercising the toggle.
+    // Only one row's menu is open at a time - open this row's menu, then click elsewhere on the
+    // page to confirm outside-click-closes behaviour before exercising the toggle.
     await row.getByRole('button', { name: `Actions for ${desc}` }).click();
     await expect(row.getByRole('menuitem', { name: 'Ignore', exact: true })).toBeVisible();
     await page.getByRole('heading', { name: 'Transactions' }).click();
@@ -71,7 +70,7 @@ test.describe('Ignoring transactions', () => {
     await expect(row.locator('.chip')).toHaveCount(0);
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();

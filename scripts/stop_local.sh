@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Stops the local dev stack (Api + FrontEnd) started by scripts/run_local.sh, for when it was
-# started in the background (e.g. run_in_background) rather than via Ctrl+C in its own terminal.
-# Safe to re-run: reports "not running" for any port with nothing bound to it.
+# started in the background rather than via Ctrl+C. Reports "not running" if nothing was bound.
 set -euo pipefail
 
 API_HTTPS_PORT=7010

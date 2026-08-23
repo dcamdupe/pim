@@ -30,8 +30,7 @@ const { transactions } = storeToRefs(transactionsStore)
 const settingsStore = useSettingsStore()
 
 // Gates each section's own loading state (not the page shell, which always renders) while the
-// shared store's initial load() is in flight - switching the month filter afterwards is a
-// synchronous recompute over the already-loaded data, not a fetch.
+// shared store's initial load() is in flight; filter changes afterwards are a sync recompute, not a fetch.
 const initialLoading = ref(true)
 const loadError = ref('')
 const minTransactionDate = computed(() =>

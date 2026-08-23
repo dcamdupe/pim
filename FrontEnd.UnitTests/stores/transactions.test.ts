@@ -143,7 +143,7 @@ describe('useTransactionsStore', () => {
   // The Api can stamp fields (e.g. Type/Ignore, derived from the category definition) as a side
   // effect of a category change, beyond whatever the caller explicitly asked to change - the store
   // must reflect the server's response, not just echo the locally-requested changes back onto the
-  // object (a real bug: UBE-82's Dashboard tiles silently miscounted income until this was fixed,
+  // object (a real bug: Dashboard tiles once silently miscounted income until this was fixed,
   // since the cached store never refetched to pick up the server-derived Type otherwise).
   it('updateTransaction() merges the full server response, not just the requested changes', async () => {
     const original = makeTransaction({ category: '', type: null })

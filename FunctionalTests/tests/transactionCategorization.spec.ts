@@ -86,8 +86,7 @@ test.describe('Transaction categorization', () => {
     await expect(page.locator('tr', { hasText: colesC }).locator('.category-select')).toHaveValue('Groceries');
 
     // clean up the Settings account added for this test so repeated runs don't accumulate it
-    // (the uploaded transactions themselves aren't cleaned up - there's no delete UI, matching
-    // the same known limitation already accepted in transactionUpload.spec.ts)
+    // (uploaded transactions aren't cleaned up - no delete UI, same known limitation as transactionUpload.spec.ts).
     await page.getByRole('link', { name: 'Settings' }).click();
     const addedRow = page.locator('.account-row').last();
     await addedRow.getByRole('button', { name: 'Remove account' }).click();
@@ -162,7 +161,7 @@ test.describe('Transaction categorization', () => {
   });
 
   test('offers to bulk-apply when two transactions share the exact same single-word description (UBE-79)', async ({ page }) => {
-    // Unlike the UBE-54 case above ("NETFLIX... COM", which has a space), this description has no
+    // Unlike the case above ("NETFLIX... COM", which has a space), this description has no
     // spaces at all - findApproximateMatch() used to have no word-boundary to try at all in that
     // case, so an exact duplicate went undetected regardless of how many transactions shared it.
     const runId = Date.now();

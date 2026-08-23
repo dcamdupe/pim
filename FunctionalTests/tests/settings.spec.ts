@@ -2,9 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Settings', () => {
   test('reaches settings via the cog, adds an account, and it persists across reload', async ({ page }) => {
-    // Unique per run - a fixed literal name risks colliding with a same-named leftover from an
-    // earlier run that didn't reach its cleanup step, which the account-name uniqueness
-    // validation (UBE-57) would then correctly (but inconveniently, for this test) reject.
+    // Unique per run, to avoid colliding with a same-named leftover from an earlier run that
+    // didn't reach cleanup - which account-name uniqueness validation would then correctly reject.
     const accountName = `Playwright Test Account ${Date.now()}`;
 
     await page.goto('/login');
@@ -36,13 +35,12 @@ test.describe('Settings', () => {
     await expect(persistedRow.locator('input').nth(0)).toHaveValue(accountName);
     await expect(persistedRow.locator('select')).toHaveValue('Savings');
 
-    // Name is the account's key (UBE-58) and can't be edited once saved - unlike Type, which stays
+    // Name is the account's key and can't be edited once saved - unlike Type, which stays
     // editable (the select above isn't disabled).
     await expect(persistedRow.locator('input').nth(0)).toHaveAttribute('readonly', '');
 
     // clean up so repeated runs don't keep accumulating accounts on the shared seeded user -
-    // removal of an already-saved account is immediate via a confirmation modal (UBE-57), not
-    // deferred to Save.
+    // removal is immediate via a confirmation modal, not deferred to Save.
     await persistedRow.getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
     await expect(page.locator('.account-row')).toHaveCount(rowsBefore);

@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # Deletes all items from the DescriptionMapping, TransactionMonth, and TransactionDescriptions
-# DynamoDB Local tables, leaving the User table (and table schemas) untouched.
-# Requires the local DynamoDB emulator to already be running (see scripts/setup_local.sh).
-#
-# Usage: scripts/clean_local.sh
+# tables, leaving the User table untouched. Requires the local DynamoDB emulator to be running.
 set -euo pipefail
 
 DYNAMO_ENDPOINT="http://localhost:8000"

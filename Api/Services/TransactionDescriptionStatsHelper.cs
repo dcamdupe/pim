@@ -3,8 +3,7 @@ using Pim.Api.Data;
 namespace Pim.Api.Services;
 
 // Every stat mutation for a description's classified/unclassified count goes through this one
-// place, since the same description can be reached from the single-edit (PUT /transactions),
-// bulk-apply (POST /mapping/description), and internal-transfer-matching (on import) paths.
+// place, since the same description can be reached from several different update paths.
 public static class TransactionDescriptionStatsHelper
 {
     public static void AdjustUnclassifiedCount(TransactionDescriptions descriptions, string description, string previousCategory, string newCategory)

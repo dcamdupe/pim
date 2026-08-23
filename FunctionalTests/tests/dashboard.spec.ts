@@ -45,7 +45,7 @@ function parseCurrency(text: string): number {
 
 // Tiles are positional: 0 = current month profit, 1 = previous-6-months profit,
 // 2 = current month expenses, 3 = previous-6-months expenses. Tiles 1 & 3 now render the *same*
-// month-range label text (UBE-70), so they're no longer distinguishable by label.
+// month-range label text, so they're no longer distinguishable by label.
 async function tileValue(page: import('@playwright/test').Page, index: number): Promise<number> {
   const kpi = page.locator('.kpi-row .kpi').nth(index);
   const text = await kpi.locator('.value').innerText();
@@ -143,21 +143,20 @@ test.describe('Dashboard tiles', () => {
     expect(after.currentProfit - before.currentProfit).toBe(2800);
     expect(after.currentExpenses - before.currentExpenses).toBe(200);
     // Previous 6 months: income 1000, active expense 300 (the -999 ignored one excluded)
-    // -> profit +700, expenses +300, shown on the tile as an average over 6 months (UBE-73).
+    // -> profit +700, expenses +300, shown on the tile as an average over 6 months.
     // The tile displays whole dollars (no cents), and "before"/"after" are each independently
     // rounded before this delta is taken, so up to ~$1 of combined rounding error is expected -
     // tighter than that would mean the average math itself is wrong.
     expect(Math.abs(after.priorProfit - before.priorProfit - 700 / 6)).toBeLessThanOrEqual(1);
     expect(Math.abs(after.priorExpenses - before.priorExpenses - 300 / 6)).toBeLessThanOrEqual(1);
 
-    // Tiles 1 & 3 (previous 6 months) never show a delta icon - the tile still renders a
-    // same-sized placeholder pill (kept invisible) so all 4 tiles line up regardless of whether
-    // a real delta is shown, so this checks visibility, not absence.
+    // Tiles 1 & 3 (previous 6 months) never show a delta icon - a same-sized placeholder pill
+    // (kept invisible) keeps all 4 tiles aligned, so this checks visibility, not absence.
     await expect(page.locator('.kpi-row .kpi').nth(1).locator('.delta-pill')).not.toBeVisible();
     await expect(page.locator('.kpi-row .kpi').nth(3).locator('.delta-pill')).not.toBeVisible();
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
@@ -182,7 +181,7 @@ test.describe('Month filter', () => {
     // Capture the target month's "before" tile 0 value ahead of the upload below, so the
     // assertion is a delta - robust to the shared, never-cleaned-up test dataset.
     await selectMonth(page, targetMonth);
-    // Tile 0's label is just "<Month> <Year>" now (UBE-73 dropped the "profit" suffix - the tile's
+    // Tile 0's label is just "<Month> <Year>" now (the "profit" suffix was dropped - the tile's
     // "Profit" kicker carries that instead), so wait for it specifically rather than by full text.
     await expect(page.locator('.kpi-row .kpi').nth(0).locator('.label')).toHaveText(monthYearLabel(targetMonth));
     const before = await tileValue(page, 0);
@@ -207,10 +206,10 @@ test.describe('Month filter', () => {
 
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(page.locator('.kpi-row .kpi')).toHaveCount(4);
-    // The filter is remembered across navigation (UBE-86) - no need to re-select it; assert the
+    // The filter is remembered across navigation - no need to re-select it; assert the
     // <select> itself still shows the previously-chosen month, not just the tiles it drove.
     await expect(page.getByLabel('Month filter')).toHaveValue(monthOptionValue(targetMonth));
-    // Tile 0's label is just "<Month> <Year>" now (UBE-73 dropped the "profit" suffix - the tile's
+    // Tile 0's label is just "<Month> <Year>" now (the "profit" suffix was dropped - the tile's
     // "Profit" kicker carries that instead), so wait for it specifically rather than by full text.
     await expect(page.locator('.kpi-row .kpi').nth(0).locator('.label')).toHaveText(monthYearLabel(targetMonth));
 
@@ -225,7 +224,7 @@ test.describe('Month filter', () => {
     await expect(incomeVsExpensesCard.locator('.card-sub')).toHaveText(expectedRangeLabel);
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
@@ -284,7 +283,7 @@ test.describe('Recent transactions', () => {
     await expect(page).toHaveURL(/\/transactions$/);
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
@@ -346,7 +345,7 @@ test.describe('Category chart', () => {
     await expect(page.locator('tr', { hasText: description })).toBeVisible();
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();

@@ -31,10 +31,8 @@ onMounted(async () => {
   }
 })
 
-// The store's accounts can change under this view (e.g. the 1-minute background refresh) after the
-// initial default was already picked - if the previously-selected account disappears (deleted
-// elsewhere), fall back to the first remaining one rather than leaving a stale, now-invalid
-// selection in the dropdown.
+// The store's accounts can change under this view (e.g. background refresh) after the initial
+// default was picked - fall back to the first remaining account if the selected one disappears.
 watch(accounts, (current) => {
   if (!current.some((a) => a.name === selectedAccount.value)) {
     selectedAccount.value = current[0]?.name ?? ''

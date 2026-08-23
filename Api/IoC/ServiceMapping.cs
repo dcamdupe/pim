@@ -88,8 +88,8 @@ public static class ServiceMapping
             });
     }
 
-    // Every non-Local environment authenticates via Cognito's Hosted UI (Google-federated,
-    // UBE-39); the FrontEnd sends Cognito's ID token as the bearer token, which the JWT bearer
+    // Every non-Local environment authenticates via Cognito's Hosted UI (Google-federated);
+    // the FrontEnd sends Cognito's ID token as the bearer token, which the JWT bearer
     // handler validates against the User Pool's own JWKS (via Authority). MapInboundClaims is
     // turned off to keep the token's own claim names ("email" etc.) rather than remapping them
     // via the default short-to-XML-namespace table, so CognitoClaimsMapper can find "email" and

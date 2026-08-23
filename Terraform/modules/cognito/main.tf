@@ -31,9 +31,8 @@ resource "aws_iam_role_policy_attachment" "pre_signup_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Declared explicitly (rather than left to Lambda's implicit auto-created log group) so it has
-# our standard 6-month retention instead of AWS's default "never expire" - same reasoning as the
-# api module's log group.
+# Declared explicitly so it has our standard 6-month retention instead of AWS's default
+# "never expire" - same reasoning as the api module's log group.
 resource "aws_cloudwatch_log_group" "pre_signup" {
   name              = "/aws/lambda/${var.application}-${var.environment}-cognito-pre-signup"
   retention_in_days = 180
@@ -95,8 +94,8 @@ resource "aws_cognito_user_pool_domain" "this" {
 
 # The Google OAuth client id/secret are deliberately not Terraform variables sourced from a
 # committed tfvars file - created manually in Google Cloud Console and supplied via
-# TF_VAR_google_client_id / TF_VAR_google_client_secret at apply time, same pattern as the UBE-22
-# OIDC IAM role being kept out of Terraform state entirely. See docs/worklogs UBE-39 for the
+# TF_VAR_google_client_id / TF_VAR_google_client_secret at apply time, same pattern as the
+# OIDC IAM role being kept out of Terraform state entirely. See docs/worklogs for the
 # Google Cloud Console setup steps.
 resource "aws_cognito_identity_provider" "google" {
   user_pool_id  = aws_cognito_user_pool.this.id

@@ -33,7 +33,7 @@ const queryFilters = queryRange && queryCategory ? { range: queryRange as RangeO
 const CATEGORIES = categoryNames()
 const RECENT_MONTHS = recentMonthOptions(new Date())
 
-// `recentMonthOptions` covers the current month plus the 6 before it (UBE-95) - but a dashboard
+// `recentMonthOptions` covers the current month plus the 6 before it - but a dashboard
 // doughnut segment click can in principle carry `range=month:<older>` for a month further back
 // than that, which then wouldn't match any <option>, leaving the Date range <select> showing
 // blank. Splice that month in as an option too when that's the case.
@@ -94,8 +94,7 @@ const rangeFilteredTransactions = computed(() => filterByDateRange(transactions.
 const accountOptions = computed(() => [...new Set(rangeFilteredTransactions.value.map((t) => t.account))].sort())
 
 // Search/account/category applied, but not the needs-category toggle - this is what the
-// toggle's own count badge reflects, so it updates live as you type/pick a filter rather than
-// only ever showing the count for the unfiltered range.
+// toggle's own count badge reflects, so it updates live as filters change.
 const searchedAndCategorised = computed(() =>
   filterTransactions(rangeFilteredTransactions.value, {
     search: searchQuery.value,

@@ -373,7 +373,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var response = await client.PutAsJsonAsync("/transactions", new List<Transaction> { updated });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        // The response body is what UBE-82's FrontEnd store relies on to pick up the server-stamped
+        // The response body is what the FrontEnd store relies on to pick up the server-stamped
         // Type/Ignore without a follow-up GET - assert on it directly, not just the stored record.
         var body = await response.Content.ReadFromJsonAsync<TransactionsResponse>(JsonOptions);
         var responseTransaction = body!.Transactions.Single();

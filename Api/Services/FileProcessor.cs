@@ -115,9 +115,8 @@ public sealed class FileProcessor : IFileProcessor
         }
     }
 
-    // Applies any rules the user has already saved (via POST /mapping/description) to the
-    // newly-parsed rows, before they're persisted - so a re-categorised merchant stays categorised
-    // on every future statement import, not just the transactions that existed at the time.
+    // Applies any rules the user has already saved to the newly-parsed rows before they're persisted,
+    // so a re-categorised merchant stays categorised on every future import, not just past transactions.
     private async Task ApplyDescriptionMappingAsync(string email, List<Transaction> transactions)
     {
         var mapping = await _descriptionMappings.GetAsync(email);

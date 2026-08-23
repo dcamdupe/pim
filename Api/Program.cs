@@ -37,10 +37,8 @@ ServiceMapping.MapServices(builder, isLocal);
 
 var app = builder.Build();
 
-// In Lambda, prefix logs with the actual Lambda request id (not ASP.NET Core's own generated
-// TraceIdentifier) so log lines can be cross-referenced with CloudWatch/API Gateway/X-Ray. Runs
-// first in the pipeline, before anything else can log. No-op locally, since there's no Lambda
-// context outside a real Lambda invocation.
+// In Lambda, prefix logs with the actual Lambda request id so log lines can be cross-referenced
+// with CloudWatch/API Gateway/X-Ray. No-op locally, since there's no Lambda context.
 app.Use(async (context, next) =>
 {
     if (context.Items[AbstractAspNetCoreFunction.LAMBDA_CONTEXT] is ILambdaContext lambdaContext)

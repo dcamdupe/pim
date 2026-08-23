@@ -73,7 +73,7 @@ public class TransactionQueryServiceTests
     [Fact]
     public async Task GetTransactionsAsync_CombinesTransactionsAcrossMoreMonthsThanTheParallelismLimit()
     {
-        // 8 months > the 5-way MaxDegreeOfParallelism the fetch loop is capped at (UBE-91) - checks
+        // 8 months > the 5-way MaxDegreeOfParallelism the fetch loop is capped at - checks
         // correctness still holds once Parallel.ForEachAsync has to queue bodies beyond that cap.
         var months = Enumerable.Range(1, 8)
             .Select(month => new TransactionMonth

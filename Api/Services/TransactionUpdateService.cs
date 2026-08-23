@@ -155,8 +155,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     }
 
     // Declassifies matching transactions (clears Category to "") rather than deleting them - unlike
-    // account removal, removing a category shouldn't destroy financial data. Description-stats are
-    // deliberately left untouched here for the same reason as DeleteTransactionsForAccountAsync.
+    // account removal, removing a category shouldn't destroy financial data.
     public async Task RemoveCategoryFromTransactionsAsync(string email, string categoryName)
     {
         var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());

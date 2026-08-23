@@ -69,9 +69,8 @@ export const useSettingsStore = defineStore('settings', () => {
     return inFlightRefresh
   }
 
-  // Only fetches if never loaded before - unlike stores/transactions.ts there's no expiry window
-  // here (UBE-87 doesn't ask for one), just "load on login"; the 1-minute interval (wired in
-  // App.vue) and forced refresh() calls after every save/add/delete keep it current after that.
+  // Only fetches if never loaded before - no expiry window like stores/transactions.ts, just
+  // "load on login"; the 1-minute interval and forced refresh() after save/add/delete keep it current.
   async function load() {
     if (loadedAt.value !== null) {
       return

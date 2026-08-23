@@ -66,9 +66,8 @@ public sealed partial class DynamoDbLoggingTests : IClassFixture<ApiWebApplicati
     [Fact]
     public async Task DeleteAsync_LogsElapsedTime_OnTheResponseLine()
     {
-        // No Api endpoint triggers a full item delete - account/category "deletion" mutates the
-        // User record instead (see worklog Current state) - the repository is called directly via
-        // DI here, same as other integration tests' own DisposeAsync cleanup already does.
+        // No Api endpoint triggers a full item delete, so the repository is called directly via DI here,
+        // same as other integration tests' own DisposeAsync cleanup already does.
         var messages = new List<string>();
         var factory = _factory.WithWebHostBuilder(builder =>
             builder.ConfigureLogging(logging => logging.AddProvider(new CapturingLoggerProvider(messages))));

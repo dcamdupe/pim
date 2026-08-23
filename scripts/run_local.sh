@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Builds and starts the whole local dev stack (Api + FrontEnd) in one
-# terminal. Kills anything already bound to their ports first, so it's
-# always safe to re-run - no manual cleanup needed if a previous run wasn't
-# stopped cleanly. Ctrl+C stops both.
-#
-# Requires `source scripts/setup_local.sh` already done at least once (starts the local
-# DynamoDB emulator, seeds the test login, creates FrontEnd/.env).
+# Builds and starts the local dev stack (Api + FrontEnd); kills anything on their ports first,
+# so it's always safe to re-run. Requires `source scripts/setup_local.sh` done at least once.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -45,7 +45,7 @@ test.describe('Transaction upload', () => {
     await expect(page).toHaveURL(/\/transactions$/);
     await expect(page.getByText(desc)).toBeVisible();
 
-    // Upload the exact same file again - proves duplicates are skipped (UBE-45), not shown twice.
+    // Upload the exact same file again - proves duplicates are skipped, not shown twice.
     await page.getByRole('link', { name: 'Upload' }).click();
     await page.locator('#account').selectOption('Playwright Upload Account');
     await page.locator('#file-input').setInputFiles({

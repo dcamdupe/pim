@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
 # Seeds the shared test login (testuser@example.com / TestPassword123!) with its default
-# categories into the DynamoDB Local "User" table, if it doesn't already exist - shared between
-# scripts/setup_local.sh (local dev) and the GitHub Actions functional-test job (UBE-18), so both
-# seed the exact same login/categories from one place.
-# Idempotent: safe to re-run, skips if the login already exists.
-#
-# Requires the "User" table to already exist (see scripts/create_dynamodb_tables.sh) and the aws
-# CLI, jq, and htpasswd to be on PATH.
-# Endpoint/region default to match Api/appsettings.Local.json; override via env vars if needed.
-#
-# Usage: scripts/seed_test_login.sh
+# categories into the DynamoDB Local "User" table, if it doesn't already exist. Idempotent.
 set -euo pipefail
 
 DYNAMO_ENDPOINT="${DYNAMO_ENDPOINT:-http://localhost:8000}"
@@ -32,8 +23,8 @@ fi
 
 password_hash="$(htpasswd -bnBC 10 "$TEST_EMAIL" "$TEST_PASSWORD" | cut -d: -f2)"
 
-# Type set "based on the original meaning" (UBE-75): every spend category is an Expense; Income
-# is Income; Internal Transfer is the Ignore type (UBE-76) so its transactions still drop out of
+# Type set "based on the original meaning": every spend category is an Expense; Income
+# is Income; Internal Transfer is the Ignore type so its transactions still drop out of
 # dashboard sums once stamped, replacing the old hardcoded category-name check.
 default_categories='[
   {"Name": "Housing", "Colour": "#2a78d6", "Type": "Expense"},
@@ -51,8 +42,7 @@ default_categories='[
 ]'
 
 # A fresh user with no MinTransactionDate makes GetTransactionsAsync's null-startDate fallback
-# (used by account/category deletion cascades and description-mapping bulk-apply) return no
-# transactions at all until their first upload sets it - seeding a far-past date here avoids
+# return no transactions until their first upload sets it - seeding a far-past date here avoids
 # that cold-start gap for local dev/testing.
 user_data="$(jq -nc --arg email "$TEST_EMAIL" --arg hash "$password_hash" --argjson categories "$default_categories" \
   '{Email: $email, PasswordHash: $hash, Accounts: [], Categories: $categories, MinTransactionDate: "2020-01-01"}')"

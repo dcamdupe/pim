@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
 # Creates the DynamoDB Local tables the Api needs (User, TransactionMonth,
-# TransactionDescriptions, DescriptionMapping) if they don't already exist - shared between
-# scripts/setup_local.sh (local dev) and the GitHub Actions integration-test job (UBE-17), so both
-# provision the exact same schema from one place.
-# Idempotent: safe to re-run, skips any table that already exists.
-#
-# Waits up to 30s for DynamoDB Local to become reachable at DYNAMO_ENDPOINT before creating tables.
-# Endpoint/region default to match Api/appsettings.Local.json; override via env vars if needed.
-#
-# Usage: scripts/create_dynamodb_tables.sh
+# TransactionDescriptions, DescriptionMapping) if they don't already exist. Idempotent.
 set -euo pipefail
 
 DYNAMO_ENDPOINT="${DYNAMO_ENDPOINT:-http://localhost:8000}"

@@ -16,12 +16,8 @@ async function findAccountRow(page: import('@playwright/test').Page, name: strin
   throw new Error(`No account row found with name "${name}"`);
 }
 
-// UBE-87: settings are loaded once into a shared client-side store (not re-fetched by every page
-// that displays them), refreshed every 1 minute, and refreshed immediately whenever settings are
-// saved - mirrors transactionsCaching.spec.ts's (UBE-82) request-counting approach, since that's the
-// only way to actually prove "loaded once, reused everywhere" rather than just "eventually shows the
-// right data" (Vue Router remounts each view on navigation, so a naive "does it show up" test would
-// pass even under a design that re-fetches on every visit).
+// Settings are loaded once into a shared client-side store (not re-fetched by every page that
+// displays them), refreshed every 1 minute, and immediately whenever settings are saved.
 test.describe('Shared settings cache (UBE-87)', () => {
   test('loads settings once per fetch-worthy change, not once per page visit', async ({ page }) => {
     const runId = Date.now();

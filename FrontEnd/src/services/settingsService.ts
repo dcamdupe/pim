@@ -58,8 +58,7 @@ export async function saveSettings(accounts: Account[]): Promise<void> {
 }
 
 // Deletes immediately (not deferred to the next PUT /settings) - the Api cascades this to delete
-// every transaction linked to the account too. Name is the account's key (UBE-58), so it's all the
-// Api needs to identify which one to remove.
+// every transaction linked to the account too. Name is the account's key, so that's all it needs.
 export async function deleteAccount(name: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/settings/account`, {
     method: 'DELETE',

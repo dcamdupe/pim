@@ -65,7 +65,7 @@ test.describe('Exporting transactions', () => {
     expect(csv).not.toContain(rentDesc);
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();

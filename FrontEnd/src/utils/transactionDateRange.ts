@@ -72,8 +72,8 @@ export interface MonthRangeOption {
   label: string
 }
 
-// The current calendar month plus the 6 full calendar months before it, newest first (UBE-95) -
-// the past-six-months portion mirrors the dashboard's getPreviousSixMonthsRange convention.
+// The current calendar month plus the 6 full calendar months before it, newest first - the
+// past-six-months portion mirrors the dashboard's getPreviousSixMonthsRange convention.
 export function recentMonthOptions(today: Date): MonthRangeOption[] {
   const options: MonthRangeOption[] = []
 

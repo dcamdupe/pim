@@ -142,11 +142,8 @@ function sumExpenses(transactions: Transaction[]): number {
   return total === 0 ? 0 : -total
 }
 
-// Per-category expense breakdown for the current month, excluding non-expense (Income/no-Type) and
-// ignored transactions - Internal Transfer is excluded via isCounted() since its category is
-// stamped Ignore (UBE-75/UBE-76) - sorted highest-spend first. Uncategorized expenses (see
-// isUncategorizedExpense) group under the empty-string category key, which SpendingByCategoryChart
-// displays as an "Uncategorized" slice.
+// Per-category expense breakdown for the current month, excluding non-expense and ignored
+// transactions, sorted highest-spend first. Uncategorized expenses group under the empty-string key.
 export function computeExpensesByCategory(transactions: Transaction[], today: Date): CategoryExpense[] {
   const currentMonthTransactions = transactions.filter((t) => isWithinRange(t, getCurrentMonthRange(today)))
   const totals = new Map<string, number>()

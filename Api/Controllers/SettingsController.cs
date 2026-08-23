@@ -59,7 +59,7 @@ public sealed class SettingsController : ControllerBase
         return NoContent();
     }
 
-    // Name is the account's key (UBE-58) - it's unique (enforced by Put) and immutable, so it's a
+    // Name is the account's key - it's unique (enforced by Put) and immutable, so it's a
     // sufficient match on its own, no need for a defence-in-depth match on other fields.
     [HttpDelete("settings/account")]
     public async Task<ActionResult> DeleteAccount(DeleteAccountRequest request)
@@ -138,7 +138,7 @@ public sealed class SettingsController : ControllerBase
     private static bool HasDuplicateNames(List<Account> accounts) =>
         accounts.GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
 
-    // Name is the account's key (UBE-58), so it can't be edited - renaming an existing account looks
+    // Name is the account's key, so it can't be edited - renaming an existing account looks
     // identical to removing it and adding a new one, and this rejects both. Removal must go through
     // DELETE /settings/account (which also cascades to that account's transactions) - PUT can still
     // add accounts and edit their Type, but every name currently on the user must still be present

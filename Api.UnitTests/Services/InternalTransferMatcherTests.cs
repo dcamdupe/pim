@@ -93,7 +93,7 @@ public class InternalTransferMatcherTests
     public async Task MatchAsync_DoesNotMatch_WhenMoreThanTwoBusinessDaysApart_EvenAcrossOnlyFiveCalendarDays()
     {
         // Fri 5 Jun -> Wed 10 Jun: only 5 calendar days (would have matched under the old
-        // 5-calendar-day window - this is the overmatching bug UBE-64 fixes), but 3 business days.
+        // 5-calendar-day window - this is the overmatching bug fixed here), but 3 business days.
         var a = Transaction("Checking", new DateOnly(2026, 6, 5), -100m, "");
         var b = Transaction("Savings", new DateOnly(2026, 6, 10), 100m, "");
         var bucket = Bucket(2026, 6, a, b);
@@ -168,7 +168,7 @@ public class InternalTransferMatcherTests
     public async Task MatchAsync_DoesNotMatch_WhenNeitherDescriptionRuleIsSatisfied()
     {
         // Amount, date, and account all line up, but neither description carries a qualifying
-        // keyword - this is the other half of the overmatching bug UBE-64 fixes.
+        // keyword - this is the other half of the overmatching bug fixed here.
         var negative = Transaction("Checking", new DateOnly(2026, 6, 1), -100m, "", description: "WOOLWORTHS 1234");
         var positive = Transaction("Savings", new DateOnly(2026, 6, 2), 100m, "", description: "REFUND RECEIVED");
         var bucket = Bucket(2026, 6, negative, positive);
@@ -256,9 +256,8 @@ public class InternalTransferMatcherTests
         Assert.Equal(1, matchedAddedCount);
     }
 
-    // Defaults to a description that satisfies the BPAY/transfer rule regardless of which side
-    // (positive or negative) it ends up playing, so tests that aren't specifically about the
-    // description rule don't need to think about it.
+    // Defaults to a description that satisfies the BPAY/transfer rule either way, so tests that
+    // aren't specifically about the description rule don't need to think about it.
     private static Transaction Transaction(string account, DateOnly date, decimal amount, string category, string? description = null) => new()
     {
         Account = account,

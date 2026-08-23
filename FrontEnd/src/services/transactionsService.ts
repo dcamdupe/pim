@@ -76,8 +76,7 @@ export async function getTransactions(startDate: string | undefined, endDate: st
 }
 
 // Returns the server's updated transactions (not void) - PUT /transactions can stamp Type/Ignore
-// server-side from the category definition whenever Category changes, so the response, not the
-// request body, is the authoritative result (see stores/transactions.ts's updateTransaction).
+// server-side, so the response, not the request body, is the authoritative result.
 export async function updateTransactions(transactions: Transaction[]): Promise<Transaction[]> {
   const response = await fetch(`${API_BASE_URL}/transactions`, {
     method: 'PUT',

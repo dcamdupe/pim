@@ -136,8 +136,8 @@ describe('computeDashboardTiles', () => {
     expect(tiles.currentMonthExpenses).toBe(80)
   })
 
-  // Internal Transfer's category is stamped Ignore by the Api (UBE-75/UBE-76), so it drops out via
-  // the ignore filter rather than any Type/category-name check here.
+  // Internal Transfer's category is stamped Ignore by the Api, so it drops out via the ignore
+  // filter rather than any Type/category-name check here.
   it('excludes Internal Transfer transactions from expenses', () => {
     const transactions = [
       tx({ date: '2026-07-05', category: 'Groceries', type: 'Expense', amount: -200 }),
@@ -166,8 +166,7 @@ describe('computeDashboardTiles', () => {
 describe('computeExpensesByCategory', () => {
   beforeEach(() => {
     // categoryColor() (dashboardMetrics.ts -> categoriesService.ts) reads the shared settings store
-    // directly (UBE-87), not its own localStorage cache anymore - seed the store's state directly
-    // rather than simulating a full load().
+    // directly now - seed the store's state directly rather than simulating a full load().
     setActivePinia(createPinia())
     useSettingsStore().categories = [
       { name: 'Housing', colour: '#2a78d6', type: 'Expense' },

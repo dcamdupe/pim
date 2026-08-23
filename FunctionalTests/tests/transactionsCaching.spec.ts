@@ -1,11 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-// UBE-82: transactions are loaded once into a shared client-side store (not re-fetched by every
-// page that displays them), and an edit made on one page is immediately visible on another without
-// a page reload. Counting GET /transactions calls is what actually proves the "loaded once, reused
-// everywhere" part - dashboard.spec.ts's "Recent transactions" test already covers the update being
-// visible after navigating, but under the old per-view-fetch design that would have passed too
-// (Vue Router remounts each view on navigation, so it always re-fetched fresh data regardless).
+// Transactions are loaded once into a shared client-side store (not re-fetched by every page that
+// displays them), and an edit made on one page is immediately visible on another without a reload.
 test.describe('Shared transactions cache (UBE-82)', () => {
   test('loads transactions once per fetch-worthy change, not once per page visit', async ({ page }) => {
     const runId = Date.now();

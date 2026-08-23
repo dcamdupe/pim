@@ -1,18 +1,6 @@
 #!/usr/bin/env bash
-# Starts (or reuses) the local DynamoDB Local emulator, creates its tables via
-# scripts/create_dynamodb_tables.sh, and seeds a test login via scripts/seed_test_login.sh (both
-# shared with the CI jobs added in UBE-17/UBE-18) - also copies the local FrontEnd .env template
-# into place (UBE-26), and sets ASPNETCORE_ENVIRONMENT=Local for the Api (UBE-23).
-# Safe to re-run: reuses an already-running/existing container, skips table creation
-# and the login insert if they already exist (the .env copy always overwrites, to keep
-# FrontEnd/.env in sync with the template).
-#
-# Requires docker, the aws CLI, jq, and htpasswd on PATH (jq/htpasswd used by
-# seed_test_login.sh).
-#
-# Must be sourced, not executed, for the ASPNETCORE_ENVIRONMENT export to
-# persist in your shell - works from bash or zsh:
-#   source scripts/setup_local.sh
+# Starts the local DynamoDB Local emulator, creates its tables, seeds a test login, and copies
+# the FrontEnd .env template into place. Must be sourced, not executed: source scripts/setup_local.sh
 
 setup_local() {
   local repo_root

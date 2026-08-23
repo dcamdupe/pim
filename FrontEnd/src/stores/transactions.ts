@@ -59,9 +59,8 @@ export const useTransactionsStore = defineStore('transactions', () => {
     return inFlightRefresh
   }
 
-  // Only fetches if there's no cache or it's past EXPIRY_MS - the 5-minute interval (wired in
-  // App.vue) is what keeps a long-open session fresh after that; this is just what runs on login/
-  // page load so a still-fresh cache doesn't trigger a redundant fetch.
+  // Only fetches if there's no cache or it's past EXPIRY_MS - the 5-minute interval keeps a
+  // long-open session fresh after that; this just avoids a redundant fetch on login/page load.
   async function load() {
     if (loadedAt.value !== null && Date.now() - loadedAt.value < EXPIRY_MS) {
       return
@@ -71,9 +70,8 @@ export const useTransactionsStore = defineStore('transactions', () => {
 
   async function updateTransaction(transaction: Transaction, changes: Partial<Transaction>) {
     const [updated] = await updateTransactions([{ ...transaction, ...changes }])
-    // Merge the server's response, not just `changes` - the Api can stamp Type/Ignore from the
-    // category definition as a side effect of a Category change, so the response is authoritative
-    // for fields beyond what was explicitly sent (see services/transactionsService.ts).
+    // Merge the server's response, not just `changes` - the Api can stamp Type/Ignore as a side
+    // effect of a Category change, so the response is authoritative beyond what was sent.
     Object.assign(transaction, updated)
     persist()
   }

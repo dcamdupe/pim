@@ -114,9 +114,8 @@ describe('transactionsService', () => {
       )
     })
 
-    // The Api can stamp Type/Ignore server-side (from the category definition) as a side effect of
-    // a Category change, so the response body - not just an echo of the request - is what's
-    // returned, and callers (stores/transactions.ts) rely on that being the authoritative result.
+    // The Api can stamp Type/Ignore server-side as a side effect of a Category change, so the
+    // response body - not an echo of the request - is the authoritative result callers rely on.
     it('returns the updated transactions from the response body, not just the request payload', async () => {
       const sent: Transaction[] = [
         { account: 'Everyday', date: '2026-06-01', description: 'Coffee', category: 'Dining', amount: -4.5, ignore: null, type: null },

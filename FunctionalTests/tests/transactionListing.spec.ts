@@ -18,7 +18,7 @@ test.describe('Transaction listing', () => {
     const sixWeeksAgo = new Date(today);
     sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42); // outside "last week"/"last month", inside "last 3 months"
     // Older than any hardcoded lookback window could plausibly use - only found under "All time"
-    // if it's genuinely resolved from the real stored MinTransactionDate (UBE-47), not a guess.
+    // if it's genuinely resolved from the real stored MinTransactionDate, not a guess.
     const veryOld = new Date(2010, 0, 1);
 
     const qif =
@@ -77,8 +77,7 @@ test.describe('Transaction listing', () => {
     await expect(page.getByText(veryOldDesc)).toBeVisible();
 
     // clean up the Settings account added for this test so repeated runs don't accumulate it
-    // (the uploaded transactions themselves aren't cleaned up - there's no delete UI, matching
-    // the same known limitation already accepted in transactionUpload.spec.ts)
+    // (uploaded transactions aren't cleaned up - no delete UI, same known limitation as transactionUpload.spec.ts).
     await page.getByRole('link', { name: 'Settings' }).click();
     const addedRow = page.locator('.account-row').last();
     await addedRow.getByRole('button', { name: 'Remove account' }).click();
@@ -87,9 +86,8 @@ test.describe('Transaction listing', () => {
   });
 
   test('filters by search, account, category, and needs-a-category', async ({ page }) => {
-    // Each description uses a distinct leading token (not just a distinct runId suffix on a
-    // shared word) so none of them approximately-match each other via UBE-48's word-boundary
-    // rule - categorising one must never pop up the "apply to similar transactions?" modal here.
+    // Each description uses a distinct leading token, not just a distinct runId suffix on a
+    // shared word, so none of them approximately-match each other and pop the "apply to similar" modal.
     const runId = Date.now();
     const coffeeDesc = `FilterCoffee${runId} Shop`;
     const rentDesc = `FilterRent${runId} Payment`;
@@ -174,7 +172,7 @@ test.describe('Transaction listing', () => {
     await expect(page.getByText(groceriesDesc)).not.toBeVisible();
     await page.getByLabel('Category filter').selectOption('');
 
-    // Amount (+/-) filter narrows to positive or negative amounts (UBE-94).
+    // Amount (+/-) filter narrows to positive or negative amounts.
     await page.getByLabel('Amount filter').selectOption('positive');
     await expect(page.getByText(salaryDesc)).toBeVisible();
     await expect(page.getByText(coffeeDesc)).not.toBeVisible();
@@ -187,7 +185,7 @@ test.describe('Transaction listing', () => {
     await expect(page.getByText(groceriesDesc)).toBeVisible();
     await page.getByLabel('Amount filter').selectOption('');
 
-    // Ignoring the remaining uncategorised groceries row (UBE-94) removes it from the
+    // Ignoring the remaining uncategorised groceries row removes it from the
     // needs-a-category count/filter, since an ignored transaction never needs a category.
     await page.locator('tr', { hasText: groceriesDesc }).getByRole('button', { name: `Actions for ${groceriesDesc}` }).click();
     await page.locator('tr', { hasText: groceriesDesc }).getByRole('menuitem', { name: 'Ignore', exact: true }).click();
@@ -208,9 +206,8 @@ test.describe('Transaction listing', () => {
     await expect(page.getByText(coffeeDesc)).toBeVisible();
     await page.getByLabel('Search description').fill('');
 
-    // clean up the two Settings accounts added for this test - both were appended at the end
-    // (in order), so removing "last" twice removes exactly these two. Removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // clean up the two Settings accounts added for this test - both were appended at the end, so
+    // removing "last" twice removes exactly these two. Removal is immediate via a confirmation modal.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
@@ -267,7 +264,7 @@ test.describe('Endless scroll', () => {
     await expect(rows).toHaveCount(TOTAL);
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();
@@ -286,7 +283,7 @@ test.describe('Expanded date filters (UBE-78)', () => {
     const targetMonthDesc = `UBE78 TargetMonth ${runId}`;
     const targetMonthOptionValue = `month:${targetMonthDate.getFullYear()}-${String(targetMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
-    // Today - the current, still-in-progress month, selectable as its own dropdown option (UBE-95).
+    // Today - the current, still-in-progress month, selectable as its own dropdown option.
     const currentMonthDesc = `UBE95 CurrentMonth ${runId}`;
     const currentMonthOptionValue = `month:${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
@@ -351,7 +348,7 @@ test.describe('Expanded date filters (UBE-78)', () => {
     await expect(page.getByText(lastFinancialYearDesc)).not.toBeVisible();
     await expect(page.getByText(currentFinancialYearDesc)).not.toBeVisible();
 
-    // The current, still-in-progress month is itself selectable as a dropdown option (UBE-95),
+    // The current, still-in-progress month is itself selectable as a dropdown option,
     // showing only today's row.
     await page.getByLabel('Date range').selectOption(currentMonthOptionValue);
     await expect(page.getByText(currentMonthDesc)).toBeVisible();
@@ -370,7 +367,7 @@ test.describe('Expanded date filters (UBE-78)', () => {
     await expect(page.getByText(currentFinancialYearDesc)).not.toBeVisible();
 
     // clean up the Settings account added for this test - removal is immediate via a
-    // confirmation modal (UBE-57), not deferred to Save.
+    // confirmation modal, not deferred to Save.
     await page.getByRole('link', { name: 'Settings' }).click();
     await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
     await page.getByRole('button', { name: 'Yes' }).click();

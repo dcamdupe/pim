@@ -90,9 +90,8 @@ public class TransactionUpdateServiceTests
         existing.Ignore = false;
         var month = new TransactionMonth { Email = Email, Year = 2026, Month = 6, Transactions = [existing] };
         var months = new List<TransactionMonth> { month };
-        // Same category as the existing "Dining" definition would produce (not Ignore-typed), but
-        // the category itself is unchanged here - a manual "Ignore" toggle should stick rather
-        // than being immediately re-stamped back to the category definition's own Ignore value.
+        // Category is unchanged, but a manual "Ignore" toggle should stick rather than being
+        // immediately re-stamped back to the category definition's own Ignore value.
         var categories = new List<Category> { new() { Name = "Dining", Colour = "#eda100", Type = Category.CategoryType.Expense } };
         var updated = Transaction("Coffee Shop", new DateOnly(2026, 6, 1), "Dining");
         updated.Type = Category.CategoryType.Expense;

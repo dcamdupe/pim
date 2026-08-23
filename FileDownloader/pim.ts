@@ -7,8 +7,7 @@ interface PimLoginResponse {
 }
 
 // Manages authentication against the PIM Api and uploading a downloaded transactions file -
-// mirrors FrontEnd/src/services/authService.ts's login()/transactionsService.ts's
-// uploadTransactions(), just from a Node script rather than the browser.
+// mirrors FrontEnd/src/services/authService.ts and transactionsService.ts, from a Node script.
 export class PimClient {
   private token: string | null = null;
 

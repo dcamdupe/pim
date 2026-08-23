@@ -1,18 +1,8 @@
 name: Deploy Terraform
 
-# Manual only - this can apply real changes to AWS, so it never runs on push.
-# Choose `action: plan` to just see what would change, or `action: apply` to
-# also apply it (in the same run, using the exact plan just produced).
-#
-# Authenticates to AWS via OIDC federation (role-to-assume), not long-lived access keys - requires
-# the AWS_ROLE_ARN repo variable, pointing at an IAM role created by hand in the AWS Console
-# (never root credentials - see Terraform/README.md). Also requires the state bucket in
-# Terraform/backend.tf to already exist (via Terraform/bootstrap) with its placeholder replaced.
-#
-# No environment/required-reviewers gate: that GitHub feature needs a paid
-# plan on a private repo. The deliberate action: apply choice at trigger
-# time is the only gate - consistent with this project's existing "one
-# person, applies done serially" model (see backend.tf/bootstrap/main.tf).
+# Manual only (never runs on push) - choose `action: plan` to preview, or `action: apply` to
+# also apply it. Authenticates to AWS via OIDC (see Terraform/README.md); the deliberate apply
+# choice at trigger time is the only gate, consistent with this project's serial single-operator model.
 on:
   workflow_dispatch:
     inputs:
@@ -72,9 +62,9 @@ jobs:
       - run: terraform workspace select -or-create=true ${{ inputs.environment }}
       - run: terraform plan -var-file=environments/${{ inputs.environment }}.tfvars -out=tfplan
         env:
-          # Google OAuth client for Cognito's Google IdP (UBE-39) - deliberately not in a
+          # Google OAuth client for Cognito's Google IdP - deliberately not in a
           # committed tfvars file, same "outside Terraform state's committed inputs" pattern as
-          # the UBE-22 OIDC role. Only needed at plan time: apply runs from the saved tfplan
+          # the OIDC role. Only needed at plan time: apply runs from the saved tfplan
           # artifact, which already has these resolved, so the apply job below doesn't need them.
           TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
           TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}

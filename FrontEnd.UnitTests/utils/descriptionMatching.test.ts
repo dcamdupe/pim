@@ -65,7 +65,7 @@ describe('findApproximateMatch', () => {
   })
 
   it('matches against its own stat entry when more than one transaction shares the exact same description', () => {
-    // The core UBE-54 fix: the description-stats list is deduplicated (one entry per unique
+    // The core fix: the description-stats list is deduplicated (one entry per unique
     // description string), so two transactions with the literal same description collapse to a
     // single stat entry with transactionCount 2 - that entry must still be a valid match target.
     const result = findApproximateMatch('COLES 0717 TURRAMURRA AUS', [stat('COLES 0717 TURRAMURRA AUS', 2, 2)])

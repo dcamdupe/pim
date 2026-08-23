@@ -7,42 +7,6 @@ locals {
 
 data "aws_region" "current" {}
 
-data "archive_file" "pre_signup" {
-  type        = "zip"
-  output_path = "${path.module}/pre_signup.zip"
-
-  source {
-    filename = "pre_signup.js"
-    content  = <<-JS
-      // Cognito Pre Sign-up trigger (UBE-39). Federated sign-in (Google) auto-provisions a
-      // Cognito user on first login, invoking this trigger as part of that provisioning - this
-      // is the standard place to enforce an allow-list for a Google-federated pool, since Google
-      // itself will authenticate anyone with a Google account. ALLOWED_EMAILS is a comma-separated
-      // env var (set below on aws_lambda_function.pre_signup); anyone not on it never gets a
-      // Cognito user created, so they can never sign in.
-      exports.handler = async (event) => {
-        const allowedEmails = (process.env.ALLOWED_EMAILS || '')
-          .split(',')
-          .map((email) => email.trim().toLowerCase())
-          .filter(Boolean);
-
-        const email = (event.request.userAttributes.email || '').toLowerCase();
-
-        if (!allowedEmails.includes(email)) {
-          throw new Error('Access is restricted.');
-        }
-
-        // Google has already verified the email and authenticated the user - Cognito's own
-        // confirmation/verification step would just be a redundant extra hop for a federated user.
-        event.response.autoConfirmUser = true;
-        event.response.autoVerifyEmail = true;
-
-        return event;
-      };
-    JS
-  }
-}
-
 data "aws_iam_policy_document" "pre_signup_assume_role" {
   statement {
     effect  = "Allow"
@@ -85,8 +49,11 @@ resource "aws_lambda_function" "pre_signup" {
   timeout       = 5
   memory_size   = 128
 
-  filename         = data.archive_file.pre_signup.output_path
-  source_code_hash = data.archive_file.pre_signup.output_base64sha256
+  # Committed zip, not archive_file - that only builds the zip at plan time, which apply (a
+  # separate job/runner) never sees. To edit: unzip, edit pre_signup.js, then
+  # zip -j -X pre_signup.zip pre_signup.js
+  filename         = "${path.module}/pre_signup.zip"
+  source_code_hash = filebase64sha256("${path.module}/pre_signup.zip")
 
   environment {
     variables = {

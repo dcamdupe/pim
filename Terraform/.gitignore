@@ -17,5 +17,5 @@ terraform.rc
 # modules/api/main.tf), not committed.
 modules/api/build/
 *.zip
-# ...except the cognito Lambda's zip - committed, unlike the api Lambda's build.zip
+# ...except the cognito Lambda's zip - committed
 !modules/cognito/pre_signup.zip

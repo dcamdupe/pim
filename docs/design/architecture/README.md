@@ -6,7 +6,7 @@ Two diagrams covering the overall structure of PIM, per [UBE-12](https://linear.
 matching `.svg` export in this folder so it's viewable directly on GitHub/in an editor without the
 draw.io app — open the `.drawio` file (desktop app, VS Code draw.io extension, or
 [app.diagrams.net](https://app.diagrams.net/)) to edit it, then re-export the `.svg` after changes.
-AWS service boxes carry the real AWS Architecture Service icon (S3, CloudFront, CloudWatch, VPC,
+AWS service boxes carry the real AWS Architecture Service icon (S3, CloudFront, CloudWatch,
 Lambda, API Gateway, DynamoDB), embedded as an inline base64 SVG image so it renders identically in
 both the `.drawio` and `.svg` — no dependency on draw.io's shape libraries. Icon source: the
 official AWS icon set as packaged by the (MIT-licensed) [`aws-icons`](https://www.npmjs.com/package/aws-icons)
@@ -30,14 +30,14 @@ before routing into controllers/services.
 
 ![AWS infrastructure](./aws-infrastructure.svg)
 
-Derived from `Terraform/main.tf` and its modules (`Terraform/modules/{frontend,api,networking,data}`):
+Derived from `Terraform/main.tf` and its modules (`Terraform/modules/{frontend,api,data}`):
 
 - **Frontend** — CloudFront (with Origin Access Control) in front of a private, encrypted S3
   bucket serving the built SPA, on a custom domain with an ACM certificate.
-- **Api** — API Gateway v2 (HTTP API, custom domain) invoking a Lambda function that runs inside
-  the VPC's private subnets, logging to CloudWatch.
-- **Networking** — a VPC with private subnets, route tables, and NACLs; the Lambda reaches
-  DynamoDB over a gateway VPC endpoint rather than through a NAT/internet gateway.
+- **Api** — API Gateway v2 (HTTP API, custom domain) invoking a Lambda function (not VPC-attached,
+  so no ENI cold-start cost), logging to CloudWatch and calling DynamoDB directly over the public
+  AWS API. Inbound is restricted independently of a VPC/security group, via the Lambda's resource
+  policy scoping invocation to this API Gateway only.
 - **Data** — four DynamoDB tables: `User`, `TransactionMonth`, `TransactionDescriptions`,
   `DescriptionMapping`.
 

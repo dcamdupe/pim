@@ -12,6 +12,6 @@ useSettingsRefresh()
 </script>
 
 <template>
-  <NavBar v-if="route.name !== 'login'" />
+  <NavBar v-if="route.name !== 'login' && route.name !== 'authCallback'" />
   <RouterView />
 </template>

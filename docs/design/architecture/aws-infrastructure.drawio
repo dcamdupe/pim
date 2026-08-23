@@ -27,6 +27,7 @@
         <mxCell id="eBrCf" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="browser" target="cloudfront">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+
         <mxCell id="apigw" value="API Gateway v2&#10;(HTTP API, custom domain)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="280" y="250" width="200" height="60" as="geometry" />
         </mxCell>
@@ -34,6 +35,16 @@
           <mxGeometry x="266" y="236" width="28" height="28" as="geometry" />
         </mxCell>
         <mxCell id="eBrGw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="browser" target="apigw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cognito" value="Amazon Cognito&#10;(User Pool, Google-federated)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="280" y="350" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="iconCognito" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;verticalLabelPosition=middle;verticalAlign=middle;image=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPkljb24tQXJjaGl0ZWN0dXJlLzQ4L0FyY2hfQW1hem9uLUNvZ25pdG9fNDg8L3RpdGxlPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+PHBhdGggZmlsbD0iI2RkMzQ0YyIgZD0iTTAgMGg2NHY2NEgweiIvPjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik00OC4zODUgMjEuMDA2di01LjMwM2MwLS45MjItLjYxOC0xLjcwMi0xLjM1LTEuNzAySDEzLjM3Yy0uNzMzIDAtMS4zNS43OC0xLjM1IDEuNzAydjUuMzAzaDE1LjE1MXYtNC4wMDJjMC0uNTUzLjQ1Mi0xLjAwMSAxLjAxLTEuMDAxaDE3LjE3M2MuNTU4IDAgMS4wMS40NDggMS4wMSAxdjQuMDAzem0tNC4wNC0zLjAwMkgyOS4xOTN2MTIuMzg0YTguNiA4LjYgMCAwIDEgNC41MzMtMy45ODUgNC40MiA0LjQyIDAgMCAxLS45NTQtMi43MzdjMC0yLjQ2NyAyLjAzOS00LjQ3NCA0LjU0Ni00LjQ3NCAyLjUwNiAwIDQuNTQ2IDIuMDA3IDQuNTQ2IDQuNDc0YTQuNDIgNC40MiAwIDAgMS0xLjA4IDIuODggOC43IDguNyAwIDAgMSAzLjU2IDIuODQ1em0tNC41MDIgNS42NjJjMC0xLjM2NC0xLjEzMi0yLjQ3Mi0yLjUyNS0yLjQ3MnMtMi41MjUgMS4xMDgtMi41MjUgMi40NzJjMCAuODk3LjQ5OCAxLjcyMyAxLjMgMi4xNThhMi41OSAyLjU5IDAgMCAwIDIuNDQ1LS4wMDEgMi40NiAyLjQ2IDAgMCAwIDEuMzA1LTIuMTU3bTguNTQzIDkuMzQ5VjIzLjAwOGgtMi4wMjF2Ny4wMDVoLTEuNzEzbC0xLjY0Ni45ODVhNi43IDYuNyAwIDAgMC0zLjc1NS0yLjg5NCA1LjQyIDUuNDIgMCAwIDEtNC4zMzYgMCA2LjU4IDYuNTggMCAwIDAtNC42OCA1LjkxMmg2LjAyOXYyLjAwMWgtOC4wODJjLS41NTggMC0xLjAxLS40NDgtMS4wMS0xdi0xMi4wMUgxMi4wMnYxNC4zMWMwIC45MjMuNjE4IDEuNzAyIDEuMzUgMS43MDJoMTkuODYzdjIuMDAySDEzLjM3MWMtMS44NTkgMC0zLjM3MS0xLjY2Mi0zLjM3MS0zLjcwM1YxNS43MDNDMTAgMTMuNjYgMTEuNTEyIDEyIDEzLjM3IDEyaDMzLjY2NWMxLjg1OCAwIDMuMzcgMS42NjEgMy4zNyAzLjcwM3YxNy4zMTJ6bS01LjA4IDEzLjk3OSA1LjYyNi01LjU3NC0xLjQyOS0xLjQxNS00LjkxMiA0Ljg2Ni0yLjExNS0yLjA5NS0xLjQyOSAxLjQxNSAyLjgzIDIuODAzYTEuMDE0IDEuMDE0IDAgMCAwIDEuNDI4IDBtMi4wMTEtMTEuMDMxYTcuNTggNy41OCAwIDAgMSA1LjgzMyA0LjA1N2MuNjkgMS4zNC45NTcgMi44NDMuNzczIDQuMzQ0YTcuNSA3LjUgMCAwIDEtMS43NjUgMy45OTcgNy42NSA3LjY1IDAgMCAxLTIuNTI2IDEuOTE4IDcuNTYgNy41NiAwIDAgMS00LjE0My42NjUgNy42IDcuNiAwIDAgMS0zLjc4LTEuNTY3IDcuNDggNy40OCAwIDAgMS0yLjgyNS02LjgzNCA3LjU1IDcuNTUgMCAwIDEgNC4wNjQtNS44MDYgNy41NSA3LjU1IDAgMCAxIDQuMzctLjc3NG0zLjE4MSAxNi4xMjRhOS43IDkuNyAwIDAgMCAzLjE5Ni0yLjQyNiA5LjUgOS41IDAgMCAwIDIuMjM1LTUuMDU2IDkuNDYgOS40NiAwIDAgMC0uOTgtNS40OTUgOS42IDkuNiAwIDAgMC03LjM4Ny01LjEzMyA5LjU3IDkuNTcgMCAwIDAtNS41NDIuOTgzIDkuNTUgOS41NSAwIDAgMC01LjE0MiA3LjM0MWMtLjQwNiAzLjMyOS45MyA2LjU2IDMuNTc0IDguNjQzQTkuNiA5LjYgMCAwIDAgNDQuNDEgNTNjMS40MTMgMCAyLjgwNy0uMzEgNC4wODgtLjkxM00yMS4xMTEgMzMuMDE1aDMuMDN2LTIuMDAyaC0zLjAzem0tNy4wNyAwaDYuMDZ2LTIuMDAyaC02LjA2em0wLTUuMDA0aDkuMDlWMjYuMDFoLTkuMDl6Ii8+PC9nPjwvc3ZnPg==;" vertex="1" parent="1">
+          <mxGeometry x="266" y="336" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="eBrCognito" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="browser" target="cognito">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="lambda" value="Lambda&#10;(api function)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
@@ -46,6 +57,10 @@
         <mxCell id="eGwLambda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="apigw" target="lambda">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="eLambdaCognito" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=11;" edge="1" parent="1" source="lambda" target="cognito">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
         <mxCell id="dynamodb" value="DynamoDB Tables" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="980" y="330" width="200" height="110" as="geometry" />
         </mxCell>

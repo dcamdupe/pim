@@ -7,7 +7,7 @@ matching `.svg` export in this folder so it's viewable directly on GitHub/in an 
 draw.io app — open the `.drawio` file (desktop app, VS Code draw.io extension, or
 [app.diagrams.net](https://app.diagrams.net/)) to edit it, then re-export the `.svg` after changes.
 AWS service boxes carry the real AWS Architecture Service icon (S3, CloudFront, CloudWatch,
-Lambda, API Gateway, DynamoDB), embedded as an inline base64 SVG image so it renders identically in
+Lambda, API Gateway, DynamoDB, Cognito), embedded as an inline base64 SVG image so it renders identically in
 both the `.drawio` and `.svg` — no dependency on draw.io's shape libraries. Icon source: the
 official AWS icon set as packaged by the (MIT-licensed) [`aws-icons`](https://www.npmjs.com/package/aws-icons)
 npm package.
@@ -30,7 +30,7 @@ before routing into controllers/services.
 
 ![AWS infrastructure](./aws-infrastructure.svg)
 
-Derived from `Terraform/main.tf` and its modules (`Terraform/modules/{frontend,api,data}`):
+Derived from `Terraform/main.tf` and its modules (`Terraform/modules/{frontend,api,data,cognito}`):
 
 - **Frontend** — CloudFront (with Origin Access Control) in front of a private, encrypted S3
   bucket serving the built SPA, on a custom domain with an ACM certificate.
@@ -38,6 +38,10 @@ Derived from `Terraform/main.tf` and its modules (`Terraform/modules/{frontend,a
   so no ENI cold-start cost), logging to CloudWatch and calling DynamoDB directly over the public
   AWS API. Inbound is restricted independently of a VPC/security group, via the Lambda's resource
   policy scoping invocation to this API Gateway only.
+- **Auth** (UBE-39) — Amazon Cognito (a User Pool federated to Google, Google-only sign-in) issues
+  the tokens the Api validates. The browser reaches Cognito's Hosted UI directly; the Lambda, also
+  not VPC-attached, validates tokens against Cognito's JWKS over the same public AWS API path it
+  already uses for DynamoDB.
 - **Data** — four DynamoDB tables: `User`, `TransactionMonth`, `TransactionDescriptions`,
   `DescriptionMapping`.
 

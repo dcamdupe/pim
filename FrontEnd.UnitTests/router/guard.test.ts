@@ -13,4 +13,8 @@ describe('resolveNavigation', () => {
   it('redirects to login when navigating to a protected route while unauthenticated', () => {
     expect(resolveNavigation('dashboard', false)).toEqual({ name: 'login' })
   })
+
+  it('always allows navigation to the auth callback route, even when unauthenticated', () => {
+    expect(resolveNavigation('authCallback', false)).toBe(true)
+  })
 })

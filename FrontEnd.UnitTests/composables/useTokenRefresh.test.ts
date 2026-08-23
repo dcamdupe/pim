@@ -5,6 +5,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from '../../FrontEnd/src/stores/auth'
 import { useTokenRefresh } from '../../FrontEnd/src/composables/useTokenRefresh'
 import * as authService from '../../FrontEnd/src/services/authService'
+import * as cognitoAuthService from '../../FrontEnd/src/services/auth/cognitoAuthService'
+import type { AuthProvider } from '../../FrontEnd/src/config/auth'
 
 function base64UrlEncode(input: string): string {
   return btoa(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -16,10 +18,10 @@ function makeToken(claims: Record<string, unknown>): string {
   return `${header}.${payload}.signature`
 }
 
-function mountWithRefresh(intervalMs: number) {
+function mountWithRefresh(intervalMs: number, authProvider?: AuthProvider) {
   const TestComponent = defineComponent({
     setup() {
-      useTokenRefresh(intervalMs)
+      useTokenRefresh(intervalMs, authProvider)
       return () => h('div')
     },
   })
@@ -105,5 +107,41 @@ describe('useTokenRefresh', () => {
     await vi.advanceTimersByTimeAsync(5000)
 
     expect(refreshSpy).not.toHaveBeenCalled()
+  })
+
+  describe('when authProvider is cognito', () => {
+    it('refreshes via the Cognito refresh token grant and keeps the refresh token', () => {
+      const store = useAuthStore()
+      store.setToken(
+        makeToken({ email: 'user@example.com', exp: Math.floor(Date.now() / 1000) + 3600 }),
+        'the-refresh-token',
+      )
+      const newIdToken = makeToken({ email: 'user@example.com', exp: Math.floor(Date.now() / 1000) + 7200 })
+      const refreshSpy = vi.spyOn(cognitoAuthService, 'refreshCognitoToken').mockResolvedValue(newIdToken)
+      const localRefreshSpy = vi.spyOn(authService, 'refreshToken')
+
+      const wrapper = mountWithRefresh(1000, 'cognito')
+      return vi.advanceTimersByTimeAsync(1000).then(() => {
+        expect(refreshSpy).toHaveBeenCalledWith('the-refresh-token')
+        expect(localRefreshSpy).not.toHaveBeenCalled()
+        expect(store.token).toBe(newIdToken)
+        expect(store.refreshTokenValue).toBe('the-refresh-token')
+
+        wrapper.unmount()
+      })
+    })
+
+    it('does not call refresh when there is no stored refresh token', async () => {
+      const store = useAuthStore()
+      store.setToken(makeToken({ email: 'user@example.com', exp: Math.floor(Date.now() / 1000) + 3600 }))
+      const refreshSpy = vi.spyOn(cognitoAuthService, 'refreshCognitoToken')
+
+      const wrapper = mountWithRefresh(1000, 'cognito')
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(refreshSpy).not.toHaveBeenCalled()
+
+      wrapper.unmount()
+    })
   })
 })

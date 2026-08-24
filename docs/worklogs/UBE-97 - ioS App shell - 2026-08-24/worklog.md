@@ -191,3 +191,25 @@ opened the project, untracked; added Xcode entries to the root
 `*.xcodeproj/project.xcworkspace/`, which turned out to anchor to repo root
 because of its internal slash and didn't match the nested `iosApp/` path -
 fixed with a `**/` prefix). Committed and pushed both fixes.
+
+### Prompt: "the app built and ran. The google logo on the login screen was incomplete"
+
+Reproduced without a simulator by rasterizing the real `LoginView.vue` SVG
+(`sips`, same trick as the app icon) as ground truth, and separately
+rendering `SVGPath.parse(...)`'s `CGPath` output for each of the 4 layers
+straight to a PNG via a plain `CGContext` (both approaches available from
+just Command Line Tools, no Xcode needed). Diffing/eyeballing the two
+found the real bug: `SVGPath.swift`'s parser loop required every command
+to start with a letter, but SVG allows *implicit repeated commands* - extra
+coordinate pairs after a command letter that reuse it without repeating
+the letter (e.g. `C x1 y1 x2 y2 x y x1 y1 x2 y2 x y` is two curves). Both
+the red and green paths use exactly this to chain a second curve after
+their first `C`, so the parser was silently stopping partway through
+each of those two paths - before the fix their bounding boxes stopped at
+x=10 instead of reaching x=1.02, i.e. roughly the left half of each piece
+was simply never drawn, leaving the ring visibly broken/incomplete
+(matches what David saw). My earlier "polish" pass had only bbox-checked
+the 4 paths, which doesn't catch a mid-path truncation like this - this
+time verified with an actual pixel-level comparison against the
+rasterized reference, confirming an exact visual match after the fix.
+Committed and pushed.

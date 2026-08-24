@@ -1,0 +1,317 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		6213554DA241C31A4BDB5332 /* iosAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */; };
+		02532D850EF85AF5BC5518F6 /* AuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115630066A71E310149E4900 /* AuthConfig.swift */; };
+		C17F51C66A4795433E8DECE1 /* PKCE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EDC0D0601A9C604FD8C204 /* PKCE.swift */; };
+		8F3D5C8B4A65F6DD426F3F05 /* CognitoAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71059E551B44AE8996DE4322 /* CognitoAuthService.swift */; };
+		E22B620A0D8F23B7FE33818C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF9CA6814FB8432197C462 /* LoginView.swift */; };
+		DBF86E7945F6AC909C726AD8 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5200F22D41B0529B7CBC45D /* DashboardView.swift */; };
+		9E2FEBF5877583AF7BCA59DF /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47DE5664F145561A7A7EA8D /* SVGPath.swift */; };
+		DA5ED4BC13A2F3922790F6EA /* GoogleLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */; };
+		0FEFEE82B9672632CF9D3F0F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		65E1BCD0ADA2173986028CFC /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosAppApp.swift; sourceTree = "<group>"; };
+		115630066A71E310149E4900 /* AuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthConfig.swift; sourceTree = "<group>"; };
+		33EDC0D0601A9C604FD8C204 /* PKCE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKCE.swift; sourceTree = "<group>"; };
+		71059E551B44AE8996DE4322 /* CognitoAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CognitoAuthService.swift; sourceTree = "<group>"; };
+		0BAF9CA6814FB8432197C462 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		E5200F22D41B0529B7CBC45D /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		F47DE5664F145561A7A7EA8D /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
+		DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleLogoView.swift; sourceTree = "<group>"; };
+		AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		36E0DF6DF660B32275A6B962 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4113FBD5576D00D7ACF7B4FE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		301FD15DD13C3BCD0FA7B0FA = {
+			isa = PBXGroup;
+			children = (
+				2BB3209B5DA47CBE1EBEE4AD /* iosApp */,
+				8669696DDECE7D35947C270F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8669696DDECE7D35947C270F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				65E1BCD0ADA2173986028CFC /* iosApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2BB3209B5DA47CBE1EBEE4AD /* iosApp */ = {
+			isa = PBXGroup;
+			children = (
+				B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */,
+				CAE9BD2A1D6875EFB1939921 /* Config */,
+				ABAD64D5789378B0319CC24A /* Services */,
+				D8E96A50BD04AE630E450C6D /* Views */,
+				AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */,
+				36E0DF6DF660B32275A6B962 /* Info.plist */,
+			);
+			path = iosApp;
+			sourceTree = "<group>";
+		};
+		CAE9BD2A1D6875EFB1939921 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				115630066A71E310149E4900 /* AuthConfig.swift */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		ABAD64D5789378B0319CC24A /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				33EDC0D0601A9C604FD8C204 /* PKCE.swift */,
+				71059E551B44AE8996DE4322 /* CognitoAuthService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D8E96A50BD04AE630E450C6D /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				0BAF9CA6814FB8432197C462 /* LoginView.swift */,
+				E5200F22D41B0529B7CBC45D /* DashboardView.swift */,
+				DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */,
+				F47DE5664F145561A7A7EA8D /* SVGPath.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C260A3B75E2C285200329450 /* iosApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 29E6C0065510D1C5E916A710 /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildPhases = (
+				F9972831C0BD03A2FB0EE74E /* Sources */,
+				4113FBD5576D00D7ACF7B4FE /* Frameworks */,
+				E9FFA9AF075A68BD2818D809 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iosApp;
+			productName = iosApp;
+			productReference = 65E1BCD0ADA2173986028CFC /* iosApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DE8356BFC19E77B763D2B375 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					C260A3B75E2C285200329450 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = CD58765F8BCD26126CF1AAE1 /* Build configuration list for PBXProject "iosApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 301FD15DD13C3BCD0FA7B0FA;
+			productRefGroup = 8669696DDECE7D35947C270F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C260A3B75E2C285200329450 /* iosApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E9FFA9AF075A68BD2818D809 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FEFEE82B9672632CF9D3F0F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F9972831C0BD03A2FB0EE74E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6213554DA241C31A4BDB5332 /* iosAppApp.swift in Sources */,
+				02532D850EF85AF5BC5518F6 /* AuthConfig.swift in Sources */,
+				C17F51C66A4795433E8DECE1 /* PKCE.swift in Sources */,
+				8F3D5C8B4A65F6DD426F3F05 /* CognitoAuthService.swift in Sources */,
+				E22B620A0D8F23B7FE33818C /* LoginView.swift in Sources */,
+				DBF86E7945F6AC909C726AD8 /* DashboardView.swift in Sources */,
+				DA5ED4BC13A2F3922790F6EA /* GoogleLogoView.swift in Sources */,
+				9E2FEBF5877583AF7BCA59DF /* SVGPath.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		028EC1497AC5FDDD52AEBC4B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		33BA980BB1347B3BCCE95895 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		822C1349D444A20831CF8BDE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.uberconcept.pim;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F05D44726A57D776473502D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.uberconcept.pim;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CD58765F8BCD26126CF1AAE1 /* Build configuration list for PBXProject "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				028EC1497AC5FDDD52AEBC4B /* Debug */,
+				33BA980BB1347B3BCCE95895 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		29E6C0065510D1C5E916A710 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				822C1349D444A20831CF8BDE /* Debug */,
+				F05D44726A57D776473502D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DE8356BFC19E77B763D2B375 /* Project object */;
+}

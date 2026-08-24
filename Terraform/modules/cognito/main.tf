@@ -127,8 +127,10 @@ resource "aws_cognito_user_pool_client" "this" {
   allowed_oauth_scopes                 = ["openid", "email", "profile"]
   supported_identity_providers         = ["Google"]
 
-  callback_urls = ["https://${var.frontend_domain_name}/auth/callback"]
-  logout_urls   = ["https://${var.frontend_domain_name}/login"]
+  # pim://auth/callback is the iOS app's redirect_uri (see iosApp/iosApp/Config/AuthConfig.swift) -
+  # ASWebAuthenticationSession catches it via the CFBundleURLTypes scheme registered in its Info.plist.
+  callback_urls = ["https://${var.frontend_domain_name}/auth/callback", "pim://auth/callback"]
+  logout_urls   = ["https://${var.frontend_domain_name}/login", "pim://auth/callback"]
 
   prevent_user_existence_errors = "ENABLED"
 

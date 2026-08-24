@@ -171,3 +171,23 @@ the 4 `Path(SVGPath.parse(...))` layers with Google's official colors
 (`#4285F4`/`#34A853`/`#FBBC05`/`#EA4335`), scaled to fit its frame. Added
 both new files to `project.pbxproj`'s Views group and Sources build phase;
 re-validated with `plutil -lint`.
+
+### Prompt: "commit and raise the PR"
+
+Committed and pushed `UBE-97/ios-app-shell`, opened
+[PR #86](https://github.com/dcamdupe/pim/pull/86).
+
+### Prompt: "the simulator in xcode fails with no bundle id"
+
+Root cause: `Info.plist` is custom (`GENERATE_INFOPLIST_FILE = NO`), and a
+custom Info.plist doesn't get `CFBundleIdentifier` (or
+`CFBundleExecutable`/`CFBundlePackageType`/etc) auto-injected by Xcode the
+way a generated one does - it needs those keys listed explicitly using the
+usual `$(PRODUCT_BUNDLE_IDENTIFIER)` etc. build-setting substitution, which
+the hand-written file was missing entirely. Added them. Also noticed Xcode
+had created `project.xcworkspace`/`xcuserdata` (per-user state) when David
+opened the project, untracked; added Xcode entries to the root
+`.gitignore` for those (first attempt used
+`*.xcodeproj/project.xcworkspace/`, which turned out to anchor to repo root
+because of its internal slash and didn't match the nested `iosApp/` path -
+fixed with a `**/` prefix). Committed and pushed both fixes.

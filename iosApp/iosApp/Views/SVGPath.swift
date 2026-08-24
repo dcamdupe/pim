@@ -49,10 +49,23 @@ enum SVGPath {
         }
 
         mutating func run() {
+            var lastCommand: Character?
             while true {
                 skipSeparators()
-                guard let cmd = scanner.first, cmd.isLetter else { break }
-                scanner.removeFirst()
+                guard !scanner.isEmpty else { break }
+                let cmd: Character
+                if let c = scanner.first, c.isLetter {
+                    scanner.removeFirst()
+                    cmd = c
+                } else if let last = lastCommand {
+                    // Implicit repeat: extra coordinate pairs after a command reuse it (a
+                    // repeated M/m becomes L/l per the SVG spec) - the Google logo's red and
+                    // green paths both rely on this to chain a second curve after a "C".
+                    cmd = last == "M" ? "L" : (last == "m" ? "l" : last)
+                } else {
+                    break
+                }
+                lastCommand = cmd
                 switch cmd {
                 case "M": moveTo(relative: false)
                 case "m": moveTo(relative: true)

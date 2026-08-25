@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PIM iOS — Dashboard</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg: #f2f4f8;
+    --surface: #ffffff;
+    --surface-2: #f8f9fc;
+    --ink: #171a24;
+    --ink-2: #5b6070;
+    --ink-3: #9093a3;
+    --border: #e7e9f1;
+    --accent: #0f766e;
+    --accent-dark: #0b5c56;
+    --accent-wash: #e3f3f1;
+    --accent-ink: #ffffff;
+    --good: #0ca30c;
+    --warn: #b3760f;
+    --crit: #d03b3b;
+
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+
+    --radius-sm: 10px;
+    --radius: 18px;
+    --radius-lg: 24px;
+    --shadow: 0 1px 2px rgba(23,26,36,0.04), 0 8px 24px -12px rgba(23,26,36,0.10);
+    --display: ui-rounded, "SF Pro Rounded", -apple-system, "Segoe UI", system-ui, sans-serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    --mono: "SFMono-Regular", ui-monospace, Menlo, monospace;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:#e4e7ee; color:var(--ink); font-family:var(--sans);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:18px; padding:40px 16px;
+  }
+  ::selection{ background:var(--accent); color:#fff; }
+
+  .doc-label{
+    font-family:var(--display); font-size:13px; font-weight:700; color:var(--ink-3);
+    text-transform:uppercase; letter-spacing:.06em;
+  }
+
+  /* ================= Device frame ================= */
+  .device{
+    width:393px; height:852px; border-radius:55px; background:#0b0b0d;
+    padding:14px; box-shadow:0 30px 60px -20px rgba(15,20,30,.35), 0 2px 8px rgba(15,20,30,.15);
+    position:relative;
+  }
+  .screen{
+    width:100%; height:100%; border-radius:42px; background:var(--bg);
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+  }
+
+  .statusbar{
+    flex:0 0 auto; height:54px; padding:0 28px; display:flex; align-items:center; justify-content:space-between;
+    font-family:var(--sans); font-size:15px; font-weight:600; color:var(--ink);
+    background:var(--bg); position:relative; z-index:5;
+  }
+  .island{
+    position:absolute; top:11px; left:50%; transform:translateX(-50%);
+    width:100px; height:30px; border-radius:16px; background:#0b0b0d;
+  }
+  .statusbar .icons{ display:flex; align-items:center; gap:5px; }
+
+  /* ================= Nav ================= */
+  .navbar{
+    flex:0 0 auto; padding:2px 20px 0; display:flex; align-items:center; justify-content:space-between;
+  }
+  .navbar .brand{ display:flex; align-items:center; gap:7px; font-family:var(--display); font-weight:800; font-size:13.5px; color:var(--ink-2); }
+  .navbar .brand .mark{
+    width:20px;height:20px;border-radius:6px; background:linear-gradient(135deg, var(--accent), #16a394);
+    display:flex;align-items:center;justify-content:center; color:#fff; font-size:11px; font-weight:800;
+  }
+  .avatar-btn{
+    width:32px;height:32px;border-radius:50%; background:var(--accent-wash); color:var(--accent-dark);
+    display:flex;align-items:center;justify-content:center; font-weight:700; font-size:12.5px;
+    font-family:var(--display); border:none;
+  }
+
+  .large-title{ padding:10px 20px 4px; display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .large-title h1{ font-family:var(--display); font-size:30px; font-weight:800; margin:0 0 3px; letter-spacing:-0.3px; }
+  .large-title .sub{ font-size:13.5px; color:var(--ink-2); }
+  .month-pill{
+    flex:0 0 auto; margin-top:4px; display:flex; align-items:center; gap:4px;
+    font-family:var(--sans); font-size:12.5px; font-weight:600; color:var(--ink-2);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:20px; padding:6px 10px 6px 12px;
+  }
+
+  /* ================= Scroll content ================= */
+  .content{ flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:110px; }
+  .content::-webkit-scrollbar{ display:none; }
+  section[data-tab]{ display:none; }
+  section[data-tab].active{ display:block; }
+
+  .sec-title{ font-family:var(--display); font-size:19px; font-weight:800; margin:0 0 2px; padding:0 20px; }
+  .sec-sub{ font-size:12px; color:var(--ink-3); margin:0 0 12px; padding:0 20px; }
+
+  /* ---------- KPI grid ----------
+     Mirrors the real DashboardTile.vue: kicker + reserved-space delta pill on top,
+     a label, then the value. No icon badge, no sparkline - those were never shipped. */
+  .kpi-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 20px 0; }
+  .kpi{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px 14px 13px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .kpi-top{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .kicker{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-2); }
+  .delta-pill{
+    font-family:var(--mono); font-size:10.5px; padding:3px 7px; border-radius:20px; font-weight:600; white-space:nowrap;
+  }
+  .delta-pill.up{ background:#e6f7e6; color:var(--good); }
+  .delta-pill.down{ background:rgba(211,51,51,.12); color:var(--crit); }
+  .delta-pill.placeholder{ visibility:hidden; }
+  .kpi .label{ font-size:11.5px; color:var(--ink-2); font-weight:600; }
+  .kpi .value{ font-family:var(--display); font-size:21px; font-weight:800; color:var(--ink); }
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:18px 18px 16px; box-shadow:var(--shadow); margin:14px 20px 0;
+  }
+  .card h2{ font-family:var(--display); font-size:15px; font-weight:700; margin:0 0 2px; }
+  .card .card-sub{ font-size:11.5px; color:var(--ink-3); margin-bottom:14px; }
+
+  .doughnut-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .legend{ display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; width:100%; }
+  .legend-row{ display:flex; align-items:center; gap:7px; font-size:11.5px; padding:2px 0; border-radius:8px; }
+  .legend-row.hl{ background:var(--surface-2); }
+  .swatch{ width:8px; height:8px; border-radius:3px; flex:0 0 auto; }
+  .legend-row .lname{ color:var(--ink-2); flex:1; }
+  .legend-row .lpct{ font-family:var(--mono); color:var(--ink); font-weight:700; }
+
+  .bar-legend{ display:flex; gap:14px; margin-bottom:10px; }
+  .bar-legend .item{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2); font-weight:600; }
+  .bar-legend .swatch{ width:9px; height:9px; border-radius:3px; }
+
+  .chip-tip{
+    text-align:center; font-size:11.5px; color:var(--ink); font-weight:600;
+    background:var(--surface-2); border-radius:10px; padding:6px 10px; margin-top:10px;
+    min-height:14px;
+  }
+  .chip-tip b{ font-family:var(--mono); }
+  .doughnut-seg, .bar-seg{ cursor:pointer; }
+
+  /* ---------- Recent transactions ---------- */
+  .recent-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
+  .view-all{ font-family:var(--display); font-size:12px; font-weight:700; color:var(--accent-dark); text-decoration:none; padding-top:2px; }
+  .recent-list{ display:flex; flex-direction:column; }
+  .recent-row{ display:flex; align-items:center; gap:11px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .recent-row:last-child{ border-bottom:none; padding-bottom:2px; }
+  .r-avatar{
+    width:34px; height:34px; border-radius:10px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--display); font-weight:800; font-size:13px; color:var(--ink);
+  }
+  .r-main{ flex:1; min-width:0; }
+  .r-merchant{ font-weight:600; font-size:13.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .r-meta{ font-size:11px; color:var(--ink-3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .r-amount{ font-family:var(--mono); font-weight:700; font-size:13px; text-align:right; flex:0 0 auto; }
+  .r-amount.pos{ color:var(--good); }
+  .chip{
+    display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--ink-2);
+    white-space:nowrap; border:1px solid var(--border); border-radius:20px; padding:3px 8px;
+  }
+  .chip .dot{ width:6px; height:6px; border-radius:50%; flex:0 0 auto; }
+  .chip.muted{ color:var(--ink-3); border-style:dashed; }
+
+  /* ---------- Transactions tab ---------- */
+  .search-row{ padding:10px 20px 0; }
+  .search-field{
+    display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:12px; padding:9px 12px; color:var(--ink-3);
+  }
+  .search-field input{
+    border:none; background:none; outline:none; font:inherit; font-size:14px; color:var(--ink); flex:1; min-width:0;
+  }
+  .chip-scroll{ display:flex; gap:8px; overflow-x:auto; padding:12px 20px; -webkit-overflow-scrolling:touch; }
+  .chip-scroll::-webkit-scrollbar{ display:none; }
+  .filter-chip{
+    flex:0 0 auto; font-family:var(--sans); font-size:12.5px; font-weight:600; white-space:nowrap;
+    padding:7px 13px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
+  }
+  .filter-chip.active{ background:var(--ink); border-color:var(--ink); color:#fff; }
+  .filter-chip.warn{ border-color:var(--warn); color:var(--warn); background:#fdf3e0; border-style:dashed; }
+
+  .tx-list{ margin:6px 20px 0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden; }
+  .tx-row{ display:flex; align-items:center; gap:11px; padding:12px 16px; border-bottom:1px solid var(--border); }
+  .tx-row:last-child{ border-bottom:none; }
+  .tx-main{ flex:1; min-width:0; }
+  .tx-merchant{ font-weight:600; font-size:13.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tx-meta{ font-size:11px; color:var(--ink-3); margin-top:2px; display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .tx-right{ text-align:right; flex:0 0 auto; }
+  .tx-amount{ font-family:var(--mono); font-weight:700; font-size:13.5px; }
+  .tx-amount.pos{ color:var(--good); }
+  .tx-cat{ margin-top:4px; }
+
+  /* ================= Tab bar ================= */
+  .tabbar{
+    position:absolute; left:0; right:0; bottom:0; z-index:6;
+    background:rgba(248,249,252,0.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-top:1px solid var(--border);
+    padding:9px 0 0; display:flex;
+  }
+  .tab-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; padding:0; color:var(--ink-3); font-family:var(--sans);
+  }
+  .tab-item .lbl{ font-size:10px; font-weight:600; }
+  .tab-item.active{ color:var(--accent-dark); }
+  .home-indicator{ width:134px; height:5px; border-radius:3px; background:var(--ink); opacity:.85; margin:9px auto 8px; }
+</style>
+</head>
+<body>
+<div class="doc-label">PIM · iOS App · Dashboard (iPhone 15/16, 393×852pt)</div>
+
+<div class="device">
+  <div class="screen">
+    <div class="statusbar">
+      <span>9:41</span>
+      <div class="island"></div>
+      <div class="icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="none"><rect x="0" y="7" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="4.5" y="5" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="9" y="3" width="3" height="8" rx="0.6" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" rx="0.6" fill="currentColor"/></svg>
+        <svg width="15" height="11" viewBox="0 0 15 11" fill="none"><path d="M7.5 10.2c.5 0 .9-.4.9-.9s-.4-.9-.9-.9-.9.4-.9.9.4.9.9.9zM4.4 6.7a4.4 4.4 0 016.2 0l-1 1a3 3 0 00-4.2 0l-1-1zM2 4.3a7.6 7.6 0 0111 0l-1 1a6.2 6.2 0 00-9 0l-1-1z" fill="currentColor"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".75" y=".75" width="20.5" height="10.5" rx="2.5" stroke="currentColor" stroke-width="1"/><rect x="2" y="2" width="16.5" height="8" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="1.6" height="4" rx="0.8" fill="currentColor"/></svg>
+      </div>
+    </div>
+
+    <div class="navbar">
+      <div class="brand"><span class="mark">P</span>Pim</div>
+      <button class="avatar-btn">DC</button>
+    </div>
+
+    <div class="content">
+      <!-- ================= DASHBOARD ================= -->
+      <section data-tab="dashboard" class="active">
+        <div class="large-title">
+          <div>
+            <h1>Dashboard</h1>
+            <div class="sub">Your financial overview.</div>
+          </div>
+          <button class="month-pill">July 2026
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <!-- 4 tiles matching DashboardTile.vue exactly: kicker, reserved-space delta pill,
+             label, value - no icon badge or sparkline, those aren't part of the shipped tile. -->
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-top">
+              <span class="kicker">Profit</span>
+              <span class="delta-pill up">▲ 12.3%</span>
+            </div>
+            <div class="label">July 2026</div>
+            <div class="value">$1,900</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top">
+              <span class="kicker">Profit</span>
+              <span class="delta-pill placeholder">—</span>
+            </div>
+            <div class="label">Average · last 6 mo</div>
+            <div class="value">$1,375</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top">
+              <span class="kicker">Expenses</span>
+              <span class="delta-pill down">▼ 8.5%</span>
+            </div>
+            <div class="label">July 2026</div>
+            <div class="value">$4,300</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-top">
+              <span class="kicker">Expenses</span>
+              <span class="delta-pill placeholder">—</span>
+            </div>
+            <div class="label">Average · last 6 mo</div>
+            <div class="value">$4,700</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Spending by category</h2>
+          <div class="card-sub">July 2026 · $4,300 total</div>
+          <div class="doughnut-wrap">
+            <svg id="doughnut" width="150" height="150" viewBox="0 0 168 168"></svg>
+            <div class="legend" id="legend"></div>
+          </div>
+          <div class="chip-tip" id="doughnut-tip">Tap a slice or category</div>
+        </div>
+
+        <div class="card">
+          <h2>Income vs. expenses</h2>
+          <div class="card-sub">Last 6 months</div>
+          <div class="bar-legend">
+            <div class="item"><span class="swatch" style="background:var(--s1)"></span>Income</div>
+            <div class="item"><span class="swatch" style="background:var(--s2)"></span>Expenses</div>
+          </div>
+          <svg id="barchart" width="100%" height="160" viewBox="0 0 337 160" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="chip-tip" id="bar-tip">Tap a bar for the exact amount</div>
+        </div>
+
+        <div class="card">
+          <div class="recent-head">
+            <h2>Recent transactions</h2>
+            <a class="view-all" href="#" id="view-all-link">View all →</a>
+          </div>
+          <div class="recent-list" id="recent-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= TRANSACTIONS ================= -->
+      <section data-tab="transactions">
+        <div class="large-title">
+          <div>
+            <h1>Transactions</h1>
+            <div class="sub">3 entries need a category</div>
+          </div>
+        </div>
+
+        <div class="search-row">
+          <div class="search-field">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            <input type="search" placeholder="Search description" />
+          </div>
+        </div>
+        <div class="chip-scroll">
+          <div class="filter-chip warn">3 need a category</div>
+        </div>
+
+        <div class="tx-list" id="tx-list"></div>
+      </section>
+    </div>
+
+    <div class="tabbar">
+      <button class="tab-item active" data-tab="dashboard">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 12l9-8 9 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="lbl">Dashboard</span>
+      </button>
+      <button class="tab-item" data-tab="transactions">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="3.5" cy="6" r="1.5" fill="currentColor"/><circle cx="3.5" cy="12" r="1.5" fill="currentColor"/><circle cx="3.5" cy="18" r="1.5" fill="currentColor"/></svg>
+        <span class="lbl">Transactions</span>
+      </button>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+
+function switchTab(tab){
+  document.querySelectorAll('section[data-tab]').forEach(s=> s.classList.toggle('active', s.dataset.tab===tab));
+  document.querySelectorAll('.tab-item').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelector('.content').scrollTop = 0;
+}
+document.querySelectorAll('.tab-item').forEach(b=> b.addEventListener('click', ()=> switchTab(b.dataset.tab)));
+document.getElementById('view-all-link').addEventListener('click', (e)=>{ e.preventDefault(); switchTab('transactions'); });
+
+function hexToRgba(hex, a){
+  const v = hex.replace('#','');
+  const r = parseInt(v.substring(0,2),16), g = parseInt(v.substring(2,4),16), b = parseInt(v.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function polar(cx,cy,r,angle){ const a=(angle-90)*Math.PI/180; return {x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)}; }
+// Ported from SpendingByCategoryChart.vue's wedgePath() - a filled wedge (outer arc, radial line
+// in, inner arc back, radial line out), so segments touch with no gap/rounded cap between them.
+function wedgePath(cx,cy,rOuter,rInner,start,end){
+  const outerStart=polar(cx,cy,rOuter,start), outerEnd=polar(cx,cy,rOuter,end);
+  const innerEnd=polar(cx,cy,rInner,end), innerStart=polar(cx,cy,rInner,start);
+  const large = end-start<=180 ? 0 : 1;
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${rOuter} ${rOuter} 0 ${large} 1 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerEnd.x} ${innerEnd.y}`,
+    `A ${rInner} ${rInner} 0 ${large} 0 ${innerStart.x} ${innerStart.y}`,
+    'Z',
+  ].join(' ');
+}
+
+const spendData = [
+  { label:'Housing',       value:2100, pct:34, hex:'#2a78d6' },
+  { label:'Groceries',     value: 990, pct:16, hex:'#eb6834' },
+  { label:'Transport',     value: 680, pct:11, hex:'#1baf7a' },
+  { label:'Dining',        value: 560, pct: 9, hex:'#eda100' },
+  { label:'Shopping',      value: 495, pct: 8, hex:'#e87ba4' },
+  { label:'Utilities',     value: 495, pct: 8, hex:'#008300' },
+  { label:'Entertainment', value: 434, pct: 7, hex:'#4a3aa7' },
+  { label:'Other',         value: 434, pct: 7, hex:'#e34948' },
+];
+
+const doughnutTip = document.getElementById('doughnut-tip');
+function setDoughnutTip(d){
+  doughnutTip.innerHTML = d ? `${d.label} &nbsp;<b>$${d.value.toLocaleString()}</b> · ${d.pct}%` : 'Tap a slice or category';
+}
+function highlightCategory(label){
+  document.querySelectorAll('.legend-row').forEach(r=> r.classList.toggle('hl', r.dataset.label===label));
+}
+
+(function buildDoughnut(){
+  // Exact geometry from SpendingByCategoryChart.vue (CX/CY/R/THICKNESS, 168x168 viewBox) - the
+  // <svg> element's own width/height (150) just scales the whole thing down to fit the card.
+  const svg = document.getElementById('doughnut');
+  const cx=84, cy=84, r=64, thickness=24, rOuter=r+thickness/2, rInner=r-thickness/2;
+  let acc = 0;
+  spendData.forEach(d=>{
+    const sweep = d.pct*3.6;
+    const start = acc, end = acc+sweep;
+    acc += sweep;
+    const path = document.createElementNS(NS,'path');
+    path.setAttribute('d', wedgePath(cx,cy,rOuter,rInner,start,end));
+    path.setAttribute('fill', d.hex);
+    path.setAttribute('class','doughnut-seg');
+    path.addEventListener('click', ()=>{ setDoughnutTip(d); highlightCategory(d.label); });
+    svg.appendChild(path);
+  });
+  const t1 = document.createElementNS(NS,'text');
+  t1.setAttribute('x',cx); t1.setAttribute('y',cy-2); t1.setAttribute('text-anchor','middle');
+  t1.setAttribute('font-family','-apple-system,system-ui,sans-serif');
+  t1.setAttribute('font-weight','800'); t1.setAttribute('font-size','21'); t1.setAttribute('fill','#171a24');
+  t1.textContent = '$4,300';
+  svg.appendChild(t1);
+  const t2 = document.createElementNS(NS,'text');
+  t2.setAttribute('x',cx); t2.setAttribute('y',cy+16); t2.setAttribute('text-anchor','middle');
+  t2.setAttribute('font-family','-apple-system,system-ui,sans-serif');
+  t2.setAttribute('font-size','10.5'); t2.setAttribute('fill','#9093a3'); t2.setAttribute('font-weight','600');
+  t2.textContent = 'July 2026';
+  svg.appendChild(t2);
+
+  const legend = document.getElementById('legend');
+  spendData.forEach(d=>{
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    row.dataset.label = d.label;
+    row.innerHTML = `<span class="swatch" style="background:${d.hex}"></span><span class="lname">${d.label}</span><span class="lpct">${d.pct}%</span>`;
+    row.addEventListener('click', ()=>{ setDoughnutTip(d); highlightCategory(d.label); });
+    legend.appendChild(row);
+  });
+})();
+
+const flowData = [
+  { m:'Feb', income:6200, expense:4800 },
+  { m:'Mar', income:6200, expense:5100 },
+  { m:'Apr', income:6450, expense:4600 },
+  { m:'May', income:6200, expense:5400 },
+  { m:'Jun', income:6800, expense:4900 },
+  { m:'Jul', income:6200, expense:4300 },
+];
+const barTip = document.getElementById('bar-tip');
+
+function barPath(x,yBase,yTop,w,r){
+  const h=yBase-yTop; if(h<=0) return '';
+  r = Math.min(r, w/2, h);
+  return `M ${x} ${yBase} L ${x} ${yTop+r} Q ${x} ${yTop} ${x+r} ${yTop} L ${x+w-r} ${yTop} Q ${x+w} ${yTop} ${x+w} ${yTop+r} L ${x+w} ${yBase} Z`;
+}
+
+(function buildBars(){
+  const svg = document.getElementById('barchart');
+  const W=337,H=160, padL=28, padR=6, padT=8, padB=22;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const maxVal=7000;
+  const groupW=plotW/flowData.length;
+  const barW=12, barGap=2.5;
+
+  [0,1750,3500,5250,7000].forEach(v=>{
+    const y = padT+plotH-(v/maxVal)*plotH;
+    const line = document.createElementNS(NS,'line');
+    line.setAttribute('x1',padL); line.setAttribute('x2',W-padR);
+    line.setAttribute('y1',y); line.setAttribute('y2',y);
+    line.setAttribute('stroke','#e7e9f1'); line.setAttribute('stroke-width','1');
+    svg.appendChild(line);
+    const t = document.createElementNS(NS,'text');
+    t.setAttribute('x',padL-6); t.setAttribute('y',y+3); t.setAttribute('text-anchor','end');
+    t.setAttribute('font-size','9'); t.setAttribute('font-family','-apple-system,system-ui,sans-serif');
+    t.setAttribute('fill','#9093a3');
+    t.textContent = v===0 ? '0' : (v/1000)+'k';
+    svg.appendChild(t);
+  });
+
+  flowData.forEach((d,idx)=>{
+    const gx = padL + idx*groupW + groupW/2;
+    const yBase = padT+plotH;
+    [['income',d.income,'#2a78d6',-1],['expense',d.expense,'#eb6834',1]].forEach(([key,val,color,dir])=>{
+      const x = gx + dir*(barGap/2) + (dir<0 ? -barW : 0);
+      const yTop = padT+plotH-(val/maxVal)*plotH;
+      const path = document.createElementNS(NS,'path');
+      path.setAttribute('d', barPath(x,yBase,yTop,barW,4));
+      path.setAttribute('fill', color);
+      path.setAttribute('class','bar-seg');
+      path.addEventListener('click', ()=>{ barTip.innerHTML = `${d.m} ${key} &nbsp;<b>$${val.toLocaleString()}</b>`; });
+      svg.appendChild(path);
+    });
+    const lbl = document.createElementNS(NS,'text');
+    lbl.setAttribute('x',gx); lbl.setAttribute('y',H-6); lbl.setAttribute('text-anchor','middle');
+    lbl.setAttribute('font-size','10'); lbl.setAttribute('font-family','ui-rounded,-apple-system,system-ui,sans-serif');
+    lbl.setAttribute('font-weight','700'); lbl.setAttribute('fill','#5b6070');
+    lbl.textContent = d.m;
+    svg.appendChild(lbl);
+  });
+})();
+
+const categories = ['Housing','Groceries','Transport','Dining','Shopping','Utilities','Entertainment','Income','Other'];
+const catColor = {
+  Housing:'#2a78d6', Groceries:'#eb6834', Transport:'#1baf7a', Dining:'#eda100',
+  Shopping:'#e87ba4', Utilities:'#008300', Entertainment:'#4a3aa7', Other:'#e34948', Income:'#0f766e',
+};
+const txns = [
+  { date:'Jul 28', merchant:'Whole Foods Market', acct:'Checking ·4821', amount:-86.42, category:'Groceries' },
+  { date:'Jul 27', merchant:'Shell Gas Station', acct:'Credit Card ·0093', amount:-54.10, category:'Transport' },
+  { date:'Jul 26', merchant:'Netflix', acct:'Credit Card ·0093', amount:-15.99, category:'Entertainment' },
+  { date:'Jul 25', merchant:'ACME Corp Payroll', acct:'Checking ·4821', amount:3100.00, category:'Income' },
+  { date:'Jul 24', merchant:'Blue Bottle Coffee', acct:'Credit Card ·0093', amount:-6.75, category:null },
+  { date:'Jul 23', merchant:'Comcast Xfinity', acct:'Checking ·4821', amount:-89.99, category:'Utilities' },
+  { date:'Jul 22', merchant:'Amazon Marketplace', acct:'Credit Card ·0093', amount:-142.33, category:'Shopping' },
+  { date:'Jul 21', merchant:"Trader Joe's", acct:'Checking ·4821', amount:-61.20, category:'Groceries' },
+  { date:'Jul 20', merchant:'Uber', acct:'Credit Card ·0093', amount:-23.50, category:null },
+  { date:'Jul 18', merchant:'City Rent LLC', acct:'Checking ·4821', amount:-2100.00, category:'Housing' },
+  { date:'Jul 17', merchant:'Steam Games', acct:'Credit Card ·0093', amount:-29.99, category:null },
+  { date:'Jul 15', merchant:'ACME Corp Payroll', acct:'Checking ·4821', amount:3100.00, category:'Income' },
+];
+function fmtAmount(amount){
+  return (amount>0?'+':'−') + '$' + Math.abs(amount).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+(function buildRecent(){
+  const list = document.getElementById('recent-list');
+  txns.slice(0,5).forEach(t=>{
+    const row = document.createElement('div');
+    row.className = 'recent-row';
+    const initial = t.merchant.charAt(0);
+    const catChip = t.category
+      ? `<span class="chip"><span class="dot" style="background:${catColor[t.category]}"></span>${t.category}</span>`
+      : `<span class="chip muted">Uncategorized</span>`;
+    const avatarBg = t.category ? hexToRgba(catColor[t.category], .16) : 'var(--surface-2)';
+    row.innerHTML = `
+      <div class="r-avatar" style="background:${avatarBg}">${initial}</div>
+      <div class="r-main">
+        <div class="r-merchant">${t.merchant}</div>
+        <div class="r-meta">${t.date} · ${t.acct} · ${t.category ? t.category : 'Uncategorized'}</div>
+      </div>
+      <div class="r-amount ${t.amount>0?'pos':''}">${fmtAmount(t.amount)}</div>
+    `;
+    list.appendChild(row);
+  });
+})();
+
+(function buildTxList(){
+  const list = document.getElementById('tx-list');
+  txns.forEach(t=>{
+    const row = document.createElement('div');
+    row.className = 'tx-row';
+    const catChip = t.category
+      ? `<span class="chip"><span class="dot" style="background:${catColor[t.category]}"></span>${t.category}</span>`
+      : `<span class="chip muted">+ Add category</span>`;
+    row.innerHTML = `
+      <div class="tx-main">
+        <div class="tx-merchant">${t.merchant}</div>
+        <div class="tx-meta"><span>${t.date}</span><span>·</span><span>${t.acct}</span></div>
+        <div class="tx-cat">${catChip}</div>
+      </div>
+      <div class="tx-right"><div class="tx-amount ${t.amount>0?'pos':''}">${fmtAmount(t.amount)}</div></div>
+    `;
+    list.appendChild(row);
+  });
+})();
+
+</script>
+</body>
+</html>

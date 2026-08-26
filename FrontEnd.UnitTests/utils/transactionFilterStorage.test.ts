@@ -14,6 +14,7 @@ const filters: TransactionFiltersState = {
   category: 'Dining',
   needsCategoryOnly: true,
   amountSign: 'negative',
+  hideIgnored: false,
 }
 
 describe('transactionFilterStorage', () => {
@@ -77,6 +78,12 @@ describe('transactionFilterStorage', () => {
 
     it('returns null when amountSign is not a recognised option', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, amountSign: 'zero' }))
+
+      expect(loadStoredTransactionFilters()).toBeNull()
+    })
+
+    it('returns null when hideIgnored is not a boolean', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, hideIgnored: 'yes' }))
 
       expect(loadStoredTransactionFilters()).toBeNull()
     })

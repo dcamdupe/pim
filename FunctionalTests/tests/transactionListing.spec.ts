@@ -195,7 +195,7 @@ test.describe('Transaction listing', () => {
     // accurate count - scoped to this test's own rows via the runId search, since other tests'
     // leftover (never-cleaned-up) transactions also contribute to the count otherwise.
     await page.getByLabel('Search description').fill(String(runId));
-    const needsToggle = page.locator('.chip-toggle');
+    const needsToggle = page.locator('.chip-toggle', { hasText: 'need a category' });
     await expect(needsToggle.locator('.chip-toggle-count')).toHaveText('1');
     await needsToggle.click();
     await expect(page.getByText(salaryDesc)).toBeVisible();

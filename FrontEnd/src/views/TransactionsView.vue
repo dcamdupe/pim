@@ -67,6 +67,7 @@ const selectedAccount = ref(queryFilters ? '' : storedFilters?.account ?? '')
 const selectedCategory = ref(queryFilters?.category ?? storedFilters?.category ?? '')
 const needsCategoryOnly = ref(queryFilters ? false : storedFilters?.needsCategoryOnly ?? false)
 const selectedAmountSign = ref<AmountSign>(queryFilters ? '' : storedFilters?.amountSign ?? '')
+const hideIgnored = ref(queryFilters ? false : storedFilters?.hideIgnored ?? false)
 
 if (queryFilters) {
   saveTransactionFilters({
@@ -76,6 +77,7 @@ if (queryFilters) {
     category: selectedCategory.value,
     needsCategoryOnly: needsCategoryOnly.value,
     amountSign: selectedAmountSign.value,
+    hideIgnored: hideIgnored.value,
   })
 }
 
@@ -102,13 +104,21 @@ const searchedAndCategorised = computed(() =>
     category: selectedCategory.value,
     needsCategoryOnly: false,
     amountSign: selectedAmountSign.value,
+    hideIgnored: false,
   }),
 )
 // Ignored transactions never get (or need) a category, so they don't count towards "needs a category".
 const needsCategoryCount = computed(() => searchedAndCategorised.value.filter((t) => !t.category && !t.ignore).length)
-const filteredTransactions = computed(() =>
-  needsCategoryOnly.value ? searchedAndCategorised.value.filter((t) => !t.category && !t.ignore) : searchedAndCategorised.value,
-)
+const filteredTransactions = computed(() => {
+  let result = searchedAndCategorised.value
+  if (hideIgnored.value) {
+    result = result.filter((t) => !t.ignore)
+  }
+  if (needsCategoryOnly.value) {
+    result = result.filter((t) => !t.category && !t.ignore)
+  }
+  return result
+})
 // Renders only the first page of the (already fully-loaded, single-API-call) filtered set - the
 // scrollObserver below grows visibleCount as the sentinel after the table comes into view.
 const visibleTransactions = computed(() => filteredTransactions.value.slice(0, visibleCount.value))
@@ -254,7 +264,7 @@ watch(scrollSentinel, (el, previousEl) => {
     scrollObserver?.observe(el)
   }
 })
-watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCategoryOnly, selectedAmountSign], () => {
+watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCategoryOnly, selectedAmountSign, hideIgnored], () => {
   visibleCount.value = TRANSACTIONS_PAGE_SIZE
   saveTransactionFilters({
     range: selectedRange.value,
@@ -263,6 +273,7 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
     category: selectedCategory.value,
     needsCategoryOnly: needsCategoryOnly.value,
     amountSign: selectedAmountSign.value,
+    hideIgnored: hideIgnored.value,
   })
 })
 </script>
@@ -305,6 +316,14 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
         @click="needsCategoryOnly = !needsCategoryOnly"
       >
         <span class="chip-toggle-count">{{ needsCategoryCount }}</span> need a category
+      </button>
+      <button
+        type="button"
+        class="chip-toggle"
+        :class="{ active: hideIgnored }"
+        @click="hideIgnored = !hideIgnored"
+      >
+        Hide ignored
       </button>
       <div class="filter-bar-actions">
         <button type="button" class="export-button" :disabled="filteredTransactions.length === 0" @click="exportCsv">Export</button>

@@ -26,6 +26,7 @@ export interface TransactionFiltersState {
   category: string
   needsCategoryOnly: boolean
   amountSign: AmountSign
+  hideIgnored: boolean
 }
 
 function isTransactionFiltersState(value: unknown): value is TransactionFiltersState {
@@ -39,7 +40,8 @@ function isTransactionFiltersState(value: unknown): value is TransactionFiltersS
     typeof v.account === 'string' &&
     typeof v.category === 'string' &&
     typeof v.needsCategoryOnly === 'boolean' &&
-    isAmountSign(v.amountSign)
+    isAmountSign(v.amountSign) &&
+    typeof v.hideIgnored === 'boolean'
   )
 }
 

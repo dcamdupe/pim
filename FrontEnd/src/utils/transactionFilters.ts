@@ -8,6 +8,7 @@ export interface TransactionFilters {
   category: string
   needsCategoryOnly: boolean
   amountSign: AmountSign
+  hideIgnored: boolean
 }
 
 // account/category are the empty string for "All accounts"/"All categories" (no filtering on
@@ -27,6 +28,9 @@ export function filterTransactions(transactions: Transaction[], filters: Transac
     }
     // Ignored transactions never get (or need) a category, so they shouldn't count as "needing" one.
     if (filters.needsCategoryOnly && (t.category || t.ignore)) {
+      return false
+    }
+    if (filters.hideIgnored && t.ignore) {
       return false
     }
     if (filters.amountSign === 'positive' && t.amount <= 0) {

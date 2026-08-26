@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { filterTransactions, type TransactionFilters } from '../../FrontEnd/src/utils/transactionFilters'
 import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
-const noFilters: TransactionFilters = { search: '', account: '', category: '', needsCategoryOnly: false, amountSign: '' }
+const noFilters: TransactionFilters = { search: '', account: '', category: '', needsCategoryOnly: false, amountSign: '', hideIgnored: false }
 
 const transactions: Transaction[] = [
   { account: 'Everyday', date: '2026-07-01', description: 'Coffee Shop', category: 'Dining', amount: -4.5, ignore: null },
@@ -72,9 +72,16 @@ describe('filterTransactions', () => {
       category: '',
       needsCategoryOnly: true,
       amountSign: '',
+      hideIgnored: false,
     })
 
     expect(result).toEqual([transactions[3]])
+  })
+
+  it('filters out ignored transactions when hideIgnored is set', () => {
+    const result = filterTransactions(transactions, { ...noFilters, hideIgnored: true })
+
+    expect(result).toEqual([transactions[0], transactions[1], transactions[2], transactions[3]])
   })
 
   it('returns an empty array when nothing matches', () => {

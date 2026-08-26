@@ -63,6 +63,13 @@ test.describe('Ignoring transactions', () => {
     // The unrelated row is untouched.
     await expect(otherRow.locator('.chip')).toHaveCount(0);
 
+    // "Hide ignored" removes the ignored row from the listing, and the unrelated row stays visible.
+    await page.getByRole('button', { name: 'Hide ignored' }).click();
+    await expect(row).toHaveCount(0);
+    await expect(otherRow).toBeVisible();
+    await page.getByRole('button', { name: 'Hide ignored' }).click();
+    await expect(row.locator('.chip')).toHaveText('Ignore');
+
     // Unignore again - the "Ignore" indicator clears.
     await row.getByRole('button', { name: `Actions for ${desc}` }).click();
     await expect(row.getByRole('menuitem', { name: 'Unignore' })).toBeVisible();

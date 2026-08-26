@@ -44,7 +44,7 @@ resource "aws_lambda_function" "pre_signup" {
   function_name = "${var.application}-${var.environment}-cognito-pre-signup"
   role          = aws_iam_role.pre_signup.arn
   handler       = "pre_signup.handler"
-  runtime       = "nodejs20.x"
+  runtime       = "nodejs22.x"
   timeout       = 5
   memory_size   = 128
 

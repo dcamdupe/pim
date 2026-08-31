@@ -253,7 +253,9 @@ item.
 
 > commit and raise PR
 
-Committed the work and opened the PR against `main`.
+Committed as `507d167`, pushed, opened PR #89 against `main`:
+https://github.com/dcamdupe/pim/pull/89 (excludes the pre-existing
+`UserInterfaceState.xcuserstate` churn).
 
 ## Handoff
 

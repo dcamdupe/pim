@@ -37,6 +37,10 @@
 		A1B000020000000000000009 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000009 /* TransactionRow.swift */; };
 		A1B00002000000000000000A /* CategoryPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A00002000000000000000A /* CategoryPickerSheet.swift */; };
 		A1B00002000000000000000B /* ApplyToSimilarSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A00002000000000000000B /* ApplyToSimilarSheet.swift */; };
+		A1B000030000000000000001 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000030000000000000001 /* KeychainStore.swift */; };
+		A1B000030000000000000002 /* BiometricAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000030000000000000002 /* BiometricAuth.swift */; };
+		A1B000030000000000000003 /* SessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000030000000000000003 /* SessionController.swift */; };
+		A1B000030000000000000004 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000030000000000000004 /* RootView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -72,6 +76,10 @@
 		A1A000020000000000000009 /* TransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRow.swift; sourceTree = "<group>"; };
 		A1A00002000000000000000A /* CategoryPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerSheet.swift; sourceTree = "<group>"; };
 		A1A00002000000000000000B /* ApplyToSimilarSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyToSimilarSheet.swift; sourceTree = "<group>"; };
+		A1A000030000000000000001 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		A1A000030000000000000002 /* BiometricAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuth.swift; sourceTree = "<group>"; };
+		A1A000030000000000000003 /* SessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionController.swift; sourceTree = "<group>"; };
+		A1A000030000000000000004 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -186,6 +194,9 @@
 				33EDC0D0601A9C604FD8C204 /* PKCE.swift */,
 				71059E551B44AE8996DE4322 /* CognitoAuthService.swift */,
 				A1A000010000000000000003 /* PimApiClient.swift */,
+				A1A000030000000000000001 /* KeychainStore.swift */,
+				A1A000030000000000000002 /* BiometricAuth.swift */,
+				A1A000030000000000000003 /* SessionController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -194,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				0BAF9CA6814FB8432197C462 /* LoginView.swift */,
+				A1A000030000000000000004 /* RootView.swift */,
 				A1A000020000000000000006 /* AppTabView.swift */,
 				A1C000010000000000000003 /* Dashboard */,
 				A1C000020000000000000011 /* Transactions */,
@@ -301,6 +313,10 @@
 				A1B000020000000000000009 /* TransactionRow.swift in Sources */,
 				A1B00002000000000000000A /* CategoryPickerSheet.swift in Sources */,
 				A1B00002000000000000000B /* ApplyToSimilarSheet.swift in Sources */,
+				A1B000030000000000000001 /* KeychainStore.swift in Sources */,
+				A1B000030000000000000002 /* BiometricAuth.swift in Sources */,
+				A1B000030000000000000003 /* SessionController.swift in Sources */,
+				A1B000030000000000000004 /* RootView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

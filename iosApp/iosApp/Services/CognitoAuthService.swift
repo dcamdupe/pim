@@ -1,13 +1,14 @@
 import AuthenticationServices
 import UIKit
 
-struct CognitoSession {
+struct CognitoSession: Equatable {
     let idToken: String
     let refreshToken: String
 }
 
 enum GoogleLoginError: Error {
     case failed
+    case refreshFailed
 }
 
 // Drives the Cognito Hosted UI's Google sign-in via ASWebAuthenticationSession, ported from
@@ -42,6 +43,34 @@ final class CognitoAuthService: NSObject {
         }
 
         return try await exchangeCodeForTokens(code: code, verifier: verifier)
+    }
+
+    // Cognito's refresh grant returns a fresh id token but not a new refresh token - the original
+    // is reused until it expires (30 days, the pool default). Mirrors FrontEnd's
+    // cognitoAuthService.ts `refreshCognitoToken`. Used by the biometric unlock on launch (UBE-105).
+    func refreshSession(refreshToken: String) async throws -> CognitoSession {
+        var request = URLRequest(url: URL(string: "https://\(AuthConfig.cognitoDomain)/oauth2/token")!)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        var body = URLComponents()
+        body.queryItems = [
+            URLQueryItem(name: "grant_type", value: "refresh_token"),
+            URLQueryItem(name: "client_id", value: AuthConfig.clientId),
+            URLQueryItem(name: "refresh_token", value: refreshToken),
+        ]
+        request.httpBody = body.percentEncodedQuery?.data(using: .utf8)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw GoogleLoginError.refreshFailed
+        }
+
+        struct RefreshResponse: Decodable {
+            let id_token: String
+        }
+        let decoded = try JSONDecoder().decode(RefreshResponse.self, from: data)
+        return CognitoSession(idToken: decoded.id_token, refreshToken: refreshToken)
     }
 
     private func authenticate(authorizeURL: URL) async throws -> URL {

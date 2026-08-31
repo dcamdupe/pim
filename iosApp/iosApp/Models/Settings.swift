@@ -9,12 +9,12 @@ struct Settings: Decodable {
     let minTransactionDate: String?
 }
 
-struct Account: Decodable {
+struct Account: Codable, Equatable {
     let name: String
     let type: String
 }
 
-struct CategoryDefinition: Decodable {
+struct CategoryDefinition: Codable, Equatable {
     let name: String
     let colour: String
     let type: String

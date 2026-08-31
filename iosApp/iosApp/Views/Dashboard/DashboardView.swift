@@ -1,18 +1,18 @@
 import SwiftUI
 
-// The dashboard screen (UBE-102), matching docs/design/dashboard-mockup-ios.html. Data comes from
-// GET /transactions + GET /settings; every metric is computed locally (DashboardViewModel), so the
-// month picker recomputes without a refetch.
+// The dashboard screen (UBE-102), matching docs/design/dashboard-mockup-ios.html. Reads the shared
+// TransactionsStore / SettingsStore (UBE-103); every metric is computed locally
+// (DashboardViewModel), so the month picker recomputes without a refetch.
 struct DashboardView: View {
-    let session: CognitoSession
     var onSignOut: (() -> Void)?
 
     @StateObject private var viewModel: DashboardViewModel
 
-    init(session: CognitoSession, onSignOut: (() -> Void)? = nil) {
-        self.session = session
+    init(transactionsStore: TransactionsStore, settingsStore: SettingsStore, onSignOut: (() -> Void)? = nil) {
         self.onSignOut = onSignOut
-        _viewModel = StateObject(wrappedValue: DashboardViewModel(idToken: session.idToken))
+        _viewModel = StateObject(wrappedValue: DashboardViewModel(
+            transactionsStore: transactionsStore, settingsStore: settingsStore
+        ))
     }
 
     var body: some View {
@@ -220,5 +220,8 @@ struct DashboardView: View {
 }
 
 #Preview {
-    DashboardView(session: CognitoSession(idToken: "preview", refreshToken: "preview"))
+    DashboardView(
+        transactionsStore: TransactionsStore(idToken: "preview"),
+        settingsStore: SettingsStore(idToken: "preview")
+    )
 }

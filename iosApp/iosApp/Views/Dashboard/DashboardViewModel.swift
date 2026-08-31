@@ -1,7 +1,9 @@
+import Combine
 import Foundation
 
-// Loads transactions + settings once, then recomputes every dashboard metric locally when the
-// month picker changes (no refetch) - same model as FrontEnd's DashboardView.vue.
+// Holds the selected month + load state and derives every dashboard metric from the shared
+// TransactionsStore / SettingsStore (UBE-103) - same model as FrontEnd's DashboardView.vue, which
+// reads the shared Pinia stores. Changing the month recomputes locally, no refetch.
 @MainActor
 final class DashboardViewModel: ObservableObject {
     enum LoadState: Equatable {
@@ -19,19 +21,34 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
-    private let api: PimApiClient
-    private var transactions: [Transaction] = []
-    private var categories: [CategoryDefinition] = []
-    private var minTransactionDate: CalDate?
+    private let transactionsStore: TransactionsStore
+    private let settingsStore: SettingsStore
+    private var cancellables: Set<AnyCancellable> = []
 
     private static let monthDefaultsKey = "pim.dashboard.month"
 
-    init(idToken: String, api: PimApiClient? = nil) {
-        self.api = api ?? PimApiClient(idToken: idToken)
+    init(transactionsStore: TransactionsStore, settingsStore: SettingsStore) {
+        self.transactionsStore = transactionsStore
+        self.settingsStore = settingsStore
         let today = DashboardMetrics.today()
         let stored = UserDefaults.standard.string(forKey: Self.monthDefaultsKey)
         self.selectedMonthKey = stored
             ?? DashboardMetrics.monthKey(year: today.year, month0: today.month - 1)
+
+        // Re-publish whenever the shared stores change (e.g. a category edit on the transactions
+        // screen) so the derived metrics below refresh.
+        transactionsStore.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+        settingsStore.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+    }
+
+    private var transactions: [Transaction] { transactionsStore.transactions }
+
+    private var minTransactionDate: CalDate? {
+        settingsStore.minTransactionDate.flatMap(DashboardMetrics.parseTransactionDate)
     }
 
     var referenceMonth: CalDate {
@@ -69,28 +86,26 @@ final class DashboardViewModel: ObservableObject {
         Array(DashboardMetrics.computeRecentTransactions(transactions).prefix(5))
     }
 
-    // Settings lookup with the shared fallback, matching categoriesService.ts + the components'
-    // FALLBACK_COLOR.
     func categoryColor(_ name: String) -> String? {
-        categories.first { $0.name == name }?.colour
+        settingsStore.categoryColor(name)
     }
 
     func load() async {
-        state = .loading
+        if !transactions.isEmpty {
+            state = .loaded
+        } else {
+            state = .loading
+        }
         do {
-            async let transactionsCall = api.getTransactions()
-            async let settingsCall = api.getSettings()
-            let (fetchedTransactions, settings) = try await (transactionsCall, settingsCall)
-
-            transactions = fetchedTransactions
-            categories = settings.categories
-            minTransactionDate = settings.minTransactionDate.flatMap(DashboardMetrics.parseTransactionDate)
+            async let transactionsCall: Void = transactionsStore.load()
+            async let settingsCall: Void = settingsStore.load()
+            _ = try await (transactionsCall, settingsCall)
             clampSelectedMonthToAvailable()
             state = .loaded
         } catch PimApiError.unauthorized {
             state = .sessionExpired
         } catch {
-            state = .failed
+            state = transactions.isEmpty ? .failed : .loaded
         }
     }
 

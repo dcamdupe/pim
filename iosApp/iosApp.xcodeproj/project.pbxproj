@@ -26,6 +26,17 @@
 		A1B000010000000000000008 /* SpendingByCategoryChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000008 /* SpendingByCategoryChart.swift */; };
 		A1B000010000000000000009 /* IncomeVsExpensesChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000009 /* IncomeVsExpensesChart.swift */; };
 		A1B0000100000000000000A0 /* RecentTransactionsList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A0000100000000000000A0 /* RecentTransactionsList.swift */; };
+		A1B000020000000000000001 /* TransactionDescriptionStat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000001 /* TransactionDescriptionStat.swift */; };
+		A1B000020000000000000002 /* TransactionsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000002 /* TransactionsStore.swift */; };
+		A1B000020000000000000003 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000003 /* SettingsStore.swift */; };
+		A1B000020000000000000004 /* DescriptionMatching.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000004 /* DescriptionMatching.swift */; };
+		A1B000020000000000000005 /* TransactionFilters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000005 /* TransactionFilters.swift */; };
+		A1B000020000000000000006 /* AppTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000006 /* AppTabView.swift */; };
+		A1B000020000000000000007 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000007 /* TransactionsView.swift */; };
+		A1B000020000000000000008 /* TransactionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000008 /* TransactionsViewModel.swift */; };
+		A1B000020000000000000009 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000020000000000000009 /* TransactionRow.swift */; };
+		A1B00002000000000000000A /* CategoryPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A00002000000000000000A /* CategoryPickerSheet.swift */; };
+		A1B00002000000000000000B /* ApplyToSimilarSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A00002000000000000000B /* ApplyToSimilarSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +61,17 @@
 		A1A000010000000000000008 /* SpendingByCategoryChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingByCategoryChart.swift; sourceTree = "<group>"; };
 		A1A000010000000000000009 /* IncomeVsExpensesChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomeVsExpensesChart.swift; sourceTree = "<group>"; };
 		A1A0000100000000000000A0 /* RecentTransactionsList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentTransactionsList.swift; sourceTree = "<group>"; };
+		A1A000020000000000000001 /* TransactionDescriptionStat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDescriptionStat.swift; sourceTree = "<group>"; };
+		A1A000020000000000000002 /* TransactionsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsStore.swift; sourceTree = "<group>"; };
+		A1A000020000000000000003 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		A1A000020000000000000004 /* DescriptionMatching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescriptionMatching.swift; sourceTree = "<group>"; };
+		A1A000020000000000000005 /* TransactionFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionFilters.swift; sourceTree = "<group>"; };
+		A1A000020000000000000006 /* AppTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabView.swift; sourceTree = "<group>"; };
+		A1A000020000000000000007 /* TransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsView.swift; sourceTree = "<group>"; };
+		A1A000020000000000000008 /* TransactionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsViewModel.swift; sourceTree = "<group>"; };
+		A1A000020000000000000009 /* TransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRow.swift; sourceTree = "<group>"; };
+		A1A00002000000000000000A /* CategoryPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerSheet.swift; sourceTree = "<group>"; };
+		A1A00002000000000000000B /* ApplyToSimilarSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyToSimilarSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +108,7 @@
 				CAE9BD2A1D6875EFB1939921 /* Config */,
 				A1C000010000000000000001 /* Models */,
 				ABAD64D5789378B0319CC24A /* Services */,
+				A1C000020000000000000010 /* Stores */,
 				A1C000010000000000000002 /* Utils */,
 				D8E96A50BD04AE630E450C6D /* Views */,
 				AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */,
@@ -99,6 +122,7 @@
 			children = (
 				A1A000010000000000000001 /* Transaction.swift */,
 				A1A000010000000000000002 /* Settings.swift */,
+				A1A000020000000000000001 /* TransactionDescriptionStat.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -107,8 +131,31 @@
 			isa = PBXGroup;
 			children = (
 				A1A000010000000000000004 /* DashboardMetrics.swift */,
+				A1A000020000000000000004 /* DescriptionMatching.swift */,
+				A1A000020000000000000005 /* TransactionFilters.swift */,
 			);
 			path = Utils;
+			sourceTree = "<group>";
+		};
+		A1C000020000000000000010 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000020000000000000002 /* TransactionsStore.swift */,
+				A1A000020000000000000003 /* SettingsStore.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		A1C000020000000000000011 /* Transactions */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000020000000000000007 /* TransactionsView.swift */,
+				A1A000020000000000000008 /* TransactionsViewModel.swift */,
+				A1A000020000000000000009 /* TransactionRow.swift */,
+				A1A00002000000000000000A /* CategoryPickerSheet.swift */,
+				A1A00002000000000000000B /* ApplyToSimilarSheet.swift */,
+			);
+			path = Transactions;
 			sourceTree = "<group>";
 		};
 		A1C000010000000000000003 /* Dashboard */ = {
@@ -147,7 +194,9 @@
 			isa = PBXGroup;
 			children = (
 				0BAF9CA6814FB8432197C462 /* LoginView.swift */,
+				A1A000020000000000000006 /* AppTabView.swift */,
 				A1C000010000000000000003 /* Dashboard */,
+				A1C000020000000000000011 /* Transactions */,
 				DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */,
 				F47DE5664F145561A7A7EA8D /* SVGPath.swift */,
 			);
@@ -241,6 +290,17 @@
 				A1B000010000000000000008 /* SpendingByCategoryChart.swift in Sources */,
 				A1B000010000000000000009 /* IncomeVsExpensesChart.swift in Sources */,
 				A1B0000100000000000000A0 /* RecentTransactionsList.swift in Sources */,
+				A1B000020000000000000001 /* TransactionDescriptionStat.swift in Sources */,
+				A1B000020000000000000002 /* TransactionsStore.swift in Sources */,
+				A1B000020000000000000003 /* SettingsStore.swift in Sources */,
+				A1B000020000000000000004 /* DescriptionMatching.swift in Sources */,
+				A1B000020000000000000005 /* TransactionFilters.swift in Sources */,
+				A1B000020000000000000006 /* AppTabView.swift in Sources */,
+				A1B000020000000000000007 /* TransactionsView.swift in Sources */,
+				A1B000020000000000000008 /* TransactionsViewModel.swift in Sources */,
+				A1B000020000000000000009 /* TransactionRow.swift in Sources */,
+				A1B00002000000000000000A /* CategoryPickerSheet.swift in Sources */,
+				A1B00002000000000000000B /* ApplyToSimilarSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

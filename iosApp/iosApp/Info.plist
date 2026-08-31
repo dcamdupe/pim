@@ -22,6 +22,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleDisplayName</key>
 	<string>PIM</string>
+	<!-- Shown in the Face ID permission prompt the first time the app unlocks a stored session
+	     (UBE-105). Touch ID devices use the localizedReason passed to LAContext instead. -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>PIM uses Face ID to unlock your saved session.</string>
 	<!-- Must match AuthConfig.redirectUri's scheme - Cognito redirects here after Google sign-in
 	     completes, and ASWebAuthenticationSession needs it registered to catch that redirect. -->
 	<key>CFBundleURLTypes</key>

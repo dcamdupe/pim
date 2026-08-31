@@ -6,6 +6,9 @@ enum AuthConfig {
     static let cognitoDomain = "pim-production.auth.ap-southeast-2.amazoncognito.com"
     static let clientId = "2cacasgfpel52naggi8fmn991a"
 
+    // The PIM Api base URL, matching FrontEnd/.env.production's VITE_API_BASE_URL.
+    static let apiBaseUrl = "https://pim-api.uberconcept.com"
+
     // Custom URL scheme registered in Info.plist's CFBundleURLTypes, used as the Hosted UI's
     // redirect_uri so ASWebAuthenticationSession can catch the callback. Must also be added to
     // Terraform/modules/cognito/main.tf's callback_urls for Cognito to accept it.

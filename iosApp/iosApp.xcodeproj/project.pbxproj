@@ -16,6 +16,16 @@
 		9E2FEBF5877583AF7BCA59DF /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47DE5664F145561A7A7EA8D /* SVGPath.swift */; };
 		DA5ED4BC13A2F3922790F6EA /* GoogleLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */; };
 		0FEFEE82B9672632CF9D3F0F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */; };
+		A1B000010000000000000001 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000001 /* Transaction.swift */; };
+		A1B000010000000000000002 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000002 /* Settings.swift */; };
+		A1B000010000000000000003 /* PimApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000003 /* PimApiClient.swift */; };
+		A1B000010000000000000004 /* DashboardMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000004 /* DashboardMetrics.swift */; };
+		A1B000010000000000000005 /* DashboardTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000005 /* DashboardTheme.swift */; };
+		A1B000010000000000000006 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000006 /* DashboardViewModel.swift */; };
+		A1B000010000000000000007 /* DashboardTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000007 /* DashboardTile.swift */; };
+		A1B000010000000000000008 /* SpendingByCategoryChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000008 /* SpendingByCategoryChart.swift */; };
+		A1B000010000000000000009 /* IncomeVsExpensesChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000009 /* IncomeVsExpensesChart.swift */; };
+		A1B0000100000000000000A0 /* RecentTransactionsList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A0000100000000000000A0 /* RecentTransactionsList.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +40,16 @@
 		DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleLogoView.swift; sourceTree = "<group>"; };
 		AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		36E0DF6DF660B32275A6B962 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1A000010000000000000001 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
+		A1A000010000000000000002 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		A1A000010000000000000003 /* PimApiClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PimApiClient.swift; sourceTree = "<group>"; };
+		A1A000010000000000000004 /* DashboardMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardMetrics.swift; sourceTree = "<group>"; };
+		A1A000010000000000000005 /* DashboardTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardTheme.swift; sourceTree = "<group>"; };
+		A1A000010000000000000006 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+		A1A000010000000000000007 /* DashboardTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardTile.swift; sourceTree = "<group>"; };
+		A1A000010000000000000008 /* SpendingByCategoryChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingByCategoryChart.swift; sourceTree = "<group>"; };
+		A1A000010000000000000009 /* IncomeVsExpensesChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomeVsExpensesChart.swift; sourceTree = "<group>"; };
+		A1A0000100000000000000A0 /* RecentTransactionsList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentTransactionsList.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,12 +84,45 @@
 			children = (
 				B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */,
 				CAE9BD2A1D6875EFB1939921 /* Config */,
+				A1C000010000000000000001 /* Models */,
 				ABAD64D5789378B0319CC24A /* Services */,
+				A1C000010000000000000002 /* Utils */,
 				D8E96A50BD04AE630E450C6D /* Views */,
 				AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */,
 				36E0DF6DF660B32275A6B962 /* Info.plist */,
 			);
 			path = iosApp;
+			sourceTree = "<group>";
+		};
+		A1C000010000000000000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000010000000000000001 /* Transaction.swift */,
+				A1A000010000000000000002 /* Settings.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A1C000010000000000000002 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000010000000000000004 /* DashboardMetrics.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
+		A1C000010000000000000003 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				E5200F22D41B0529B7CBC45D /* DashboardView.swift */,
+				A1A000010000000000000005 /* DashboardTheme.swift */,
+				A1A000010000000000000006 /* DashboardViewModel.swift */,
+				A1A000010000000000000007 /* DashboardTile.swift */,
+				A1A000010000000000000008 /* SpendingByCategoryChart.swift */,
+				A1A000010000000000000009 /* IncomeVsExpensesChart.swift */,
+				A1A0000100000000000000A0 /* RecentTransactionsList.swift */,
+			);
+			path = Dashboard;
 			sourceTree = "<group>";
 		};
 		CAE9BD2A1D6875EFB1939921 /* Config */ = {
@@ -85,6 +138,7 @@
 			children = (
 				33EDC0D0601A9C604FD8C204 /* PKCE.swift */,
 				71059E551B44AE8996DE4322 /* CognitoAuthService.swift */,
+				A1A000010000000000000003 /* PimApiClient.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -93,7 +147,7 @@
 			isa = PBXGroup;
 			children = (
 				0BAF9CA6814FB8432197C462 /* LoginView.swift */,
-				E5200F22D41B0529B7CBC45D /* DashboardView.swift */,
+				A1C000010000000000000003 /* Dashboard */,
 				DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */,
 				F47DE5664F145561A7A7EA8D /* SVGPath.swift */,
 			);
@@ -177,6 +231,16 @@
 				DBF86E7945F6AC909C726AD8 /* DashboardView.swift in Sources */,
 				DA5ED4BC13A2F3922790F6EA /* GoogleLogoView.swift in Sources */,
 				9E2FEBF5877583AF7BCA59DF /* SVGPath.swift in Sources */,
+				A1B000010000000000000001 /* Transaction.swift in Sources */,
+				A1B000010000000000000002 /* Settings.swift in Sources */,
+				A1B000010000000000000003 /* PimApiClient.swift in Sources */,
+				A1B000010000000000000004 /* DashboardMetrics.swift in Sources */,
+				A1B000010000000000000005 /* DashboardTheme.swift in Sources */,
+				A1B000010000000000000006 /* DashboardViewModel.swift in Sources */,
+				A1B000010000000000000007 /* DashboardTile.swift in Sources */,
+				A1B000010000000000000008 /* SpendingByCategoryChart.swift in Sources */,
+				A1B000010000000000000009 /* IncomeVsExpensesChart.swift in Sources */,
+				A1B0000100000000000000A0 /* RecentTransactionsList.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

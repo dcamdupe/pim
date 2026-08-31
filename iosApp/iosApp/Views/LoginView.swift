@@ -43,7 +43,7 @@ struct LoginView: View {
                 .stroke(Color(.separator), lineWidth: 1)
         )
         .fullScreenCover(item: $session) { session in
-            DashboardView(session: session, onSignOut: { self.session = nil })
+            AppTabView(session: session, onSignOut: { self.session = nil })
         }
     }
 

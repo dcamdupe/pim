@@ -197,3 +197,12 @@ a real device:
 
 Not done (deliberate, see Scope): transparent refresh on a mid-session 401,
 non-biometric passcode fallback, persisting the id token itself.
+
+### Prompt 4
+
+> commit and raise PR
+
+Committed as `8501916`, pushed. Opened PR #90
+(https://github.com/dcamdupe/pim/pull/90), stacked on #89
+(`base: UBE-103/ios-app-transaction-screen`) - retarget to `main` once #89
+merges. Excludes the pre-existing `UserInterfaceState.xcuserstate` churn.

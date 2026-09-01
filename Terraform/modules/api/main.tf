@@ -42,6 +42,12 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# Lets the Lambda publish trace segments to X-Ray (needed for tracing_config below).
+resource "aws_iam_role_policy_attachment" "lambda_xray" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
 data "aws_iam_policy_document" "dynamodb_access" {
   statement {
     sid    = "TableAccess"
@@ -98,6 +104,11 @@ resource "aws_lambda_function" "api" {
       CognitoSettings__Authority   = var.cognito_authority
       CognitoSettings__AppClientId = var.cognito_app_client_id
     }
+  }
+
+  # One X-Ray segment per invocation (UBE-104); no in-process SDK, so no downstream subsegments.
+  tracing_config {
+    mode = "Active"
   }
 
   tags = local.common_tags

@@ -199,6 +199,28 @@ DNS itself is created by hand, not by Terraform - after `apply`, point your DNS 
 - `pim.uberconcept.com` → the `frontend_cloudfront_domain_name` output (CNAME/ALIAS)
 - `pim-api.uberconcept.com` → the `api_custom_domain_target` output (CNAME/ALIAS)
 
+## Observability (UBE-104)
+
+The API Lambda has **X-Ray active tracing** (`modules/api/main.tf`'s
+`tracing_config { mode = "Active" }` + the `AWSXRayDaemonWriteAccess` managed policy). Lambda
+emits one trace segment per invocation; see them in the **X-Ray** / **CloudWatch → Application
+Signals → Traces** console - request duration over time, cold starts, and error/fault/throttle
+rate, with a trace map node for the function.
+
+What it does **not** show, and why:
+
+- **No DynamoDB (or other downstream) subsegments.** That needs an in-process tracer. The AWS
+  X-Ray SDK for .NET doesn't support AWS SDK for .NET v4 (which `Pim.Api` uses) and is entering
+  maintenance mode; adding downstream spans would mean the ADOT/OpenTelemetry Lambda layer,
+  which was ruled out on cost/cold-start grounds. Per-op DynamoDB latency is still logged as
+  `elapsedMs` by `DynamoDbRepository` - query it in CloudWatch Logs Insights.
+- **No API Gateway segment.** HTTP APIs (`apigatewayv2`) don't support X-Ray; the trace starts
+  at the Lambda. The gateway hop is covered by API Gateway's free CloudWatch metrics.
+
+Cost: **$0** at this app's volume - X-Ray's free tier is 100k traces recorded/month, and this is
+a single-user app. If volume ever climbs, set a billing alarm; there's no sampling rule
+configured (Lambda's default applies).
+
 ## Deploying the app
 
 Once the infrastructure exists (first `apply` done), `.github/workflows/deploy.yml` is how the

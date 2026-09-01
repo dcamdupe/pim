@@ -185,6 +185,14 @@ Implemented (Terraform only):
 
 No `Pim.Api` code, no packages, no test changes. Ready for a Terraform apply.
 
+### Prompt 6
+
+> tidy up the comments, no more than 1 line / commit and raise PR
+
+Trimmed the two `main.tf` comments to one line each (fuller rationale stays in
+`Terraform/README.md`). Committed and opened PR #91
+(https://github.com/dcamdupe/pim/pull/91) against `main`.
+
 ## Handoff
 
 1. Merge the PR, then run **`terraform.yml` with `action: apply`** (production).

@@ -7,15 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6213554DA241C31A4BDB5332 /* iosAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */; };
 		02532D850EF85AF5BC5518F6 /* AuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115630066A71E310149E4900 /* AuthConfig.swift */; };
-		C17F51C66A4795433E8DECE1 /* PKCE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EDC0D0601A9C604FD8C204 /* PKCE.swift */; };
-		8F3D5C8B4A65F6DD426F3F05 /* CognitoAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71059E551B44AE8996DE4322 /* CognitoAuthService.swift */; };
-		E22B620A0D8F23B7FE33818C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF9CA6814FB8432197C462 /* LoginView.swift */; };
-		DBF86E7945F6AC909C726AD8 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5200F22D41B0529B7CBC45D /* DashboardView.swift */; };
-		9E2FEBF5877583AF7BCA59DF /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47DE5664F145561A7A7EA8D /* SVGPath.swift */; };
-		DA5ED4BC13A2F3922790F6EA /* GoogleLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */; };
 		0FEFEE82B9672632CF9D3F0F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */; };
+		6213554DA241C31A4BDB5332 /* iosAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */; };
+		8F3D5C8B4A65F6DD426F3F05 /* CognitoAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71059E551B44AE8996DE4322 /* CognitoAuthService.swift */; };
+		9E2FEBF5877583AF7BCA59DF /* SVGPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = F47DE5664F145561A7A7EA8D /* SVGPath.swift */; };
 		A1B000010000000000000001 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000001 /* Transaction.swift */; };
 		A1B000010000000000000002 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000002 /* Settings.swift */; };
 		A1B000010000000000000003 /* PimApiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000010000000000000003 /* PimApiClient.swift */; };
@@ -41,20 +37,19 @@
 		A1B000030000000000000002 /* BiometricAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000030000000000000002 /* BiometricAuth.swift */; };
 		A1B000030000000000000003 /* SessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000030000000000000003 /* SessionController.swift */; };
 		A1B000030000000000000004 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000030000000000000004 /* RootView.swift */; };
+		C17F51C66A4795433E8DECE1 /* PKCE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EDC0D0601A9C604FD8C204 /* PKCE.swift */; };
+		DA5ED4BC13A2F3922790F6EA /* GoogleLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */; };
+		DBF86E7945F6AC909C726AD8 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5200F22D41B0529B7CBC45D /* DashboardView.swift */; };
+		E22B620A0D8F23B7FE33818C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF9CA6814FB8432197C462 /* LoginView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		65E1BCD0ADA2173986028CFC /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosAppApp.swift; sourceTree = "<group>"; };
+		0BAF9CA6814FB8432197C462 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		115630066A71E310149E4900 /* AuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthConfig.swift; sourceTree = "<group>"; };
 		33EDC0D0601A9C604FD8C204 /* PKCE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKCE.swift; sourceTree = "<group>"; };
-		71059E551B44AE8996DE4322 /* CognitoAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CognitoAuthService.swift; sourceTree = "<group>"; };
-		0BAF9CA6814FB8432197C462 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		E5200F22D41B0529B7CBC45D /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		F47DE5664F145561A7A7EA8D /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
-		DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleLogoView.swift; sourceTree = "<group>"; };
-		AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		36E0DF6DF660B32275A6B962 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		65E1BCD0ADA2173986028CFC /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		71059E551B44AE8996DE4322 /* CognitoAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CognitoAuthService.swift; sourceTree = "<group>"; };
 		A1A000010000000000000001 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		A1A000010000000000000002 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		A1A000010000000000000003 /* PimApiClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PimApiClient.swift; sourceTree = "<group>"; };
@@ -80,6 +75,11 @@
 		A1A000030000000000000002 /* BiometricAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuth.swift; sourceTree = "<group>"; };
 		A1A000030000000000000003 /* SessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionController.swift; sourceTree = "<group>"; };
 		A1A000030000000000000004 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosAppApp.swift; sourceTree = "<group>"; };
+		DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleLogoView.swift; sourceTree = "<group>"; };
+		E5200F22D41B0529B7CBC45D /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		F47DE5664F145561A7A7EA8D /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,22 +93,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		301FD15DD13C3BCD0FA7B0FA = {
-			isa = PBXGroup;
-			children = (
-				2BB3209B5DA47CBE1EBEE4AD /* iosApp */,
-				8669696DDECE7D35947C270F /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		8669696DDECE7D35947C270F /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				65E1BCD0ADA2173986028CFC /* iosApp.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		2BB3209B5DA47CBE1EBEE4AD /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
@@ -123,6 +107,22 @@
 				36E0DF6DF660B32275A6B962 /* Info.plist */,
 			);
 			path = iosApp;
+			sourceTree = "<group>";
+		};
+		301FD15DD13C3BCD0FA7B0FA = {
+			isa = PBXGroup;
+			children = (
+				2BB3209B5DA47CBE1EBEE4AD /* iosApp */,
+				8669696DDECE7D35947C270F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8669696DDECE7D35947C270F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				65E1BCD0ADA2173986028CFC /* iosApp.app */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		A1C000010000000000000001 /* Models */ = {
@@ -143,6 +143,20 @@
 				A1A000020000000000000005 /* TransactionFilters.swift */,
 			);
 			path = Utils;
+			sourceTree = "<group>";
+		};
+		A1C000010000000000000003 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				E5200F22D41B0529B7CBC45D /* DashboardView.swift */,
+				A1A000010000000000000005 /* DashboardTheme.swift */,
+				A1A000010000000000000006 /* DashboardViewModel.swift */,
+				A1A000010000000000000007 /* DashboardTile.swift */,
+				A1A000010000000000000008 /* SpendingByCategoryChart.swift */,
+				A1A000010000000000000009 /* IncomeVsExpensesChart.swift */,
+				A1A0000100000000000000A0 /* RecentTransactionsList.swift */,
+			);
+			path = Dashboard;
 			sourceTree = "<group>";
 		};
 		A1C000020000000000000010 /* Stores */ = {
@@ -166,28 +180,6 @@
 			path = Transactions;
 			sourceTree = "<group>";
 		};
-		A1C000010000000000000003 /* Dashboard */ = {
-			isa = PBXGroup;
-			children = (
-				E5200F22D41B0529B7CBC45D /* DashboardView.swift */,
-				A1A000010000000000000005 /* DashboardTheme.swift */,
-				A1A000010000000000000006 /* DashboardViewModel.swift */,
-				A1A000010000000000000007 /* DashboardTile.swift */,
-				A1A000010000000000000008 /* SpendingByCategoryChart.swift */,
-				A1A000010000000000000009 /* IncomeVsExpensesChart.swift */,
-				A1A0000100000000000000A0 /* RecentTransactionsList.swift */,
-			);
-			path = Dashboard;
-			sourceTree = "<group>";
-		};
-		CAE9BD2A1D6875EFB1939921 /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				115630066A71E310149E4900 /* AuthConfig.swift */,
-			);
-			path = Config;
-			sourceTree = "<group>";
-		};
 		ABAD64D5789378B0319CC24A /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -199,6 +191,14 @@
 				A1A000030000000000000003 /* SessionController.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		CAE9BD2A1D6875EFB1939921 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				115630066A71E310149E4900 /* AuthConfig.swift */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		D8E96A50BD04AE630E450C6D /* Views */ = {
@@ -389,6 +389,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PR94W54U2G;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
@@ -413,6 +414,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PR94W54U2G;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
@@ -433,20 +435,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CD58765F8BCD26126CF1AAE1 /* Build configuration list for PBXProject "iosApp" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				028EC1497AC5FDDD52AEBC4B /* Debug */,
-				33BA980BB1347B3BCCE95895 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		29E6C0065510D1C5E916A710 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				822C1349D444A20831CF8BDE /* Debug */,
 				F05D44726A57D776473502D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CD58765F8BCD26126CF1AAE1 /* Build configuration list for PBXProject "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				028EC1497AC5FDDD52AEBC4B /* Debug */,
+				33BA980BB1347B3BCCE95895 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

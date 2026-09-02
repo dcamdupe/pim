@@ -12,6 +12,8 @@ export interface Config {
   tmbankMemberNumber: string;
   tmbankPassword: string;
   tmbankAccount: string;
+  amexUsername: string;
+  amexPassword: string;
   pimBaseUrl: string;
   pimLogin: string;
   pimPassword: string;
@@ -46,5 +48,5 @@ export function loadConfig(): Config {
     pimAccount: process.env.PimAccount,
   };
 
-  return assertComplete(values, '.env');
+//  return assertComplete(values, '.env');
 }

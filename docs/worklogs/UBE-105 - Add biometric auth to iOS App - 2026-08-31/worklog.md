@@ -225,4 +225,4 @@ Re-landed onto a fresh branch **`UBE-105/ios-biometric-auth-v2`** off current
 squash matched the branch for everything else), so those files were checked out
 verbatim onto the new branch - no conflicts. Host `swiftc -typecheck` (Keychain
 / Biometric / Session via stub) + `-parse` (views) still pass; `plutil -lint`
-OK. New PR against `main`.
+OK. Opened PR #92 (https://github.com/dcamdupe/pim/pull/92) against `main`.

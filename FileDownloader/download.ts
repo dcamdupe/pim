@@ -8,11 +8,10 @@ import { PimClient } from './pim';
 async function main() {
   const config = loadConfig();
 
-  // Each downloader's export is filed under that bank's own account name (config.<bank>Account),
-  // reused as the PIM account name.
+  // Each downloader's export is filed under that bank's configured PIM account name.
   const jobs: { downloader: Downloader; pimAccount: string }[] = [
-    { downloader: new WestpacDownloader(), pimAccount: config.westpacAccount },
-    { downloader: new TmbankDownloader(), pimAccount: config.tmbankAccount },
+    { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
+    { downloader: new TmbankDownloader(), pimAccount: config.tmbankPimAccount },
   ];
 
   const startDate = process.env.StartDate;

@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Pim.Api.Auth;
 using Pim.Api.Data;
 using Pim.Api.Repository;
 using Pim.Api.Services;
@@ -31,7 +33,10 @@ public sealed class TransactionsController : ControllerBase
         _users = users;
     }
 
+    // Also accepts an X-Api-Key credential (see ApiKeyAuthenticationHandler) so headless clients
+    // like FileDownloader can upload without the interactive Google/Cognito login flow.
     [HttpPost("transactions/file")]
+    [Authorize(AuthenticationSchemes = $"{JwtBearerDefaults.AuthenticationScheme},{ApiKeyAuthenticationHandler.SchemeName}")]
     public async Task<IActionResult> UploadFile([FromForm] UploadTransactionsRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Account) || request.File.Length == 0)

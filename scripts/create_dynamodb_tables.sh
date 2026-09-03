@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Creates the DynamoDB Local tables the Api needs (User, TransactionMonth,
-# TransactionDescriptions, DescriptionMapping) if they don't already exist. Idempotent.
+# TransactionDescriptions, DescriptionMapping, ApiKey) if they don't already exist. Idempotent.
 set -euo pipefail
 
 DYNAMO_ENDPOINT="${DYNAMO_ENDPOINT:-http://localhost:8000}"
 DYNAMO_REGION="${DYNAMO_REGION:-us-east-1}"
-TABLES=(User TransactionMonth TransactionDescriptions DescriptionMapping)
+TABLES=(User TransactionMonth TransactionDescriptions DescriptionMapping ApiKey)
 
 export AWS_ACCESS_KEY_ID=local
 export AWS_SECRET_ACCESS_KEY=local

@@ -64,6 +64,7 @@ data "aws_iam_policy_document" "dynamodb_access" {
       var.transaction_dynamodb_table_arn,
       var.transaction_descriptions_dynamodb_table_arn,
       var.description_mapping_dynamodb_table_arn,
+      var.api_key_dynamodb_table_arn,
     ]
   }
 }

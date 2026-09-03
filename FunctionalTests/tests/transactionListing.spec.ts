@@ -300,8 +300,14 @@ test.describe('Expanded date filters (UBE-78)', () => {
     const lastFinancialYearDate = new Date(currentFinancialYearStart - 1, 11, 15); // ~mid-December of last FY
     const lastFinancialYearDesc = `UBE78 LastFY ${runId}`;
 
-    // Inside the *current* financial year - must not show under "Last financial year".
-    const currentFinancialYearDate = new Date(currentFinancialYearStart, 6, 15); // ~mid-July of the current FY
+    // Inside the *current* financial year - must not show under "Last financial year". Picked
+    // relative to today so it never lands in targetMonthDate's month: mid-July is only distinct
+    // from "2 months ago" outside Aug-Oct, so in the Jul-Dec half of the year use the current
+    // month instead (still current FY, never 2 months back).
+    const currentFinancialYearDate =
+      today.getMonth() >= 6
+        ? new Date(today.getFullYear(), today.getMonth(), 28)
+        : new Date(currentFinancialYearStart, 6, 15);
     const currentFinancialYearDesc = `UBE78 CurrentFY ${runId}`;
 
     const qif =

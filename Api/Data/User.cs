@@ -14,4 +14,8 @@ public sealed class User
     public List<Category> Categories { get; set; } = [];
 
     public DateOnly? MinTransactionDate { get; set; }
+
+    // The user's current API key (also stored as an ApiKey row, keyed by the value). Null until
+    // one is generated via POST /settings/api.
+    public string? ApiKey { get; set; }
 }

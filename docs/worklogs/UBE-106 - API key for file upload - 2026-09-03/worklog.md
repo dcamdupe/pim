@@ -125,7 +125,7 @@ without a Google token.
 - [x] `dotnet build` green; `Api.UnitTests` green (90); FrontEnd build + unit tests green (210)
 - [ ] `dotnet test` (integration) — needs local DynamoDB with the new `ApiKey` table; run
       `source scripts/setup_local.sh` then `dotnet test`
-- [ ] PR raised
+- [x] PR raised — https://github.com/dcamdupe/pim/pull/93 (commit `2780400`)
 
 ## Follow-ups / notes for David
 

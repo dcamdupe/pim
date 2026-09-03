@@ -15,8 +15,7 @@ export interface Config {
   amexUsername: string;
   amexPassword: string;
   pimBaseUrl: string;
-  pimLogin: string;
-  pimPassword: string;
+  pimApiKey: string;
   pimAccount: string;
 }
 
@@ -43,8 +42,7 @@ export function loadConfig(): Config {
     tmbankPassword: process.env.TmbankPassword,
     tmbankAccount: process.env.TmbankAccount,
     pimBaseUrl: process.env.BaseUrl,
-    pimLogin: process.env.PimLogin,
-    pimPassword: process.env.PimPassword,
+    pimApiKey: process.env.PimApiKey,
     pimAccount: process.env.PimAccount,
   };
 

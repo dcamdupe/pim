@@ -10,7 +10,7 @@ EndDate="$(date +%d/%m/%Y)"
 if date -v-5d +%d/%m/%Y >/dev/null 2>&1; then
   StartDate="$(date -v-5d +%d/%m/%Y)"
 else
-  StartDate="$(date -d '-5 days' +%d/%m/%Y)"
+  StartDate="$(date -d '-20 days' +%d/%m/%Y)"
 fi
 
 StartDate="$StartDate" EndDate="$EndDate" npx tsx download.ts

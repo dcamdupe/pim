@@ -16,7 +16,6 @@ export interface Config {
   amexPassword: string;
   pimBaseUrl: string;
   pimApiKey: string;
-  pimAccount: string;
 }
 
 // Fails fast (naming every missing one) rather than letting a blank value silently reach
@@ -43,7 +42,6 @@ export function loadConfig(): Config {
     tmbankAccount: process.env.TmbankAccount,
     pimBaseUrl: process.env.BaseUrl,
     pimApiKey: process.env.PimApiKey,
-    pimAccount: process.env.PimAccount,
   };
 
   return assertComplete(values, '.env');

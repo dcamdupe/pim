@@ -5,10 +5,15 @@ import { TmbankDownloader } from './downloaders/tmbank';
 import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
 
-const downloaders: Downloader[] = [new WestpacDownloader(), new TmbankDownloader()];
-
 async function main() {
   const config = loadConfig();
+
+  // Each downloader's export is filed under that bank's own account name (config.<bank>Account),
+  // reused as the PIM account name.
+  const jobs: { downloader: Downloader; pimAccount: string }[] = [
+    { downloader: new WestpacDownloader(), pimAccount: config.westpacAccount },
+    { downloader: new TmbankDownloader(), pimAccount: config.tmbankAccount },
+  ];
 
   const startDate = process.env.StartDate;
   const endDate = process.env.EndDate;
@@ -20,14 +25,14 @@ async function main() {
 
   const pim = new PimClient(config);
 
-  for (const downloader of downloaders) {
+  for (const { downloader, pimAccount } of jobs) {
     console.log(`Running ${downloader.constructor.name}`);
     const savedPath = await downloader.download(config, startDate, endDate);
     const { size } = fs.statSync(savedPath);
     console.log(`Saved: ${savedPath} (${size} bytes)`);
 
-    await pim.uploadFile(savedPath);
-    console.log(`Uploaded to PIM account: ${config.pimAccount}`);
+    await pim.uploadFile(savedPath, pimAccount);
+    console.log(`Uploaded to PIM account: ${pimAccount}`);
   }
 }
 

@@ -11,6 +11,7 @@ function makeSettings(overrides: Partial<Settings> = {}): Settings {
     accounts: [{ name: 'Everyday', type: 'Transaction' }],
     categories: [{ name: 'Dining', colour: '#eda100', type: 'Expense' }],
     minTransactionDate: '2020-01-01',
+    apiKey: null,
     ...overrides,
   }
 }
@@ -115,6 +116,31 @@ describe('useSettingsStore', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
+  it('load() caches the API key returned by the service', async () => {
+    vi.spyOn(settingsService, 'getSettings').mockResolvedValue(makeSettings({ apiKey: 'key-abc' }))
+
+    const store = useSettingsStore()
+    await store.load()
+
+    expect(store.apiKey).toBe('key-abc')
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
+    expect(stored.apiKey).toBe('key-abc')
+  })
+
+  it('regenerateApiKey() stores the new key and persists it', async () => {
+    vi.spyOn(settingsService, 'getSettings').mockResolvedValue(makeSettings({ apiKey: 'old-key' }))
+    const generateSpy = vi.spyOn(settingsService, 'generateApiKey').mockResolvedValue('new-key')
+    const store = useSettingsStore()
+    await store.load()
+
+    await store.regenerateApiKey()
+
+    expect(generateSpy).toHaveBeenCalledTimes(1)
+    expect(store.apiKey).toBe('new-key')
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
+    expect(stored.apiKey).toBe('new-key')
+  })
+
   it('clear() resets state and removes the localStorage cache', async () => {
     vi.spyOn(settingsService, 'getSettings').mockResolvedValue(makeSettings())
     const store = useSettingsStore()
@@ -125,6 +151,7 @@ describe('useSettingsStore', () => {
     expect(store.accounts).toEqual([])
     expect(store.categories).toEqual([])
     expect(store.minTransactionDate).toBeNull()
+    expect(store.apiKey).toBeNull()
     expect(store.loadedAt).toBeNull()
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })

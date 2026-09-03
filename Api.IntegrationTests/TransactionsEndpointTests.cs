@@ -37,6 +37,7 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
     private readonly List<string> _seededMonthIds = [];
+    private readonly List<string> _seededApiKeys = [];
 
     public TransactionsEndpointTests(ApiWebApplicationFactory factory)
     {
@@ -74,6 +75,12 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
 
         var transactionDescriptions = scope.ServiceProvider.GetRequiredService<IRepository<TransactionDescriptions>>();
         await transactionDescriptions.DeleteAsync(_email);
+
+        var apiKeys = scope.ServiceProvider.GetRequiredService<IRepository<ApiKey>>();
+        foreach (var key in _seededApiKeys)
+        {
+            await apiKeys.DeleteAsync(key);
+        }
     }
 
     [Fact]
@@ -468,6 +475,42 @@ public sealed class TransactionsEndpointTests : IClassFixture<ApiWebApplicationF
         var response = await client.PutAsJsonAsync("/transactions", new List<Transaction>());
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_File_SucceedsWithAValidApiKey_AndNoBearerToken()
+    {
+        var apiKey = await SeedApiKey();
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(ApiKeyAuthenticationHandler.HeaderName, apiKey);
+        using var content = BuildMultipartContent("Everyday", ValidQif);
+
+        var response = await client.PostAsync("/transactions/file", content);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        _seededMonthIds.Add(TransactionMonth.BuildId(_email, 2026, 6));
+    }
+
+    [Fact]
+    public async Task Post_File_IsRejected_WithAnUnknownApiKey()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add(ApiKeyAuthenticationHandler.HeaderName, "not-a-real-key");
+        using var content = BuildMultipartContent("Everyday", ValidQif);
+
+        var response = await client.PostAsync("/transactions/file", content);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    private async Task<string> SeedApiKey()
+    {
+        var key = ApiKeyGenerator.Generate();
+        using var scope = _factory.Services.CreateScope();
+        var apiKeys = scope.ServiceProvider.GetRequiredService<IRepository<ApiKey>>();
+        await apiKeys.AddAsync(new ApiKey { Key = key, Email = _email });
+        _seededApiKeys.Add(key);
+        return key;
     }
 
     private static MultipartFormDataContent BuildMultipartContent(string account, string fileText, string fileName = "transactions.qif")

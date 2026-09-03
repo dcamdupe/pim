@@ -49,6 +49,11 @@ const pendingCategoryRemoval = ref<CategoryDefinition | null>(null)
 const deletingCategory = ref(false)
 const deleteCategoryError = ref('')
 
+const apiKey = computed(() => settingsStore.apiKey)
+const generatingApiKey = ref(false)
+const apiKeyError = ref('')
+const apiKeyCopied = ref(false)
+
 // Parallel to `accounts`, index-for-index - whether that row was added via "+ Add account" but
 // never yet saved, in which case removing it is instant and local (nothing exists server-side to
 // delete or confirm). Kept as a plain index-aligned array rather than e.g. a Set<Account> keyed on
@@ -218,6 +223,27 @@ async function confirmRemoveCategory() {
 function cancelRemoveCategory() {
   pendingCategoryRemoval.value = null
 }
+
+async function onGenerateApiKey() {
+  apiKeyError.value = ''
+  apiKeyCopied.value = false
+  generatingApiKey.value = true
+  try {
+    await settingsStore.regenerateApiKey()
+  } catch {
+    apiKeyError.value = 'Could not generate an API key. Please try again.'
+  } finally {
+    generatingApiKey.value = false
+  }
+}
+
+async function copyApiKey() {
+  if (!apiKey.value) {
+    return
+  }
+  await navigator.clipboard.writeText(apiKey.value)
+  apiKeyCopied.value = true
+}
 </script>
 
 <template>
@@ -352,6 +378,31 @@ function cancelRemoveCategory() {
         <p v-if="hasDuplicateNames" class="status status-error">Account names must be unique.</p>
         <p v-else-if="saveError" class="status status-error">{{ saveError }}</p>
       </div>
+
+      <h2>API Key</h2>
+      <p class="subtitle">Used to authenticate automated uploads to <code>POST /transactions/file</code>.</p>
+
+      <div v-if="apiKey" class="api-key-row">
+        <code class="api-key-value">{{ apiKey }}</code>
+        <button type="button" class="remove-button" aria-label="Copy API key" @click="copyApiKey">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        </button>
+        <span v-if="apiKeyCopied" class="status status-success">Copied.</span>
+      </div>
+
+      <button type="button" class="add-button" :disabled="generatingApiKey" @click="onGenerateApiKey">
+        {{
+          generatingApiKey
+            ? 'Generating…'
+            : apiKey
+              ? 'Invalidate and Regenerate'
+              : 'Generate API Key'
+        }}
+      </button>
+      <p v-if="apiKeyError" class="status status-error">{{ apiKeyError }}</p>
     </template>
 
     <div v-if="pendingRemoval" class="modal-backdrop">
@@ -542,6 +593,22 @@ label {
 .add-category-row .add-button {
   border: 1px dashed var(--border);
   margin-bottom: 0;
+}
+
+.api-key-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.api-key-value {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field-bg);
+  font-family: monospace;
+  word-break: break-all;
 }
 
 .colour-select {

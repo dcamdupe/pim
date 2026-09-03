@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import {
   getSettings,
   saveSettings,
+  generateApiKey,
   deleteAccount,
   addCategory,
   deleteCategory,
@@ -68,6 +69,30 @@ describe('settingsService', () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
       await expect(saveSettings([])).rejects.toBeInstanceOf(SettingsRequestFailedError)
+    })
+  })
+
+  describe('generateApiKey', () => {
+    it('POSTs /settings/api with the bearer token and returns the new key', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ apiKey: 'abc123' }),
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      const result = await generateApiKey()
+
+      expect(result).toBe('abc123')
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/settings\/api$/),
+        expect.objectContaining({ method: 'POST', headers: { Authorization: 'Bearer a-jwt' } }),
+      )
+    })
+
+    it('throws SettingsRequestFailedError when the response is not ok', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+      await expect(generateApiKey()).rejects.toBeInstanceOf(SettingsRequestFailedError)
     })
   })
 

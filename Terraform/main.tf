@@ -30,6 +30,14 @@ module "description_mapping_data" {
   table_name  = "DescriptionMapping"
 }
 
+module "api_key_data" {
+  source = "./modules/data"
+
+  application = var.application
+  environment = var.environment
+  table_name  = "ApiKey"
+}
+
 module "frontend" {
   source = "./modules/frontend"
 
@@ -60,6 +68,7 @@ module "api" {
   transaction_dynamodb_table_arn              = module.transactions_data.table_arn
   transaction_descriptions_dynamodb_table_arn = module.transaction_descriptions_data.table_arn
   description_mapping_dynamodb_table_arn      = module.description_mapping_data.table_arn
+  api_key_dynamodb_table_arn                  = module.api_key_data.table_arn
   domain_name                                 = var.api_domain_name
   certificate_arn                             = var.api_certificate_arn
   cognito_authority                           = module.cognito.authority

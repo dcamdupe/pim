@@ -31,6 +31,7 @@ export interface Settings {
   accounts: Account[]
   categories: CategoryDefinition[]
   minTransactionDate: string | null
+  apiKey: string | null
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -55,6 +56,21 @@ export async function saveSettings(accounts: Account[]): Promise<void> {
   if (!response.ok) {
     throw new SettingsRequestFailedError()
   }
+}
+
+// Generates (or, if one already exists, invalidates and regenerates) the caller's API key and
+// returns the new value. The old key stops working immediately.
+export async function generateApiKey(): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/settings/api`, {
+    method: 'POST',
+    headers: authHeaders(),
+  })
+
+  if (!response.ok) {
+    throw new SettingsRequestFailedError()
+  }
+
+  return ((await response.json()) as { apiKey: string }).apiKey
 }
 
 // Deletes immediately (not deferred to the next PUT /settings) - the Api cascades this to delete

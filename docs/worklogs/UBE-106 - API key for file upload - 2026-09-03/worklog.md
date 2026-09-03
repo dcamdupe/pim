@@ -175,3 +175,12 @@ Confirmed with David and reverted to the original plan: a dedicated `ApiKey` loo
 
 `dotnet build`, `Api.UnitTests` (90), FrontEnd build + unit tests (210) all green.
 Integration suite pending a local DynamoDB with the new table.
+
+**Prompt:** commit and raise PR / 3 functional tests failing (transactionListing UBE-78) / go with 1
+
+**Response:** Committed the slice (`2780400`), pushed, opened PR #93. The reported
+functional-test failure was pre-existing and date-driven, not from this change:
+`transactionListing.spec.ts` put its "2 months ago" probe and its "mid-July of the current
+FY" probe in the same month whenever the suite runs in September, so the CurrentFY row
+showed under the specific-past-month filter. Fixed by picking the current-FY probe date
+relative to today so it can never be 2 months back (`03a05de`).

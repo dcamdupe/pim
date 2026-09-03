@@ -46,6 +46,31 @@ test.describe('Settings', () => {
     await expect(page.locator('.account-row')).toHaveCount(rowsBefore);
   });
 
+  test('generates an API key, then invalidates and regenerates it to a different value', async ({ page }) => {
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await expect(page).toHaveURL(/\/settings$/);
+
+    // The seeded user may already have a key from an earlier run - either button label reaches
+    // the same "generate a fresh key" action.
+    await page.getByRole('button', { name: /Generate API Key|Invalidate and Regenerate/ }).click();
+    await expect(page.locator('.api-key-value')).toHaveText(/^[a-z0-9]{40}$/);
+    const firstKey = await page.locator('.api-key-value').textContent();
+
+    await page.getByRole('button', { name: 'Invalidate and Regenerate' }).click();
+    await expect(page.locator('.api-key-value')).not.toHaveText(firstKey ?? '');
+    await expect(page.locator('.api-key-value')).toHaveText(/^[a-z0-9]{40}$/);
+
+    // Survives a reload (GET /settings returns it).
+    await page.reload();
+    await expect(page.locator('.api-key-value')).toHaveText(/^[a-z0-9]{40}$/);
+  });
+
   test('adds a category, it appears in the transaction category dropdown, then deletes it via the confirm modal', async ({
     page,
   }) => {

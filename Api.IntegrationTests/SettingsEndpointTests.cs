@@ -23,6 +23,7 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
     private readonly List<string> _seededMonthIds = [];
+    private readonly List<string> _generatedApiKeys = [];
 
     public SettingsEndpointTests(ApiWebApplicationFactory factory)
     {
@@ -51,6 +52,12 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         foreach (var id in _seededMonthIds)
         {
             await transactionMonths.DeleteAsync(id);
+        }
+
+        var apiKeys = scope.ServiceProvider.GetRequiredService<IRepository<ApiKey>>();
+        foreach (var key in _generatedApiKeys)
+        {
+            await apiKeys.DeleteAsync(key);
         }
 
         var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
@@ -335,6 +342,43 @@ public sealed class SettingsEndpointTests : IClassFixture<ApiWebApplicationFacto
         var response = await client.SendAsync(deleteRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GenerateApiKey_ReturnsALowercaseAlphanumericKey_ThatGetSettingsThenEchoes()
+    {
+        var client = AuthenticatedClient();
+
+        var response = await client.PostAsync("/settings/api", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<GenerateApiKeyResponse>(JsonOptions);
+        Assert.Matches("^[a-z0-9]{40}$", body!.ApiKey);
+        _generatedApiKeys.Add(body.ApiKey);
+
+        var settingsResponse = await client.GetAsync("/settings");
+        var settings = await settingsResponse.Content.ReadFromJsonAsync<SettingsResponse>(JsonOptions);
+        Assert.Equal(body.ApiKey, settings!.ApiKey);
+    }
+
+    [Fact]
+    public async Task GenerateApiKey_Regenerating_ReturnsADifferentKey_AndInvalidatesTheOldOne()
+    {
+        var client = AuthenticatedClient();
+
+        var first = await (await client.PostAsync("/settings/api", null))
+            .Content.ReadFromJsonAsync<GenerateApiKeyResponse>(JsonOptions);
+        var second = await (await client.PostAsync("/settings/api", null))
+            .Content.ReadFromJsonAsync<GenerateApiKeyResponse>(JsonOptions);
+        _generatedApiKeys.Add(first!.ApiKey);
+        _generatedApiKeys.Add(second!.ApiKey);
+
+        Assert.NotEqual(first.ApiKey, second.ApiKey);
+
+        using var scope = _factory.Services.CreateScope();
+        var apiKeys = scope.ServiceProvider.GetRequiredService<IRepository<ApiKey>>();
+        Assert.Null(await apiKeys.GetAsync(first.ApiKey));
+        Assert.NotNull(await apiKeys.GetAsync(second.ApiKey));
     }
 
     private HttpClient AuthenticatedClient()

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Pim.Api.Auth;
 using Pim.Api.Data;
 using Pim.Api.Repository;
 using Pim.Api.Services;
@@ -12,12 +13,18 @@ namespace Pim.Api.Controllers;
 public sealed class SettingsController : ControllerBase
 {
     private readonly IRepository<User> _users;
+    private readonly IRepository<ApiKey> _apiKeys;
     private readonly ITransactionUpdateService _transactionUpdateService;
     private readonly ILogger<SettingsController> _logger;
 
-    public SettingsController(IRepository<User> users, ITransactionUpdateService transactionUpdateService, ILogger<SettingsController> logger)
+    public SettingsController(
+        IRepository<User> users,
+        IRepository<ApiKey> apiKeys,
+        ITransactionUpdateService transactionUpdateService,
+        ILogger<SettingsController> logger)
     {
         _users = users;
+        _apiKeys = apiKeys;
         _transactionUpdateService = transactionUpdateService;
         _logger = logger;
     }
@@ -31,7 +38,32 @@ public sealed class SettingsController : ControllerBase
             return NotFound();
         }
 
-        return Ok(new SettingsResponse(user.Accounts, user.Categories, user.MinTransactionDate));
+        return Ok(new SettingsResponse(user.Accounts, user.Categories, user.MinTransactionDate, user.ApiKey));
+    }
+
+    // Generating always replaces any existing key - that's the "invalidate and regenerate" path.
+    // The superseded ApiKey row is deleted so the old value stops authenticating immediately.
+    [HttpPost("settings/api")]
+    public async Task<ActionResult<GenerateApiKeyResponse>> GenerateApiKey()
+    {
+        var user = await GetAuthenticatedUser();
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (user.ApiKey is not null)
+        {
+            await _apiKeys.DeleteAsync(user.ApiKey);
+        }
+
+        var key = ApiKeyGenerator.Generate();
+        await _apiKeys.AddAsync(new ApiKey { Key = key, Email = user.Email });
+
+        user.ApiKey = key;
+        await _users.UpdateAsync(user.Email, user);
+
+        return Ok(new GenerateApiKeyResponse(key));
     }
 
     [HttpPut("settings")]
@@ -162,7 +194,9 @@ public sealed class SettingsController : ControllerBase
     }
 }
 
-public sealed record SettingsResponse(List<Account> Accounts, List<Category> Categories, DateOnly? MinTransactionDate);
+public sealed record SettingsResponse(List<Account> Accounts, List<Category> Categories, DateOnly? MinTransactionDate, string? ApiKey);
+
+public sealed record GenerateApiKeyResponse(string ApiKey);
 
 public sealed record SettingsRequest(List<Account> Accounts);
 

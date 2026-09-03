@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { getSettings, type Account, type CategoryDefinition } from '../services/settingsService'
+import { getSettings, generateApiKey, type Account, type CategoryDefinition } from '../services/settingsService'
 
 const STORAGE_KEY = 'pim.settings'
 
@@ -8,6 +8,7 @@ interface StoredSettings {
   accounts: Account[]
   categories: CategoryDefinition[]
   minTransactionDate: string | null
+  apiKey: string | null
   loadedAt: number
 }
 
@@ -31,6 +32,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const accounts = ref<Account[]>(stored?.accounts ?? [])
   const categories = ref<CategoryDefinition[]>(stored?.categories ?? [])
   const minTransactionDate = ref<string | null>(stored?.minTransactionDate ?? null)
+  const apiKey = ref<string | null>(stored?.apiKey ?? null)
   const loadedAt = ref<number | null>(stored?.loadedAt ?? null)
 
   function persist() {
@@ -43,6 +45,7 @@ export const useSettingsStore = defineStore('settings', () => {
         accounts: accounts.value,
         categories: categories.value,
         minTransactionDate: minTransactionDate.value,
+        apiKey: apiKey.value,
         loadedAt: loadedAt.value,
       } satisfies StoredSettings),
     )
@@ -61,6 +64,7 @@ export const useSettingsStore = defineStore('settings', () => {
       accounts.value = settings.accounts
       categories.value = settings.categories
       minTransactionDate.value = settings.minTransactionDate
+      apiKey.value = settings.apiKey
       loadedAt.value = Date.now()
       persist()
     })().finally(() => {
@@ -78,13 +82,20 @@ export const useSettingsStore = defineStore('settings', () => {
     await refresh()
   }
 
+  // Generates a new API key (invalidating any existing one) and updates the cached value.
+  async function regenerateApiKey() {
+    apiKey.value = await generateApiKey()
+    persist()
+  }
+
   function clear() {
     accounts.value = []
     categories.value = []
     minTransactionDate.value = null
+    apiKey.value = null
     loadedAt.value = null
     localStorage.removeItem(STORAGE_KEY)
   }
 
-  return { accounts, categories, minTransactionDate, loadedAt, load, refresh, clear }
+  return { accounts, categories, minTransactionDate, apiKey, loadedAt, load, refresh, regenerateApiKey, clear }
 })

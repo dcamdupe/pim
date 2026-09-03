@@ -85,7 +85,8 @@ public static class ServiceMapping
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SigningKey)),
                     ValidateLifetime = true,
                 };
-            });
+            })
+            .AddApiKey();
     }
 
     // Every non-Local environment authenticates via Cognito's Hosted UI (Google-federated);
@@ -121,7 +122,8 @@ public static class ServiceMapping
                         return Task.CompletedTask;
                     },
                 };
-            });
+            })
+            .AddApiKey();
     }
 
     // Replaces the default console provider with NLog (config in nlog.config)

@@ -10,18 +10,23 @@ export class TmbankDownloader implements Downloader {
     const page = await context.newPage();
 
     try {
+      // login
       await page.goto('https://ib.tmbank.com.au/IB/SignOn/Login.aspx');
       await page.getByRole('textbox', { name: 'Member Number' }).fill(config.tmbankMemberNumber);
       await page.getByRole('textbox', { name: 'Password' }).fill(config.tmbankPassword);
       await page.getByRole('button', { name: 'Log in' }).click();
       console.log('Signed in to TMBank Internet Banking');
+      
+      // select transactions
       await page.getByRole('button', { name: config.tmbankAccount }).click();
       await page.getByRole('button', { name: ' View All Transaction and' }).click();
       await page.getByRole('button', { name: ' Download' }).click();
       await page.locator('input[name="STARTDATE"]').pressSequentially(startDate);
-      await page.locator('input[name="ENDDATE"]').pressSequentially(endDate);
+      await page.locator('input[name="ENDDATE"]').pressSequentially(subtractOneDay(endDate));
       await page.locator('#ctl00_c_ddlDocType').selectOption('QIF');
       console.log('Export form filled in');
+
+      // download
       const downloadPromise = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Download' }).click();
       const download = await downloadPromise;
@@ -35,4 +40,16 @@ export class TmbankDownloader implements Downloader {
       await browser.close();
     }
   }
+}
+
+// TMBank's export end date needs to be one day earlier than the requested range.
+// dateStr is dd/MM/yyyy, matching download.sh's StartDate/EndDate format.
+function subtractOneDay(dateStr: string): string {
+  const [day, month, year] = dateStr.split('/').map(Number);
+  const date = new Date(year, month - 1, day - 1);
+  return [
+    String(date.getDate()).padStart(2, '0'),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    date.getFullYear(),
+  ].join('/');
 }

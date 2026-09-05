@@ -21,12 +21,14 @@ export class AmexDownloader implements Downloader {
       await page.getByTestId('userid-input').fill(config.amexUsername);
       await page.getByTestId('password-input').fill(config.amexPassword);
       await page.getByTestId('submit-button').click();
+      console.log('Signed in to Amex');
 
       // search
       const startDateIso = convertDate(startDate);
       const endDateIso = convertDate(endDate);
       await page.goto('https://global.americanexpress.com/activity/search?from=' + startDateIso + '&to=' + endDateIso);
       await page.getByRole('button', { name: 'Search' }).click();
+      console.log('Export form filled in');
 
       // download
       await page.locator('[class*="action-icon-dls-icon-download-"]').click();

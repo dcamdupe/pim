@@ -68,7 +68,7 @@ stored server-side) are data, not theme, and stay as-is.
 - [ ] `xcodebuild build` succeeds - couldn't run from this sandbox (Command Line Tools only,
       no Xcode.app selected); David confirmed it looks good
 - [x] David to visually verify in Simulator/device (light + dark)
-- [x] PR raised
+- [x] PR raised — https://github.com/dcamdupe/pim/pull/94 (commit `0c39d18`)
 
 ## Prompt / response log
 

@@ -4,14 +4,16 @@ import type { Downloader } from './downloaders/downloader';
 import { TmbankDownloader } from './downloaders/tmbank';
 import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
+import { AmexDownloader } from './downloaders/amex';
 
 async function main() {
   const config = loadConfig();
 
   // Each downloader's export is filed under that bank's configured PIM account name.
   const jobs: { downloader: Downloader; pimAccount: string }[] = [
-    { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
-    { downloader: new TmbankDownloader(), pimAccount: config.tmbankPimAccount },
+    // { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
+    // { downloader: new TmbankDownloader(), pimAccount: config.tmbankPimAccount },
+    { downloader: new AmexDownloader(), pimAccount: config.amexPimAccount },
   ];
 
   const startDate = process.env.StartDate;

@@ -8,9 +8,7 @@ dotenv.config({ path: ENV_PATH, quiet: true });
 export interface Config {
   westpacCustomerId: string;
   westpacPassword: string;
-  // Bank-site selector for the account to export.
   westpacAccount: string;
-  // PIM account name the export is filed under (must match a Settings-page account).
   westpacPimAccount: string;
   tmbankMemberNumber: string;
   tmbankPassword: string;
@@ -18,6 +16,7 @@ export interface Config {
   tmbankPimAccount: string;
   amexUsername: string;
   amexPassword: string;
+  amexPimAccount: string;
   pimBaseUrl: string;
   pimApiKey: string;
 }
@@ -46,6 +45,9 @@ export function loadConfig(): Config {
     tmbankPassword: process.env.TmbankPassword,
     tmbankAccount: process.env.TmbankAccount,
     tmbankPimAccount: process.env.TmbankPimAccount,
+    amexUsername: process.env.AmexUsername,
+    amexPassword: process.env.AmexPassword,
+    amexPimAccount: process.env.AmexPimAccount,
     pimBaseUrl: process.env.BaseUrl,
     pimApiKey: process.env.PimApiKey,
   };

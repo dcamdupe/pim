@@ -16,26 +16,30 @@ export class AmexDownloader implements Downloader {
     const page = await context.newPage();
 
     try {
+      // login
       await page.goto('https://www.americanexpress.com/en-au/account/login?inav=en_au_menu_login');
       await page.getByTestId('userid-input').fill(config.amexUsername);
       await page.getByTestId('password-input').fill(config.amexPassword);
       await page.getByTestId('submit-button').click();
 
+      // search
       const startDateIso = convertDate(startDate);
       const endDateIso = convertDate(endDate);
-
       await page.goto('https://global.americanexpress.com/activity/search?from=' + startDateIso + '&to=' + endDateIso);
+      await page.getByRole('button', { name: 'Search' }).click();
 
-      // TODO: click search
+      // download
+      await page.locator('[class*="action-icon-dls-icon-download-"]').click();
+      await page.locator('#axp-activity-download-body-selection-options-qif').click();
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator('[data-test-id="axp-activity-download-footer-download-confirm"]').click();
+      const download = await downloadPromise;
 
-      // TODO: click download
 
-      // TODO: select qif format
-
-      // TODO: click download
-
-      // TODO: save the fi;e
-
+      // save the file
+      const savePath = path.join(__dirname, '..', download.suggestedFilename());
+      await download.saveAs(savePath);
+      return savePath;
 
     } finally {
       await browser.close();

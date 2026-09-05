@@ -35,7 +35,7 @@ what `download.sh`'s output would be piped/redirected into.
       wrapping `console.log`/`console.error` with the timestamp) and updated all 11 call
       sites across `download.ts` + the 3 `downloaders/*.ts` files to use it instead
 - [x] Sanity-check output format by eye (no test suite for this script)
-- [x] PR raised
+- [x] PR raised — https://github.com/dcamdupe/pim/pull/95 (commit `126bcd4`)
 
 ## Prompt / response log
 

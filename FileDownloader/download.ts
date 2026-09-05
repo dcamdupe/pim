@@ -11,7 +11,7 @@ async function main() {
 
   // Each downloader's export is filed under that bank's configured PIM account name.
   const jobs: { downloader: Downloader; pimAccount: string }[] = [
-    // { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
+    { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
     { downloader: new TmbankDownloader(), pimAccount: config.tmbankPimAccount },
     // { downloader: new AmexDownloader(), pimAccount: config.amexPimAccount },
   ];

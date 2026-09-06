@@ -10,7 +10,7 @@ export class AmexDownloader implements Downloader {
 
     // Camoufox to handle the browser blocking
     const browser = await firefox.launch(
-      await launchOptions({ headless: false, humanize: true, geoip: true, locale: 'en-AU' }),
+      await launchOptions({ headless: true, humanize: true, geoip: true, locale: 'en-AU' }),
     );
     const context = await browser.newContext();
     const page = await context.newPage();

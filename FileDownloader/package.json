@@ -15,5 +15,9 @@
     "@types/node": "^26.1.1",
     "dotenv": "^17.4.2",
     "tsx": "^4.23.11"
+  },
+  "dependencies": {
+    "camoufox-js": "^0.12.0",
+    "playwright-core": "1.63.0"
   }
 }

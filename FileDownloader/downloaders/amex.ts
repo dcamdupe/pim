@@ -1,4 +1,5 @@
-import { chromium, devices } from '@playwright/test';
+import { firefox } from 'playwright-core';
+import { launchOptions } from 'camoufox-js';
 import path from 'path';
 import type { Config } from '../config';
 import type { Downloader } from './downloader';
@@ -6,13 +7,13 @@ import type { Downloader } from './downloader';
 export class AmexDownloader implements Downloader {
   async download(config: Config, startDate: string, endDate: string): Promise<string> {
 
-    // TODO: see if we can make this run in headless
-    const browser = await chromium.launch({ channel: 'chrome', headless: false });
-    const context = await browser.newContext({ ...devices['Desktop Chrome'] });
-    await context.addInitScript(() => {
-      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    });
-
+    // Camoufox (stealth-patched Firefox) manages the fingerprint itself, so no device
+    // descriptor or navigator.webdriver patching here. headless: false for now while we
+    // check whether Amex blocks it.
+    const browser = await firefox.launch(
+      await launchOptions({ headless: false, humanize: true, geoip: true, locale: 'en-AU' }),
+    );
+    const context = await browser.newContext();
     const page = await context.newPage();
 
     try {
@@ -23,12 +24,20 @@ export class AmexDownloader implements Downloader {
       await page.getByTestId('submit-button').click();
       console.log('Signed in to Amex');
 
+      await page.pause();
+
       // search
+      page.locator('[data-locator-id="statement_balance_cta_title"]')
+      page.getByRole('link', { name: 'Search' })
       const startDateIso = convertDate(startDate);
       const endDateIso = convertDate(endDate);
       await page.goto('https://global.americanexpress.com/activity/search?from=' + startDateIso + '&to=' + endDateIso);
-      await page.getByRole('button', { name: 'Search' }).click();
+      await page.getByRole('button', { name: 'Search', exact: true })
+        .and(page.locator('button[type="button"]'))
+        .click();
       console.log('Export form filled in');
+
+      await page.pause();
 
       // download
       await page.locator('[class*="action-icon-dls-icon-download-"]').click();
@@ -38,10 +47,10 @@ export class AmexDownloader implements Downloader {
       const download = await downloadPromise;
 
 
-      // save the file
-      const savePath = path.join(__dirname, '..', download.suggestedFilename());
-      await download.saveAs(savePath);
-      return savePath;
+      // // save the file
+      // const savePath = path.join(__dirname, '..', download.suggestedFilename());
+      // await download.saveAs(savePath);
+      // return savePath;
 
     } finally {
       await browser.close();

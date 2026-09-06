@@ -3,13 +3,12 @@ import { launchOptions } from 'camoufox-js';
 import path from 'path';
 import type { Config } from '../config';
 import type { Downloader } from './downloader';
+import { log } from '../logger';
 
 export class AmexDownloader implements Downloader {
   async download(config: Config, startDate: string, endDate: string): Promise<string> {
 
-    // Camoufox (stealth-patched Firefox) manages the fingerprint itself, so no device
-    // descriptor or navigator.webdriver patching here. headless: false for now while we
-    // check whether Amex blocks it.
+    // Camoufox to handle the browser blocking
     const browser = await firefox.launch(
       await launchOptions({ headless: false, humanize: true, geoip: true, locale: 'en-AU' }),
     );
@@ -27,7 +26,7 @@ export class AmexDownloader implements Downloader {
       // element to render before moving on.
       await page.waitForURL('https://global.americanexpress.com/dashboard**');
       await page.locator('[data-locator-id="statement_balance_cta_title"]').waitFor();
-      console.log('Signed in to Amex');
+      log('Signed in to Amex');
 
       // search
       const startDateIso = convertDate(startDate);
@@ -36,7 +35,7 @@ export class AmexDownloader implements Downloader {
       await page.getByRole('button', { name: 'Search', exact: true })
         .and(page.locator('button[type="button"]'))
         .click();
-      console.log('Export form filled in');
+      log('Export form filled in');
 
       // download
       await page.getByRole('button', { name: 'Download' }).click();

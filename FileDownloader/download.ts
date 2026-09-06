@@ -5,6 +5,7 @@ import { TmbankDownloader } from './downloaders/tmbank';
 import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
 import { AmexDownloader } from './downloaders/amex';
+import { log, logError } from './logger';
 
 async function main() {
   const config = loadConfig();
@@ -22,24 +23,24 @@ async function main() {
     throw new Error('Missing required StartDate/EndDate environment variables.');
   }
 
-  console.log(`Downloading transactions from ${startDate} to ${endDate}`);
+  log(`Downloading transactions from ${startDate} to ${endDate}`);
 
   const pim = new PimClient(config);
 
   for (const { downloader, pimAccount } of jobs) {
-    console.log(`Running ${downloader.constructor.name}`);
+    log(`Running ${downloader.constructor.name}`);
     const savedPath = await downloader.download(config, startDate, endDate);
     const { size } = fs.statSync(savedPath);
-    console.log(`Saved: ${savedPath} (${size} bytes)`);
+    log(`Saved: ${savedPath} (${size} bytes)`);
 
     await pim.uploadFile(savedPath, pimAccount);
-    console.log(`Uploaded to PIM account: ${pimAccount}`);
+    log(`Uploaded to PIM account: ${pimAccount}`);
   }
 }
 
 if (require.main === module) {
   main().catch((error: unknown) => {
-    console.error(error);
+    logError(error);
     process.exitCode = 1;
   });
 }

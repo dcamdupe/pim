@@ -2,6 +2,7 @@ import { chromium, devices } from '@playwright/test';
 import path from 'path';
 import type { Config } from '../config';
 import type { Downloader } from './downloader';
+import { log } from '../logger';
 
 export class TmbankDownloader implements Downloader {
   async download(config: Config, startDate: string, endDate: string): Promise<string> {
@@ -15,7 +16,7 @@ export class TmbankDownloader implements Downloader {
       await page.getByRole('textbox', { name: 'Member Number' }).fill(config.tmbankMemberNumber);
       await page.getByRole('textbox', { name: 'Password' }).fill(config.tmbankPassword);
       await page.getByRole('button', { name: 'Log in' }).click();
-      console.log('Signed in to TMBank Internet Banking');
+      log('Signed in to TMBank Internet Banking');
       
       // select transactions
       await page.getByRole('button', { name: config.tmbankAccount }).click();
@@ -24,7 +25,7 @@ export class TmbankDownloader implements Downloader {
       await page.locator('input[name="STARTDATE"]').pressSequentially(startDate);
       await page.locator('input[name="ENDDATE"]').pressSequentially(subtractOneDay(endDate));
       await page.locator('#ctl00_c_ddlDocType').selectOption('QIF');
-      console.log('Export form filled in');
+      log('Export form filled in');
 
       // download
       const downloadPromise = page.waitForEvent('download');

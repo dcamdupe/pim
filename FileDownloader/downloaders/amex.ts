@@ -22,13 +22,14 @@ export class AmexDownloader implements Downloader {
       await page.getByTestId('userid-input').fill(config.amexUsername);
       await page.getByTestId('password-input').fill(config.amexPassword);
       await page.getByTestId('submit-button').click();
+
+      // Login redirects into the dashboard SPA; wait for that route and for a real dashboard
+      // element to render before moving on.
+      await page.waitForURL('https://global.americanexpress.com/dashboard**');
+      await page.locator('[data-locator-id="statement_balance_cta_title"]').waitFor();
       console.log('Signed in to Amex');
 
-      await page.pause();
-
       // search
-      page.locator('[data-locator-id="statement_balance_cta_title"]')
-      page.getByRole('link', { name: 'Search' })
       const startDateIso = convertDate(startDate);
       const endDateIso = convertDate(endDate);
       await page.goto('https://global.americanexpress.com/activity/search?from=' + startDateIso + '&to=' + endDateIso);
@@ -37,20 +38,17 @@ export class AmexDownloader implements Downloader {
         .click();
       console.log('Export form filled in');
 
-      await page.pause();
-
       // download
-      await page.locator('[class*="action-icon-dls-icon-download-"]').click();
+      await page.getByRole('button', { name: 'Download' }).click();
       await page.locator('#axp-activity-download-body-selection-options-qif').click();
       const downloadPromise = page.waitForEvent('download');
       await page.locator('[data-test-id="axp-activity-download-footer-download-confirm"]').click();
       const download = await downloadPromise;
 
-
-      // // save the file
-      // const savePath = path.join(__dirname, '..', download.suggestedFilename());
-      // await download.saveAs(savePath);
-      // return savePath;
+      // save the file
+      const savePath = path.join(__dirname, '..', download.suggestedFilename());
+      await download.saveAs(savePath);
+      return savePath;
 
     } finally {
       await browser.close();

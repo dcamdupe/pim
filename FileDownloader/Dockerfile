@@ -4,6 +4,11 @@ FROM mcr.microsoft.com/playwright:v1.62.1-noble
 
 WORKDIR /app
 
+# camoufox-js's better-sqlite3 dependency (used for its GeoIP lookups) has no prebuilt binary
+# for this platform and always compiles from source via node-gyp, which needs a C/C++ toolchain.
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

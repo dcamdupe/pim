@@ -18,6 +18,6 @@
   },
   "dependencies": {
     "camoufox-js": "^0.12.0",
-    "playwright-core": "1.63.0"
+    "playwright-core": "1.60.0"
   }
 }

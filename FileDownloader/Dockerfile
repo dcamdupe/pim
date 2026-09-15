@@ -7,6 +7,11 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# Camoufox (used by the Amex downloader) ships its own Firefox build, fetched here into a fixed
+# path rather than the ephemeral ~/.cache. buildx picks the arm64 asset when built --platform arm64.
+ENV CAMOUFOX_INSTALL_DIR=/opt/camoufox
+RUN npx camoufox-js fetch
+
 COPY . .
 RUN chmod +x download.sh
 

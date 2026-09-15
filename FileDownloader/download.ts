@@ -14,7 +14,7 @@ async function main() {
   const jobs: { downloader: Downloader; pimAccount: string }[] = [
     { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
     { downloader: new TmbankDownloader(), pimAccount: config.tmbankPimAccount },
-    // { downloader: new AmexDownloader(), pimAccount: config.amexPimAccount },
+    { downloader: new AmexDownloader(), pimAccount: config.amexPimAccount },
   ];
 
   const startDate = process.env.StartDate;

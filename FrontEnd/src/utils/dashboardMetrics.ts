@@ -174,13 +174,19 @@ export function computeExpensesByCategory(transactions: Transaction[], today: Da
 
 // The 6 calendar months ending with the current month (unlike getPreviousSixMonthsRange, which
 // excludes the current month) - matches the "last 6 months" income vs. expenses bar chart.
-export function computeMonthlyIncomeExpenses(transactions: Transaction[], today: Date): MonthlyFlow[] {
+// An empty/omitted `category` includes every category, matching the "All categories" filter option.
+export function computeMonthlyIncomeExpenses(
+  transactions: Transaction[],
+  today: Date,
+  category = '',
+): MonthlyFlow[] {
   const months: MonthlyFlow[] = []
+  const categoryTransactions = category ? transactions.filter((t) => t.category === category) : transactions
 
   for (let i = 5; i >= 0; i--) {
     const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1)
     const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
-    const monthTransactions = transactions.filter((t) => isWithinRange(t, { start: monthStart, end: monthEnd }))
+    const monthTransactions = categoryTransactions.filter((t) => isWithinRange(t, { start: monthStart, end: monthEnd }))
 
     months.push({
       month: MONTH_ABBREVIATIONS[monthStart.getMonth()],

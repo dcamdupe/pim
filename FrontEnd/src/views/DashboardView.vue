@@ -15,6 +15,7 @@ import {
   computeRecentTransactions,
 } from '../utils/dashboardMetrics'
 import { loadStoredDashboardFilters, saveDashboardFilters } from '../utils/dashboardFilterStorage'
+import { categoryNames } from '../services/categoriesService'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
@@ -38,17 +39,23 @@ const minTransactionDate = computed(() =>
 )
 const storedFilters = loadStoredDashboardFilters()
 const selectedMonthKey = ref(storedFilters?.month ?? computeAvailableMonths(null, realToday)[0].value)
+const selectedCategory = ref(storedFilters?.category ?? '')
+// A computed, not a plain call - settingsStore.categories is still empty until settingsStore.load()
+// (below) resolves, so this needs to react to that rather than capture an empty list once at setup.
+const categories = computed(() => categoryNames())
 
 const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
 const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
 
-watch(selectedMonthKey, (month) => {
-  saveDashboardFilters({ month })
+watch([selectedMonthKey, selectedCategory], ([month, category]) => {
+  saveDashboardFilters({ month, category })
 })
 
 const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
 const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, selectedMonth.value))
-const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value))
+const monthlyIncomeExpenses = computed(() =>
+  computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value, selectedCategory.value),
+)
 const recentTransactions = computed(() => computeRecentTransactions(transactions.value))
 const selectedMonthLabel = computed(() => formatMonthYear(selectedMonth.value))
 const sixMonthRangeLabel = computed(() => formatSixMonthRangeLabel(selectedMonth.value))
@@ -137,7 +144,13 @@ onMounted(async () => {
       </div>
 
       <div class="card">
-        <h2>Income vs. expenses</h2>
+        <div class="card-head">
+          <h2>Income vs. expenses</h2>
+          <select v-model="selectedCategory" aria-label="Category filter" :disabled="initialLoading">
+            <option value="">All categories</option>
+            <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+          </select>
+        </div>
         <p v-if="initialLoading" class="card-sub status">Loading…</p>
         <template v-else>
           <p class="card-sub">{{ sixMonthRangeLabel }}</p>
@@ -243,6 +256,17 @@ onMounted(async () => {
   font-size: 15.5px;
   font-weight: 700;
   margin: 0 0 2px;
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-head h2 {
+  margin: 0;
 }
 
 .card .card-sub {

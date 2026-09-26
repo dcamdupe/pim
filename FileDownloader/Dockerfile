@@ -9,6 +9,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# The base image ships npm 11, which logs a "new major version" notice on every npx run.
+RUN npm install -g npm@12
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

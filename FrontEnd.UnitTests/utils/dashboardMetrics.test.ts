@@ -323,6 +323,29 @@ describe('computeMonthlyIncomeExpenses', () => {
     expect(result.find((m) => m.month === 'Jul')).toMatchObject({ income: 3000, expense: 0 })
   })
 
+  it('restricts totals to the given category when one is passed', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -200 }),
+      tx({ date: '2026-07-07', category: 'Dining', type: 'Expense', amount: -50 }),
+    ]
+
+    const result = computeMonthlyIncomeExpenses(transactions, today, 'Groceries')
+
+    expect(result.find((m) => m.month === 'Jul')).toMatchObject({ income: 0, expense: 200 })
+  })
+
+  it('includes every category when no category is passed', () => {
+    const transactions = [
+      tx({ date: '2026-07-05', category: 'Income', type: 'Income', amount: 3000 }),
+      tx({ date: '2026-07-06', category: 'Groceries', type: 'Expense', amount: -200 }),
+    ]
+
+    const result = computeMonthlyIncomeExpenses(transactions, today)
+
+    expect(result.find((m) => m.month === 'Jul')).toMatchObject({ income: 3000, expense: 200 })
+  })
+
   it('excludes transactions outside the 6-month window', () => {
     const transactions = [tx({ date: '2026-01-15', category: 'Income', type: 'Income', amount: 9999 })]
 

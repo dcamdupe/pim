@@ -4,6 +4,7 @@ const MONTH_KEY = /^\d{4}-\d{2}$/
 
 export interface DashboardFiltersState {
   month: string
+  category: string
 }
 
 function isDashboardFiltersState(value: unknown): value is DashboardFiltersState {
@@ -11,7 +12,7 @@ function isDashboardFiltersState(value: unknown): value is DashboardFiltersState
     return false
   }
   const v = value as Record<string, unknown>
-  return typeof v.month === 'string' && MONTH_KEY.test(v.month)
+  return typeof v.month === 'string' && MONTH_KEY.test(v.month) && typeof v.category === 'string'
 }
 
 export function loadStoredDashboardFilters(): DashboardFiltersState | null {

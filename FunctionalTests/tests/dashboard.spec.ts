@@ -27,6 +27,20 @@ function monthOptionValue(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+// Fixed English abbreviations - mirrors dashboardMetrics.ts's MONTH_ABBREVIATIONS.
+const MONTH_ABBREVIATIONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Reads a bar's value from its <title> tooltip text (e.g. "Sep expenses $200") - the chart is
+// plain inline SVG with no other way to read a bar's value. A zero-value bar renders no path (and
+// therefore no <title>) at all, so an absent title means 0, not "not rendered yet" - the
+// always-present wrapper is checked instead to guard against reading before the chart re-renders.
+async function barValue(page: import('@playwright/test').Page, monthAbbrev: string, kind: 'income' | 'expenses'): Promise<number> {
+  await expect(page.locator('.bar-chart-wrap')).toBeVisible();
+  const title = page.locator('.bar-seg title', { hasText: `${monthAbbrev} ${kind}` });
+  const count = await title.count();
+  return count === 0 ? 0 : parseCurrency((await title.textContent()) ?? '');
+}
+
 // The month filter's options only cover minTransactionDate onward once /settings has loaded (it
 // starts out current-month-only) - wait for the target option to exist before selecting it.
 async function selectMonth(page: import('@playwright/test').Page, date: Date) {
@@ -281,6 +295,59 @@ test.describe('Recent transactions', () => {
 
     await card.getByRole('link', { name: 'View all →' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
+
+    // clean up the Settings account added for this test - removal is immediate via a
+    // confirmation modal, not deferred to Save.
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.locator('.account-row').last().getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+});
+
+test.describe('Income vs. expenses category filter', () => {
+  test('filtering to a category re-scopes the chart to that category only', async ({ page }) => {
+    const runId = Date.now();
+    const today = new Date();
+    const description = `CategoryFilterExpense${runId}`;
+    const monthAbbrev = MONTH_ABBREVIATIONS[today.getMonth()];
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    // Capture the "before" value filtered to Groceries - robust to the shared, never-cleaned-up
+    // test dataset accumulated by every other spec in this suite; only the *delta* is asserted.
+    await page.getByLabel('Category filter').selectOption('Groceries');
+    await expect(page.getByLabel('Category filter')).toHaveValue('Groceries');
+    const before = await barValue(page, monthAbbrev, 'expenses');
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill(`CategoryFilterAccount${runId}`);
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption(`CategoryFilterAccount${runId}`);
+    const qif = '!Type:Bank\n' + qifRecord(today, description, '-37.00');
+    await page.locator('#file-input').setInputFiles({ name: 'categoryfilter.qif', mimeType: 'text/plain', buffer: Buffer.from(qif) });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await page.getByLabel('Date range').selectOption('allTime');
+    await page.locator('tr', { hasText: description }).locator('.category-select').selectOption('Groceries');
+
+    await page.getByRole('link', { name: 'Dashboard' }).click();
+    // The category filter is remembered across navigation, same as the month filter.
+    await expect(page.getByLabel('Category filter')).toHaveValue('Groceries');
+
+    const after = await barValue(page, monthAbbrev, 'expenses');
+    expect(after - before).toBe(37);
 
     // clean up the Settings account added for this test - removal is immediate via a
     // confirmation modal, not deferred to Save.

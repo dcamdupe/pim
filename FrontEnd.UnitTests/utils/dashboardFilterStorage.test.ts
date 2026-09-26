@@ -9,6 +9,7 @@ const STORAGE_KEY = 'pim.dashboardFilters'
 
 const filters: DashboardFiltersState = {
   month: '2026-06',
+  category: 'Groceries',
 }
 
 describe('dashboardFilterStorage', () => {
@@ -41,6 +42,12 @@ describe('dashboardFilterStorage', () => {
 
     it('returns null when the month field is missing', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({}))
+
+      expect(loadStoredDashboardFilters()).toBeNull()
+    })
+
+    it('returns null when the category field is missing', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ month: '2026-06' }))
 
       expect(loadStoredDashboardFilters()).toBeNull()
     })

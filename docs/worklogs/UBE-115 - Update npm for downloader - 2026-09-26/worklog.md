@@ -49,3 +49,12 @@ node 24.18.1 / npm 11.16.0); local npm is 10.9.8. npm 12 supports node `^24.15.0
 `RUN npm install -g npm@12` to `FileDownloader/Dockerfile` before `npm ci`. arm64 image builds,
 `npm ci` works with the existing lockfile, image reports npm 12.1.0 and the update notice is gone.
 npm 12 now logs `npm notice run ...` lines when `npx` runs.
+
+**Prompt:** commit and raise PR
+
+**Response:** Committed the Dockerfile change and worklog, pushed, and raised PR #98
+(https://github.com/dcamdupe/pim/pull/98).
+
+**Prompt:** yes (commit and push the worklog update)
+
+**Response:** Committed and pushed the worklog session-log update to PR #98.

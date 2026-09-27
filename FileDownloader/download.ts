@@ -5,6 +5,7 @@ import { TmbankDownloader } from './downloaders/tmbank';
 import { WestpacDownloader } from './downloaders/westpac';
 import { PimClient } from './pim';
 import { AmexDownloader } from './downloaders/amex';
+import { MacquarieDownloader } from './downloaders/macquarie';
 import { log, logError } from './logger';
 
 async function main() {
@@ -12,9 +13,10 @@ async function main() {
 
   // Each downloader's export is filed under that bank's configured PIM account name.
   const jobs: { downloader: Downloader; pimAccount: string }[] = [
-    { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
-    { downloader: new TmbankDownloader(), pimAccount: config.tmbankPimAccount },
-    { downloader: new AmexDownloader(), pimAccount: config.amexPimAccount },
+    // { downloader: new WestpacDownloader(), pimAccount: config.westpacPimAccount },
+    // { downloader: new TmbankDownloader(), pimAccount: config.tmbankPimAccount },
+    // { downloader: new AmexDownloader(), pimAccount: config.amexPimAccount },
+    { downloader: new MacquarieDownloader(), pimAccount: config.macquariePimAccount },
   ];
 
   const startDate = process.env.StartDate;

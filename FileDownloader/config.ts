@@ -17,6 +17,9 @@ export interface Config {
   amexUsername: string;
   amexPassword: string;
   amexPimAccount: string;
+  macquarieUsername: string;
+  macquariePassword: string;
+  macquariePimAccount: string;
   pimBaseUrl: string;
   pimApiKey: string;
 }
@@ -48,6 +51,9 @@ export function loadConfig(): Config {
     amexUsername: process.env.AmexUsername,
     amexPassword: process.env.AmexPassword,
     amexPimAccount: process.env.AmexPimAccount,
+    macquarieUsername: process.env.MacquarieUsername,
+    macquariePassword: process.env.MacquariePassword,
+    macquariePimAccount: process.env.MacquariePimAccount,
     pimBaseUrl: process.env.BaseUrl,
     pimApiKey: process.env.PimApiKey,
   };

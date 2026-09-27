@@ -17,6 +17,7 @@ final class SessionController: ObservableObject {
 
     let biometricType: BiometricType
     private let authService: CognitoAuthService
+    private var hasAutoUnlocked = false
 
     private static let unlockReason = "Unlock PIM"
 
@@ -29,6 +30,14 @@ final class SessionController: ObservableObject {
             : .signedOut
     }
 
+    // Launch-time auto-prompt, at most once per launch, called once the scene is active so the
+    // prompt shows over the login screen rather than during launch (UBE-117).
+    func autoUnlockIfNeeded() async {
+        guard !hasAutoUnlocked, state == .locked else { return }
+        hasAutoUnlocked = true
+        await unlock()
+    }
+
     // Biometric prompt (via the Keychain item's access control) -> refresh-token exchange -> signed
     // in. A cancelled prompt leaves the screen locked silently; anything else shows an error and
     // keeps the Google button available as the fallback.
@@ -39,9 +48,12 @@ final class SessionController: ObservableObject {
         defer { isAuthenticating = false }
 
         do {
-            guard let refreshToken = try KeychainStore.read(
-                for: KeychainStore.refreshTokenKey, reason: Self.unlockReason
-            ) else {
+            // Off the main thread - SecItemCopyMatching blocks for the whole biometric prompt (UBE-117).
+            let reason = Self.unlockReason
+            let refreshToken = try await Task.detached(priority: .userInitiated) {
+                try KeychainStore.read(for: KeychainStore.refreshTokenKey, reason: reason)
+            }.value
+            guard let refreshToken else {
                 state = .signedOut
                 return
             }

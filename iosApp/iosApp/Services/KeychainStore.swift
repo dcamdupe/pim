@@ -74,13 +74,16 @@ enum KeychainStore {
         SecItemDelete(baseQuery(for: key) as CFDictionary)
     }
 
-    // Attributes-only query - does not request the data, so the biometric access control is not
-    // invoked and no prompt is shown. `errSecInteractionNotAllowed` still means the item exists,
-    // it just can't be inspected without authenticating.
+    // Attributes-only query with a non-interactive context - an attributes query alone still
+    // triggers the item's biometric prompt (UBE-117). `errSecInteractionNotAllowed` means it exists.
     static func contains(_ key: String) -> Bool {
+        let context = LAContext()
+        context.interactionNotAllowed = true
+
         var query = baseQuery(for: key)
         query[kSecReturnAttributes as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
+        query[kSecUseAuthenticationContext as String] = context
         let status = SecItemCopyMatching(query as CFDictionary, nil)
         return status == errSecSuccess || status == errSecInteractionNotAllowed
     }

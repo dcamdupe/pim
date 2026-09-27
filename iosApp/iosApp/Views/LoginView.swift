@@ -2,9 +2,11 @@ import SwiftUI
 
 // Sign-in / unlock screen (UBE-105). When a Cognito refresh token is stored and biometrics are
 // available (`SessionController.state == .locked`), the primary action is a Face ID / Touch ID
-// unlock and it auto-prompts once on appear; the Google button is always the fallback.
+// unlock and it auto-prompts once per launch, after the scene becomes active; the Google button
+// is always the fallback.
 struct LoginView: View {
     @EnvironmentObject private var session: SessionController
+    @Environment(\.scenePhase) private var scenePhase
 
     private var isLocked: Bool { session.state == .locked }
 
@@ -33,11 +35,14 @@ struct LoginView: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color(.separator), lineWidth: 1)
         )
-        .task {
-            if isLocked {
-                await session.unlock()
-            }
-        }
+        .onAppear { autoUnlockIfActive(scenePhase) }
+        .onChange(of: scenePhase) { _, phase in autoUnlockIfActive(phase) }
+    }
+
+    // Unstructured Task so the prompt's own inactive/active transition can't cancel the unlock.
+    private func autoUnlockIfActive(_ phase: ScenePhase) {
+        guard phase == .active, isLocked else { return }
+        Task { await session.autoUnlockIfNeeded() }
     }
 
     private var unlockButton: some View {

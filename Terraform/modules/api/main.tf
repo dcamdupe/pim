@@ -54,6 +54,7 @@ data "aws_iam_policy_document" "dynamodb_access" {
     effect = "Allow"
     actions = [
       "dynamodb:GetItem",
+      "dynamodb:BatchGetItem",
       "dynamodb:PutItem",
       "dynamodb:UpdateItem",
       "dynamodb:DeleteItem",

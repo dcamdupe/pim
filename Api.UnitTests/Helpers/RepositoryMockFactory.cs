@@ -14,6 +14,13 @@ internal static class RepositoryMockFactory
         mock.Setup(r => r.GetAsync(It.IsAny<string>()))
             .ReturnsAsync((string id) => items.FirstOrDefault(item => GetId(item, idProperty) == id));
 
+        mock.Setup(r => r.GetManyAsync(It.IsAny<IEnumerable<string>>()))
+            .ReturnsAsync((IEnumerable<string> ids) =>
+            {
+                var idSet = ids.ToHashSet(StringComparer.Ordinal);
+                return items.Where(item => idSet.Contains(GetId(item, idProperty))).ToList();
+            });
+
         mock.Setup(r => r.AddAsync(It.IsAny<T>()))
             .Returns((T entity) =>
             {

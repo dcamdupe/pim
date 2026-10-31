@@ -82,6 +82,57 @@ public sealed partial class DynamoDbLoggingTests : IClassFixture<ApiWebApplicati
         Assert.Matches(ElapsedMsPattern(), responseLog);
     }
 
+    [Fact]
+    public async Task GetManyAsync_ReturnsFoundItems_AcrossMoreThanOneBatch_AndLogsElapsedTime()
+    {
+        // 120 months > BatchGetItem's 100-key cap, so this needs two batch calls; only every 10th exists.
+        var messages = new List<string>();
+        var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureLogging(logging => logging.AddProvider(new CapturingLoggerProvider(messages))));
+        using var scope = factory.Services.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        var months = Enumerable.Range(0, 120)
+            .Select(i => (Year: 2010 + (i / 12), Month: (i % 12) + 1))
+            .ToList();
+        var stored = months.Where((_, i) => i % 10 == 0)
+            .Select(m => new TransactionMonth { Email = _email, Year = m.Year, Month = m.Month })
+            .ToList();
+        foreach (var bucket in stored)
+        {
+            await repository.AddAsync(bucket);
+        }
+
+        try
+        {
+            var result = await repository.GetManyAsync(
+                months.Select(m => TransactionMonth.BuildId(_email, m.Year, m.Month)));
+
+            Assert.Equal(stored.Select(b => b.Id).Order(), result.Select(b => b.Id).Order());
+            var responseLog = Assert.Single(messages, m => m.StartsWith("DynamoDB GetManyAsync response:", StringComparison.Ordinal));
+            Assert.Contains("count=120", responseLog, StringComparison.Ordinal);
+            Assert.Contains("found=12", responseLog, StringComparison.Ordinal);
+            Assert.Matches(ElapsedMsPattern(), responseLog);
+        }
+        finally
+        {
+            foreach (var bucket in stored)
+            {
+                await repository.DeleteAsync(bucket.Id);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task GetManyAsync_IgnoresDuplicateIds()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<IRepository<User>>();
+
+        var result = await users.GetManyAsync([_email, _email]);
+
+        Assert.Single(result);
+    }
+
     private HttpClient AuthenticatedClient(List<string> logSink)
     {
         var factory = _factory.WithWebHostBuilder(builder =>

@@ -1,3 +1,4 @@
+using Moq;
 using Pim.Api.Data;
 using Pim.Api.Services;
 using Pim.Api.UnitTests.Helpers;
@@ -71,10 +72,8 @@ public class TransactionQueryServiceTests
     }
 
     [Fact]
-    public async Task GetTransactionsAsync_CombinesTransactionsAcrossMoreMonthsThanTheParallelismLimit()
+    public async Task GetTransactionsAsync_CombinesTransactionsAcrossManyMonths()
     {
-        // 8 months > the 5-way MaxDegreeOfParallelism the fetch loop is capped at - checks
-        // correctness still holds once Parallel.ForEachAsync has to queue bodies beyond that cap.
         var months = Enumerable.Range(1, 8)
             .Select(month => new TransactionMonth
             {
@@ -235,6 +234,22 @@ public class TransactionQueryServiceTests
         var result = await sut.GetTransactionsAsync(Email, new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30));
 
         Assert.Contains(result, t => t.Description == "Before stored min date");
+    }
+
+    [Fact]
+    public async Task GetTransactionsAsync_FetchesAllMonthsInOneBatchCall()
+    {
+        var transactionRepository = RepositoryMockFactory.Create(new List<TransactionMonth>());
+        var userRepository = RepositoryMockFactory.Create(new List<User>());
+        var sut = new TransactionQueryService(transactionRepository.Object, userRepository.Object);
+
+        await sut.GetTransactionsAsync(Email, new DateOnly(2020, 12, 1), new DateOnly(2026, 10, 31));
+
+        // 2020-12 to 2026-10 inclusive = 71 month buckets, all requested in a single call.
+        transactionRepository.Verify(
+            r => r.GetManyAsync(It.Is<IEnumerable<string>>(ids => ids.Count() == 71)),
+            Times.Once);
+        transactionRepository.Verify(r => r.GetAsync(It.IsAny<string>()), Times.Never);
     }
 
     private static Transaction Transaction(string description, DateOnly date) => new()

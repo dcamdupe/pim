@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Pim.Api.Data;
 using Pim.Api.Repository;
 
@@ -6,8 +5,6 @@ namespace Pim.Api.Services;
 
 public sealed class TransactionQueryService : ITransactionQueryService
 {
-    private const int MaxParallelMonthFetches = 5;
-
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<User> _users;
 
@@ -25,25 +22,12 @@ public sealed class TransactionQueryService : ITransactionQueryService
             return [];
         }
 
-        var transactions = new ConcurrentBag<Transaction>();
+        var ids = EnumerateMonths(effectiveStartDate.Value, endDate)
+            .Select(month => TransactionMonth.BuildId(email, month.Year, month.Month));
+        var buckets = await _transactionMonths.GetManyAsync(ids);
 
-        await Parallel.ForEachAsync(
-            EnumerateMonths(effectiveStartDate.Value, endDate),
-            new ParallelOptions { MaxDegreeOfParallelism = MaxParallelMonthFetches },
-            async (month, _) =>
-            {
-                var id = TransactionMonth.BuildId(email, month.Year, month.Month);
-                var bucket = await _transactionMonths.GetAsync(id);
-                if (bucket is not null)
-                {
-                    foreach (var transaction in bucket.Transactions)
-                    {
-                        transactions.Add(transaction);
-                    }
-                }
-            });
-
-        return transactions
+        return buckets
+            .SelectMany(bucket => bucket.Transactions)
             .Where(t => t.Date >= effectiveStartDate.Value && t.Date <= endDate)
             .OrderByDescending(t => t.Date)
             .ToList();

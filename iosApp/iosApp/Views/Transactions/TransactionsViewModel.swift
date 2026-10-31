@@ -20,6 +20,8 @@ final class TransactionsViewModel: ObservableObject {
         let transaction: Transaction
         let category: String
         let match: ApproximateMatch
+        // Description stats snapshot taken when the sheet opened, reused for live recounts.
+        let descriptionStats: [TransactionDescriptionStat]
         var id: String { transaction.id }
     }
 
@@ -33,6 +35,8 @@ final class TransactionsViewModel: ObservableObject {
     @Published var pendingCategoryChange: PendingCategoryChange?
     @Published private(set) var modalAction: ModalAction?
     @Published private(set) var categorySaveError: String?
+    // Editable "starts with" text in the apply-to-similar sheet (UBE-121), seeded from the match.
+    @Published var matchPrefix: String = ""
 
     private let transactionsStore: TransactionsStore
     private let settingsStore: SettingsStore
@@ -115,7 +119,13 @@ final class TransactionsViewModel: ObservableObject {
             // The category picker sheet is dismissing as this runs - let it finish before
             // presenting the "apply to similar?" sheet, or SwiftUI drops the second presentation.
             try? await Task.sleep(nanoseconds: 350_000_000)
-            pendingCategoryChange = PendingCategoryChange(transaction: transaction, category: category, match: match)
+            matchPrefix = match.descriptionStart
+            pendingCategoryChange = PendingCategoryChange(
+                transaction: transaction,
+                category: category,
+                match: match,
+                descriptionStats: transactionsStore.descriptions
+            )
             return
         }
         await directSave(category, for: transaction)
@@ -133,15 +143,37 @@ final class TransactionsViewModel: ObservableObject {
         }
     }
 
+    var trimmedMatchPrefix: String { matchPrefix.trimmingCharacters(in: .whitespaces) }
+
+    var matchPrefixCount: Int {
+        guard let pending = pendingCategoryChange, !trimmedMatchPrefix.isEmpty else { return 0 }
+        return DescriptionMatching.countMatchingTransactions(
+            prefix: trimmedMatchPrefix,
+            description: pending.transaction.description,
+            otherDescriptions: pending.descriptionStats
+        )
+    }
+
+    // Why "Apply" is disabled, if it is - the prefix must cover this transaction and at least one other.
+    var matchPrefixError: String? {
+        guard let pending = pendingCategoryChange else { return nil }
+        if trimmedMatchPrefix.isEmpty { return "Enter the text descriptions should start with." }
+        if !pending.transaction.description.hasPrefix(trimmedMatchPrefix) {
+            return "This transaction\u{2019}s description doesn\u{2019}t start with this text."
+        }
+        if matchPrefixCount == 0 { return "No other transactions start with this text." }
+        return nil
+    }
+
     // "Apply to N similar" - save the description rule, then the store refreshes.
     func confirmApplyToSimilar() async {
-        guard let pending = pendingCategoryChange else { return }
+        guard let pending = pendingCategoryChange, matchPrefixError == nil else { return }
         categorySaveError = nil
         modalAction = .confirm
         defer { modalAction = nil }
         do {
             try await transactionsStore.applyDescriptionMapping(
-                descriptionStart: pending.match.descriptionStart, category: pending.category
+                descriptionStart: trimmedMatchPrefix, category: pending.category
             )
             pendingCategoryChange = nil
         } catch PimApiError.unauthorized {

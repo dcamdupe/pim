@@ -37,6 +37,9 @@ struct TransactionsView: View {
         .sheet(item: $viewModel.pendingCategoryChange) { pending in
             ApplyToSimilarSheet(
                 pending: pending,
+                matchPrefix: $viewModel.matchPrefix,
+                matchCount: viewModel.matchPrefixCount,
+                validationMessage: viewModel.matchPrefixError,
                 activeAction: viewModel.modalAction,
                 errorMessage: viewModel.categorySaveError,
                 onApplyToAll: { Task { await viewModel.confirmApplyToSimilar() } },

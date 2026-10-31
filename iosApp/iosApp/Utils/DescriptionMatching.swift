@@ -26,15 +26,9 @@ enum DescriptionMatching {
 
         for boundary in boundaries {
             let prefix = String(chars[0..<boundary])
-            var matchingTransactionCount = 0
-
-            for stat in otherDescriptions where stat.description.hasPrefix(prefix) {
-                // The stat for `description` itself also represents the transaction being edited -
-                // only the *other* transactions it covers count.
-                matchingTransactionCount += stat.description == description
-                    ? stat.transactionCount - 1
-                    : stat.transactionCount
-            }
+            let matchingTransactionCount = countMatchingTransactions(
+                prefix: prefix, description: description, otherDescriptions: otherDescriptions
+            )
 
             if matchingTransactionCount > 0 {
                 var trimmed = prefix
@@ -51,5 +45,20 @@ enum DescriptionMatching {
         }
 
         return nil
+    }
+
+    // Counts transactions, other than the one being edited (`description`), whose description
+    // starts with `prefix` - the same ordinal StartsWith rule the Api applies when saving a mapping.
+    static func countMatchingTransactions(
+        prefix: String,
+        description: String,
+        otherDescriptions: [TransactionDescriptionStat]
+    ) -> Int {
+        var count = 0
+        for stat in otherDescriptions where stat.description.hasPrefix(prefix) {
+            // The stat for `description` itself also represents the transaction being edited.
+            count += stat.description == description ? stat.transactionCount - 1 : stat.transactionCount
+        }
+        return count
     }
 }

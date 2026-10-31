@@ -225,6 +225,81 @@ test.describe('Transaction categorization', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
+  test('lets the bulk-apply prefix be edited, showing the full description and a live count (UBE-121)', async ({ page }) => {
+    const runId = Date.now();
+    const colesA = `COLES${runId} 0717 TURRAMURRA AUS`;
+    const colesB = `COLES${runId} 0717 HORNSBY AUS`;
+    const colesC = `COLES${runId} 0760 ASQUITH AUS`;
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    const dateForUpload = `${day}/${month}/${year}`;
+
+    const qif =
+      '!Type:Bank\n' +
+      `D${dateForUpload}\nM${colesA}\nT-20.00\n^\n` +
+      `D${dateForUpload}\nM${colesB}\nT-15.00\n^\n` +
+      `D${dateForUpload}\nM${colesC}\nT-10.00\n^\n`;
+
+    await page.goto('/login');
+    await page.locator('#email').fill('testuser@example.com');
+    await page.locator('#password').fill('TestPassword123!');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: '+ Add account' }).click();
+    const newRow = page.locator('.account-row').last();
+    await newRow.locator('input').nth(0).fill('Playwright Prefix Account');
+    await newRow.locator('select').selectOption('Transaction');
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page.getByText('Saved.').first()).toBeVisible();
+
+    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('link', { name: 'Upload' }).click();
+    await page.locator('#account').selectOption('Playwright Prefix Account');
+    await page.locator('#file-input').setInputFiles({
+      name: 'transactions.qif',
+      mimeType: 'text/plain',
+      buffer: Buffer.from(qif),
+    });
+    await page.getByRole('button', { name: 'Save' }).first().click();
+    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page.locator('tr', { hasText: colesA })).toBeVisible();
+
+    // The suggestion is the longest shared prefix ("COLES<runId> 0717"), matching only colesB.
+    await page.locator('tr', { hasText: colesA }).locator('.category-select').selectOption('Groceries');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByTestId('modal-full-description')).toHaveText(colesA);
+    const prefixInput = dialog.getByLabel('Apply to descriptions starting with');
+    await expect(prefixInput).toHaveValue(`COLES${runId} 0717`);
+    await expect(dialog.getByRole('button', { name: /Apply to 1 similar transactions/ })).toBeEnabled();
+
+    // Text this transaction doesn't start with can't be applied.
+    await prefixInput.fill(`WOOLWORTHS${runId}`);
+    await expect(dialog.getByText("This transaction's description doesn't start with this text.")).toBeVisible();
+    await expect(dialog.getByRole('button', { name: /Apply to 0 similar transactions/ })).toBeDisabled();
+
+    // Widening to the merchant token picks up the other store too.
+    await prefixInput.fill(`COLES${runId}`);
+    await expect(dialog.getByText('2 other transactions')).toBeVisible();
+    await dialog.getByRole('button', { name: /Apply to 2 similar transactions/ }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await expect(page.locator('tr', { hasText: colesA }).locator('.category-select')).toHaveValue('Groceries');
+    await expect(page.locator('tr', { hasText: colesB }).locator('.category-select')).toHaveValue('Groceries');
+    await expect(page.locator('tr', { hasText: colesC }).locator('.category-select')).toHaveValue('Groceries');
+
+    await page.getByRole('link', { name: 'Settings' }).click();
+    const addedRow = page.locator('.account-row').last();
+    await addedRow.getByRole('button', { name: 'Remove account' }).click();
+    await page.getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
   test('Cancel on the bulk-apply modal saves nothing (UBE-66)', async ({ page }) => {
     const runId = Date.now();
     const colesA = `COLES${runId} 0717 TURRAMURRA AUS`;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findApproximateMatch } from '../../FrontEnd/src/utils/descriptionMatching'
+import { countMatchingTransactions, findApproximateMatch } from '../../FrontEnd/src/utils/descriptionMatching'
 import type { TransactionDescriptionStat } from '../../FrontEnd/src/services/transactionDescriptionsService'
 
 function stat(description: string, transactionCount: number, unclassifiedCount = 0): TransactionDescriptionStat {
@@ -95,5 +95,34 @@ describe('findApproximateMatch', () => {
     ])
 
     expect(result).toEqual({ descriptionStart: 'COLES', matchingTransactionCount: 5 })
+  })
+})
+
+describe('countMatchingTransactions', () => {
+  const stats = [
+    stat('COLES 0717 TURRAMURRA AUS', 3),
+    stat('COLES 0760 ASQUITH AUS', 2),
+    stat('COLESWORTH PTY LTD', 1),
+    stat('WOOLWORTHS 1234', 4),
+  ]
+
+  it('counts every transaction starting with a wider prefix', () => {
+    expect(countMatchingTransactions('COLES', 'COLES 0717 TURRAMURRA AUS', stats)).toBe(2 + 2 + 1)
+  })
+
+  it('counts only the narrower subset for a more specific prefix', () => {
+    expect(countMatchingTransactions('COLES 0717', 'COLES 0717 TURRAMURRA AUS', stats)).toBe(2)
+  })
+
+  it('excludes the transaction being edited from its own description entry', () => {
+    expect(countMatchingTransactions('COLES 0717 TURRAMURRA AUS', 'COLES 0717 TURRAMURRA AUS', stats)).toBe(2)
+  })
+
+  it('returns 0 when nothing else starts with the prefix', () => {
+    expect(countMatchingTransactions('ALDI', 'ALDI STORES', [stat('ALDI STORES', 1), ...stats])).toBe(0)
+  })
+
+  it('is case-sensitive, matching the Api ordinal StartsWith', () => {
+    expect(countMatchingTransactions('coles', 'COLES 0717 TURRAMURRA AUS', stats)).toBe(0)
   })
 })

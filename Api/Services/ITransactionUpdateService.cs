@@ -6,9 +6,10 @@ public interface ITransactionUpdateService
 {
     Task UpdateTransactionsAsync(string email, List<Transaction> transactions);
 
-    Task ApplyDescriptionMappingAsync(string email, string descriptionStart, string category);
+    // These take the caller's already-loaded user, so they don't re-read it.
+    Task ApplyDescriptionMappingAsync(User user, string descriptionStart, string category);
 
-    Task DeleteTransactionsForAccountAsync(string email, string accountName);
+    Task DeleteTransactionsForAccountAsync(User user, string accountName);
 
-    Task RemoveCategoryFromTransactionsAsync(string email, string categoryName);
+    Task RemoveCategoryFromTransactionsAsync(User user, string categoryName);
 }

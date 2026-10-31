@@ -21,7 +21,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, []);
 
-        await Assert.ThrowsAsync<FileParseException>(() => sut.ProcessAsync(Email, Account, CreateFile()));
+        await Assert.ThrowsAsync<FileParseException>(() => sut.ProcessAsync(NewUser(), Account, CreateFile()));
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class FileProcessorTests
         var months = new List<TransactionMonth>();
         var sut = CreateProcessor(factory, months);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.Equal(TransactionMonth.BuildId(Email, 2026, 6), month.Id);
@@ -64,7 +64,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.Equal(2, month.Transactions.Count);
@@ -83,7 +83,7 @@ public class FileProcessorTests
         var months = new List<TransactionMonth>();
         var sut = CreateProcessor(factory, months);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         Assert.Equal(2, months.Count);
         Assert.Contains(months, m => m.Year == 2026 && m.Month == 6 && m.Transactions.Single().Description == "June Row");
@@ -107,7 +107,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.Single(month.Transactions);
@@ -130,7 +130,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.Single(month.Transactions);
@@ -164,7 +164,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.Equal(2, month.Transactions.Count);
@@ -183,7 +183,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, [], [user]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(user, Account, CreateFile());
 
         Assert.Equal(new DateOnly(2026, 6, 1), user.MinTransactionDate);
     }
@@ -200,7 +200,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, [], [user]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(user, Account, CreateFile());
 
         Assert.Equal(new DateOnly(2026, 5, 1), user.MinTransactionDate);
     }
@@ -217,7 +217,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, [], [user]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(user, Account, CreateFile());
 
         Assert.Equal(new DateOnly(2026, 5, 1), user.MinTransactionDate);
     }
@@ -231,7 +231,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, [], [user]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(user, Account, CreateFile());
 
         Assert.Null(user.MinTransactionDate);
     }
@@ -249,7 +249,7 @@ public class FileProcessorTests
         var transactionDescriptions = new List<TransactionDescriptions>();
         var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var record = Assert.Single(transactionDescriptions);
         Assert.Equal(2, record.Descriptions.Count);
@@ -279,7 +279,7 @@ public class FileProcessorTests
         var transactionDescriptions = new List<TransactionDescriptions> { existing };
         var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var record = Assert.Single(transactionDescriptions);
         Assert.Equal(2, record.Descriptions.Count);
@@ -314,7 +314,7 @@ public class FileProcessorTests
         var factory = CreateFactory(parser);
         var sut = CreateProcessor(factory, months, transactionDescriptions: transactionDescriptions);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var record = Assert.Single(transactionDescriptions);
         var coffee = Assert.Single(record.Descriptions);
@@ -339,7 +339,7 @@ public class FileProcessorTests
         var transactionDescriptions = new List<TransactionDescriptions>();
         var sut = CreateProcessor(factory, [], transactionDescriptions: transactionDescriptions, descriptionMappings: [mapping]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var record = Assert.Single(transactionDescriptions);
         var stat = Assert.Single(record.Descriptions);
@@ -365,7 +365,7 @@ public class FileProcessorTests
         var months = new List<TransactionMonth>();
         var sut = CreateProcessor(factory, months, descriptionMappings: [mapping]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.Equal("Groceries", month.Transactions.Single(t => t.Description == "COLES 0717 TURRAMURRA AUS").Category);
@@ -395,7 +395,7 @@ public class FileProcessorTests
         var months = new List<TransactionMonth>();
         var sut = CreateProcessor(factory, months, users: [user], descriptionMappings: [mapping]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(user, Account, CreateFile());
 
         var month = Assert.Single(months);
         var transaction = month.Transactions.Single();
@@ -424,7 +424,7 @@ public class FileProcessorTests
         var months = new List<TransactionMonth>();
         var sut = CreateProcessor(factory, months, descriptionMappings: [mapping]);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.Equal("Specific Coles", month.Transactions.Single().Category);
@@ -443,11 +443,51 @@ public class FileProcessorTests
         var months = new List<TransactionMonth>();
         var sut = CreateProcessor(factory, months);
 
-        await sut.ProcessAsync(Email, Account, CreateFile());
+        await sut.ProcessAsync(NewUser(), Account, CreateFile());
 
         var month = Assert.Single(months);
         Assert.All(month.Transactions, t => Assert.Equal(InternalTransferMatcher.CategoryName, t.Category));
     }
+
+    [Fact]
+    public async Task ProcessAsync_NeverReloadsTheUser_FromTheRepository()
+    {
+        var user = new User
+        {
+            Email = Email,
+            PasswordHash = "hash",
+            Categories = [new Category { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense }],
+        };
+        var mapping = new DescriptionMapping
+        {
+            Email = Email,
+            Mappings = [new DescriptionMappingEntry { DescriptionStart = "COLES", Category = "Groceries" }],
+        };
+        var parser = new Mock<IFileParser>();
+        parser.Setup(p => p.Parse(Account)).Returns(
+        [
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 1), Description = "COLES 0717 TURRAMURRA AUS", Category = "", Amount = -20m },
+            new Transaction { Account = Account, Date = new DateOnly(2026, 6, 2), Description = "Transfer to Savings", Category = "", Amount = -100m },
+            new Transaction { Account = "Savings", Date = new DateOnly(2026, 6, 3), Description = "Transfer from Everyday", Category = "", Amount = 100m },
+        ]);
+        var transactionRepository = RepositoryMockFactory.Create(new List<TransactionMonth>());
+        var userRepository = RepositoryMockFactory.Create(new List<User> { user });
+        var transactionDescriptionsRepository = RepositoryMockFactory.Create(new List<TransactionDescriptions>());
+        var sut = new FileProcessor(
+            CreateFactory(parser).Object,
+            transactionRepository.Object,
+            userRepository.Object,
+            transactionDescriptionsRepository.Object,
+            RepositoryMockFactory.Create(new List<DescriptionMapping> { mapping }).Object,
+            new InternalTransferMatcher(transactionRepository.Object, transactionDescriptionsRepository.Object),
+            NullLogger<FileProcessor>.Instance);
+
+        await sut.ProcessAsync(user, Account, CreateFile());
+
+        userRepository.Verify(r => r.GetAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    private static User NewUser() => new() { Email = Email, PasswordHash = "hash" };
 
     private static IFormFile CreateFile() => new FormFile(new MemoryStream(), 0, 0, "file", "transactions.qif");
 
@@ -469,7 +509,7 @@ public class FileProcessorTests
         var userRepository = RepositoryMockFactory.Create(users ?? [new User { Email = Email, PasswordHash = "hash" }]);
         var transactionDescriptionsRepository = RepositoryMockFactory.Create(transactionDescriptions ?? []);
         var creditDescriptionMappingRepository = RepositoryMockFactory.Create(descriptionMappings ?? []);
-        var internalTransferMatcher = new InternalTransferMatcher(transactionRepository.Object, transactionDescriptionsRepository.Object, userRepository.Object);
+        var internalTransferMatcher = new InternalTransferMatcher(transactionRepository.Object, transactionDescriptionsRepository.Object);
         return new FileProcessor(
             factory.Object,
             transactionRepository.Object,

@@ -109,7 +109,7 @@ public sealed class SettingsController : ControllerBase
         }
 
         await _users.UpdateAsync(user.Email, user);
-        await _transactionUpdateService.DeleteTransactionsForAccountAsync(user.Email, request.Name);
+        await _transactionUpdateService.DeleteTransactionsForAccountAsync(user, request.Name);
 
         return NoContent();
     }
@@ -162,7 +162,7 @@ public sealed class SettingsController : ControllerBase
         }
 
         await _users.UpdateAsync(user.Email, user);
-        await _transactionUpdateService.RemoveCategoryFromTransactionsAsync(user.Email, category.Name);
+        await _transactionUpdateService.RemoveCategoryFromTransactionsAsync(user, category.Name);
 
         return NoContent();
     }

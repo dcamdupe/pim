@@ -3,10 +3,10 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { categoryColor, categoryNames } from '../services/categoriesService'
-import { getCachedTransactionDescriptions } from '../services/transactionDescriptionsService'
+import { getCachedTransactionDescriptions, type TransactionDescriptionStat } from '../services/transactionDescriptionsService'
 import { saveDescriptionMapping, type Transaction } from '../services/transactionsService'
 import { useTransactionsStore } from '../stores/transactions'
-import { findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
+import { countMatchingTransactions, findApproximateMatch, type ApproximateMatch } from '../utils/descriptionMatching'
 import { filterTransactions, type AmountSign } from '../utils/transactionFilters'
 import { loadStoredTransactionFilters, saveTransactionFilters, type RangeOption } from '../utils/transactionFilterStorage'
 import { filterByDateRange, recentMonthOptions, type MonthRangeOption } from '../utils/transactionDateRange'
@@ -19,6 +19,8 @@ interface PendingCategoryChange {
   transaction: Transaction
   category: string
   match: ApproximateMatch
+  // Snapshot of the description stats taken when the modal opened, reused for live recounts.
+  descriptionStats: TransactionDescriptionStat[]
 }
 
 const route = useRoute()
@@ -61,6 +63,33 @@ const modalAction = ref<'confirm' | 'decline' | null>(null)
 // small spinner on that row only, distinct from the modal's own spinner.
 const directSaveTransaction = ref<Transaction | null>(null)
 const categorySaveError = ref('')
+// The editable "starts with" text in the bulk-apply modal (UBE-121), seeded from the suggested match.
+const matchPrefix = ref('')
+const trimmedMatchPrefix = computed(() => matchPrefix.value.trim())
+const matchPrefixCount = computed(() => {
+  const pending = pendingCategoryChange.value
+  if (!pending || !trimmedMatchPrefix.value) {
+    return 0
+  }
+  return countMatchingTransactions(trimmedMatchPrefix.value, pending.transaction.description, pending.descriptionStats)
+})
+// Why Apply is disabled, if it is - the prefix must cover this transaction and at least one other.
+const matchPrefixError = computed(() => {
+  const pending = pendingCategoryChange.value
+  if (!pending) {
+    return ''
+  }
+  if (!trimmedMatchPrefix.value) {
+    return 'Enter the text descriptions should start with.'
+  }
+  if (!pending.transaction.description.startsWith(trimmedMatchPrefix.value)) {
+    return "This transaction's description doesn't start with this text."
+  }
+  if (matchPrefixCount.value === 0) {
+    return 'No other transactions start with this text.'
+  }
+  return ''
+})
 
 const searchQuery = ref(queryFilters ? '' : storedFilters?.search ?? '')
 const selectedAccount = ref(queryFilters ? '' : storedFilters?.account ?? '')
@@ -173,7 +202,8 @@ async function onCategoryChange(transaction: Transaction, event: Event) {
   const match = findApproximateMatch(transaction.description, otherDescriptions)
 
   if (match) {
-    pendingCategoryChange.value = { transaction, category, match }
+    pendingCategoryChange.value = { transaction, category, match, descriptionStats: otherDescriptions }
+    matchPrefix.value = match.descriptionStart
   } else {
     directSaveTransaction.value = transaction
     try {
@@ -186,7 +216,7 @@ async function onCategoryChange(transaction: Transaction, event: Event) {
 
 async function confirmBulkApply() {
   const pending = pendingCategoryChange.value
-  if (!pending) {
+  if (!pending || matchPrefixError.value) {
     return
   }
 
@@ -194,7 +224,7 @@ async function confirmBulkApply() {
   savingCategory.value = true
   modalAction.value = 'confirm'
   try {
-    await saveDescriptionMapping(pending.match.descriptionStart, pending.category)
+    await saveDescriptionMapping(trimmedMatchPrefix.value, pending.category)
     // A forced refresh, not load() - the mapping rule can retroactively recategorise many
     // transactions server-side that we have no individual references to mutate locally.
     await transactionsStore.refresh()
@@ -412,11 +442,25 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
     <div v-if="pendingCategoryChange" class="modal-backdrop">
       <div class="modal" role="dialog" aria-modal="true">
         <h2>Apply to similar transactions?</h2>
-        <p>
-          {{ pendingCategoryChange.match.matchingTransactionCount }}
-          other transaction{{ pendingCategoryChange.match.matchingTransactionCount === 1 ? '' : 's' }}
-          starting with "<strong>{{ pendingCategoryChange.match.descriptionStart }}</strong>" could also be categorised
-          as <strong>{{ pendingCategoryChange.category }}</strong>.
+        <p class="modal-transaction">
+          Transaction: <strong data-testid="modal-full-description">{{ pendingCategoryChange.transaction.description }}</strong>
+        </p>
+        <label class="modal-prefix-label" for="match-prefix">Apply to descriptions starting with</label>
+        <input
+          id="match-prefix"
+          v-model="matchPrefix"
+          class="modal-prefix-input"
+          type="text"
+          :disabled="savingCategory"
+          :aria-invalid="matchPrefixError ? 'true' : 'false'"
+          aria-describedby="match-prefix-help"
+        />
+        <p id="match-prefix-help" class="modal-prefix-help" :class="{ error: matchPrefixError }">
+          <template v-if="matchPrefixError">{{ matchPrefixError }}</template>
+          <template v-else>
+            {{ matchPrefixCount }} other transaction{{ matchPrefixCount === 1 ? '' : 's' }} could also be categorised
+            as <strong>{{ pendingCategoryChange.category }}</strong>.
+          </template>
         </p>
         <div class="modal-actions">
           <button type="button" class="modal-button secondary" :disabled="savingCategory" @click="cancelCategoryChange">Cancel</button>
@@ -424,9 +468,9 @@ watch([selectedRange, searchQuery, selectedAccount, selectedCategory, needsCateg
             <span v-if="modalAction === 'decline'" class="spinner" aria-label="Saving…"></span>
             Just this one
           </button>
-          <button type="button" class="modal-button primary" :disabled="savingCategory" @click="confirmBulkApply">
+          <button type="button" class="modal-button primary" :disabled="savingCategory || !!matchPrefixError" @click="confirmBulkApply">
             <span v-if="modalAction === 'confirm'" class="spinner" aria-label="Saving…"></span>
-            Apply to {{ pendingCategoryChange.match.matchingTransactionCount }} similar transactions
+            Apply to {{ matchPrefixCount }} similar transactions
           </button>
         </div>
       </div>
@@ -775,6 +819,39 @@ th.actions-header {
 .modal p {
   margin: 0 0 20px;
   color: var(--text-h);
+}
+
+.modal p.modal-transaction {
+  margin-bottom: 14px;
+  overflow-wrap: anywhere;
+}
+
+.modal-prefix-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modal-prefix-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--field-bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.modal p.modal-prefix-help {
+  margin: 8px 0 20px;
+  font-size: 13px;
+}
+
+.modal p.modal-prefix-help.error {
+  color: #d33;
 }
 
 .modal-actions {

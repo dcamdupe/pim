@@ -31,16 +31,7 @@ export function findApproximateMatch(description: string, otherDescriptions: Tra
 
   for (const boundary of boundaries) {
     const prefix = description.slice(0, boundary)
-    let matchingTransactionCount = 0
-
-    for (const stat of otherDescriptions) {
-      if (!stat.description.startsWith(prefix)) {
-        continue
-      }
-      // The stat for `description` itself also represents the transaction being edited - only
-      // the transactions *other* than that one count as a match.
-      matchingTransactionCount += stat.description === description ? stat.transactionCount - 1 : stat.transactionCount
-    }
+    const matchingTransactionCount = countMatchingTransactions(prefix, description, otherDescriptions)
 
     if (matchingTransactionCount > 0) {
       return { descriptionStart: prefix.trimEnd(), matchingTransactionCount }
@@ -59,4 +50,18 @@ export function findApproximateMatch(description: string, otherDescriptions: Tra
   }
 
   return null
+}
+
+// Counts transactions, other than the one being edited (`description`), whose description starts
+// with `prefix` - the same ordinal StartsWith rule the Api applies when saving a mapping.
+export function countMatchingTransactions(prefix: string, description: string, otherDescriptions: TransactionDescriptionStat[]): number {
+  let count = 0
+  for (const stat of otherDescriptions) {
+    if (!stat.description.startsWith(prefix)) {
+      continue
+    }
+    // The stat for `description` itself also represents the transaction being edited.
+    count += stat.description === description ? stat.transactionCount - 1 : stat.transactionCount
+  }
+  return count
 }

@@ -57,7 +57,7 @@ Likely contributors:
 - [x] Remove redundant `User` lookups per request
 - [x] Unit tests for service changes
 - [x] Remove redundant `User` lookups on other endpoints (settings account/category delete, description mapping)
-- [ ] `dotnet build` / `dotnet test` pass (build + unit tests pass; integration tests blocked on DynamoDB Local tables)
+- [x] `dotnet build` / `dotnet test` pass
 - [x] `terraform fmt -recursive` / `terraform validate` pass
 - [x] Record findings and follow-up (apply + re-measure)
 
@@ -151,3 +151,22 @@ change the lambda to 512Mb of RAM, we'll try with that first
 
 ### Response
 Set `memory_size = 512` in `Terraform/modules/api/main.tf`. fmt and validate pass.
+
+### Prompt
+commit and raise PR
+
+### Response
+Committed 081b665 and raised https://github.com/dcamdupe/pim/pull/100. The PR notes that the
+integration tests haven't been run yet.
+
+### Prompt
+(user ran `source scripts/setup_local.sh`)
+
+### Response
+Integration tests: 66 passed. Updated the PR description to match.
+
+### Prompt
+yes, commit and push
+
+### Response
+Committed and pushed the worklog update to PR #100.

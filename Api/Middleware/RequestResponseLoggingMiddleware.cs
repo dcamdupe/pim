@@ -56,10 +56,12 @@ public sealed partial class RequestResponseLoggingMiddleware
     private static async Task<string> ReadTruncatedAsync(Stream body)
     {
         using var reader = new StreamReader(body, Encoding.UTF8, leaveOpen: true);
-        var buffer = new char[MaxLoggedBodyChars];
+        // Read one extra char to detect truncation without EndOfStream (CA2024).
+        var buffer = new char[MaxLoggedBodyChars + 1];
         var read = await reader.ReadBlockAsync(buffer, 0, buffer.Length);
-        var text = new string(buffer, 0, read);
-        return reader.EndOfStream ? text : text + "...[truncated]";
+        return read > MaxLoggedBodyChars
+            ? new string(buffer, 0, MaxLoggedBodyChars) + "...[truncated]"
+            : new string(buffer, 0, read);
     }
 
     // Multipart form bodies (the /transactions/file upload) are binary-boundary-delimited, not

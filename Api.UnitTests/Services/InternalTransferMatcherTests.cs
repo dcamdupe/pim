@@ -19,7 +19,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(), [a, b], [bucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, a.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, b.Category);
@@ -35,9 +35,9 @@ public class InternalTransferMatcherTests
         {
             new() { Name = InternalTransferMatcher.CategoryName, Colour = "#6b7280", Type = Category.CategoryType.Ignore },
         };
-        var sut = CreateMatcher([bucket], categories);
+        var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(categories), [a, b], [bucket]);
 
         Assert.Equal(Category.CategoryType.Ignore, a.Type);
         Assert.True(a.Ignore);
@@ -53,7 +53,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(), [a, b], [bucket]);
 
         Assert.Equal("", a.Category);
         Assert.Equal("", b.Category);
@@ -68,7 +68,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(), [a, b], [bucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, a.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, b.Category);
@@ -83,7 +83,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(), [a, b], [bucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, a.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, b.Category);
@@ -99,7 +99,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(), [a, b], [bucket]);
 
         Assert.Equal("", a.Category);
         Assert.Equal("", b.Category);
@@ -113,7 +113,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(), [a, b], [bucket]);
 
         Assert.Equal("", a.Category);
         Assert.Equal("", b.Category);
@@ -127,7 +127,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a, b);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a, b], [bucket]);
+        await sut.MatchAsync(User(), [a, b], [bucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, a.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, b.Category);
@@ -141,7 +141,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, negative, positive);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+        await sut.MatchAsync(User(), [negative, positive], [bucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, negative.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, positive.Category);
@@ -158,7 +158,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, negative, positive);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+        await sut.MatchAsync(User(), [negative, positive], [bucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, negative.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, positive.Category);
@@ -174,7 +174,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, negative, positive);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+        await sut.MatchAsync(User(), [negative, positive], [bucket]);
 
         Assert.Equal("", negative.Category);
         Assert.Equal("", positive.Category);
@@ -190,7 +190,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, negative, positive);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [negative, positive], [bucket]);
+        await sut.MatchAsync(User(), [negative, positive], [bucket]);
 
         Assert.Equal("", negative.Category);
         Assert.Equal("", positive.Category);
@@ -205,13 +205,12 @@ public class InternalTransferMatcherTests
         var monthsRepo = RepositoryMockFactory.Create(months);
         var sut = new InternalTransferMatcher(
             monthsRepo.Object,
-            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object,
-            RepositoryMockFactory.Create(new List<User>()).Object);
+            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object);
 
         var added = Transaction("Checking", new DateOnly(2026, 6, 2), -100m, "");
         var juneBucket = Bucket(2026, 6, added);
 
-        await sut.MatchAsync(Email, [added], [juneBucket]);
+        await sut.MatchAsync(User(), [added], [juneBucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, added.Category);
         Assert.Equal(InternalTransferMatcher.CategoryName, oldTransaction.Category);
@@ -229,12 +228,12 @@ public class InternalTransferMatcherTests
             new() { Email = Email, Descriptions = [new TransactionDescriptionStat { Description = oldTransaction.Description, TransactionCount = 1, UnclassifiedCount = 1 }] },
         };
         var descriptionsRepo = RepositoryMockFactory.Create(descriptions);
-        var sut = new InternalTransferMatcher(monthsRepo.Object, descriptionsRepo.Object, RepositoryMockFactory.Create(new List<User>()).Object);
+        var sut = new InternalTransferMatcher(monthsRepo.Object, descriptionsRepo.Object);
 
         var added = Transaction("Checking", new DateOnly(2026, 6, 2), -100m, "");
         var juneBucket = Bucket(2026, 6, added);
 
-        await sut.MatchAsync(Email, [added], [juneBucket]);
+        await sut.MatchAsync(User(), [added], [juneBucket]);
 
         var stat = Assert.Single(Assert.Single(descriptions).Descriptions);
         Assert.Equal(0, stat.UnclassifiedCount);
@@ -249,7 +248,7 @@ public class InternalTransferMatcherTests
         var bucket = Bucket(2026, 6, a1, a2, candidate);
         var sut = CreateMatcher([bucket]);
 
-        await sut.MatchAsync(Email, [a1, a2, candidate], [bucket]);
+        await sut.MatchAsync(User(), [a1, a2, candidate], [bucket]);
 
         Assert.Equal(InternalTransferMatcher.CategoryName, candidate.Category);
         var matchedAddedCount = new[] { a1.Category, a2.Category }.Count(c => c == InternalTransferMatcher.CategoryName);
@@ -275,9 +274,11 @@ public class InternalTransferMatcherTests
         Transactions = [.. transactions],
     };
 
-    private static InternalTransferMatcher CreateMatcher(List<TransactionMonth> months, List<Category>? categories = null) =>
+    private static User User(List<Category>? categories = null) =>
+        new() { Email = Email, PasswordHash = "unused", Categories = categories ?? [] };
+
+    private static InternalTransferMatcher CreateMatcher(List<TransactionMonth> months) =>
         new(
             RepositoryMockFactory.Create(months).Object,
-            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object,
-            RepositoryMockFactory.Create(new List<User> { new() { Email = Email, PasswordHash = "unused", Categories = categories ?? [] } }).Object);
+            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object);
 }

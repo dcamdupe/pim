@@ -54,7 +54,7 @@ public sealed class TransactionsController : ControllerBase
 
         try
         {
-            await _fileProcessor.ProcessAsync(email, request.Account, request.File);
+            await _fileProcessor.ProcessAsync(user, request.Account, request.File);
         }
         catch (FileParseException)
         {

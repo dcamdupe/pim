@@ -91,10 +91,11 @@ resource "aws_lambda_function" "api" {
   # Amazon.Lambda.AspNetCoreServer.Hosting's AddAWSLambdaHosting auto-detects
   # the entry point at startup - no Class::Method handler string needed,
   # just the assembly name.
-  handler     = "Pim.Api"
-  runtime     = "dotnet10"
-  timeout     = 30
-  memory_size = 128
+  handler = "Pim.Api"
+  runtime = "dotnet10"
+  timeout = 30
+  # Lambda CPU scales with memory; 128MB starved .NET cold starts (UBE-120: ~12s uploads).
+  memory_size = 512
 
   filename         = data.archive_file.api.output_path
   source_code_hash = data.archive_file.api.output_base64sha256

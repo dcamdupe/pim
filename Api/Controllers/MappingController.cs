@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Pim.Api.Data;
+using Pim.Api.Repository;
 using Pim.Api.Services;
 
 namespace Pim.Api.Controllers;
@@ -10,10 +12,12 @@ namespace Pim.Api.Controllers;
 public sealed class MappingController : ControllerBase
 {
     private readonly ITransactionUpdateService _transactionUpdateService;
+    private readonly IRepository<User> _users;
 
-    public MappingController(ITransactionUpdateService transactionUpdateService)
+    public MappingController(ITransactionUpdateService transactionUpdateService, IRepository<User> users)
     {
         _transactionUpdateService = transactionUpdateService;
+        _users = users;
     }
 
     [HttpPost("mapping/description")]
@@ -25,7 +29,13 @@ public sealed class MappingController : ControllerBase
         }
 
         var email = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        await _transactionUpdateService.ApplyDescriptionMappingAsync(email, request.DescriptionStart, request.Category);
+        var user = await _users.GetAsync(email);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        await _transactionUpdateService.ApplyDescriptionMappingAsync(user, request.DescriptionStart, request.Category);
 
         return NoContent();
     }

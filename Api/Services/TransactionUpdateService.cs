@@ -72,11 +72,12 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
         }
     }
 
-    public async Task ApplyDescriptionMappingAsync(string email, string descriptionStart, string category)
+    public async Task ApplyDescriptionMappingAsync(User user, string descriptionStart, string category)
     {
+        var email = user.Email;
         await UpsertMappingAsync(email, descriptionStart, category);
 
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
+        var allTransactions = await GetAllTransactionsAsync(user);
 
         var affectedMonths = allTransactions
             .Where(t => t.Description.StartsWith(descriptionStart, StringComparison.Ordinal))
@@ -84,7 +85,6 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
             .Distinct();
 
         (TransactionDescriptions Descriptions, bool IsNew)? descriptionsContext = null;
-        List<Category>? categories = null;
 
         foreach (var (year, month) in affectedMonths)
         {
@@ -107,8 +107,7 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
                 TransactionDescriptionStatsHelper.AdjustUnclassifiedCount(descriptionsContext.Value.Descriptions, transaction.Description, transaction.Category, category);
 
                 transaction.Category = category;
-                categories ??= await LoadCategoriesAsync(email);
-                Category.StampTransaction(transaction, categories);
+                Category.StampTransaction(transaction, user.Categories);
                 changed = true;
             }
 
@@ -127,9 +126,10 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     // Description-stats (TransactionCount/UnclassifiedCount) are deliberately left untouched here -
     // they're soft heuristic counters for description matching, not financial data, and going
     // slightly stale on account deletion is an accepted simplification.
-    public async Task DeleteTransactionsForAccountAsync(string email, string accountName)
+    public async Task DeleteTransactionsForAccountAsync(User user, string accountName)
     {
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
+        var email = user.Email;
+        var allTransactions = await GetAllTransactionsAsync(user);
 
         var affectedMonths = allTransactions
             .Where(t => t.Account == accountName)
@@ -156,9 +156,10 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
 
     // Declassifies matching transactions (clears Category to "") rather than deleting them - unlike
     // account removal, removing a category shouldn't destroy financial data.
-    public async Task RemoveCategoryFromTransactionsAsync(string email, string categoryName)
+    public async Task RemoveCategoryFromTransactionsAsync(User user, string categoryName)
     {
-        var allTransactions = await _transactionQueryService.GetTransactionsAsync(email, startDate: null, endDate: UnboundedEndDate());
+        var email = user.Email;
+        var allTransactions = await GetAllTransactionsAsync(user);
 
         var affectedMonths = allTransactions
             .Where(t => t.Category == categoryName)
@@ -198,6 +199,12 @@ public sealed class TransactionUpdateService : ITransactionUpdateService
     // filter. Padding by a few days comfortably covers that gap without needing to know the user's
     // actual timezone.
     private static DateOnly UnboundedEndDate() => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(3);
+
+    // Passes MinTransactionDate explicitly so the query service doesn't re-read the user for it.
+    private async Task<List<Transaction>> GetAllTransactionsAsync(User user) =>
+        user.MinTransactionDate is { } startDate
+            ? await _transactionQueryService.GetTransactionsAsync(user.Email, startDate, UnboundedEndDate())
+            : [];
 
     private async Task<List<Category>> LoadCategoriesAsync(string email)
     {

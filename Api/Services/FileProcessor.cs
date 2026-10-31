@@ -33,8 +33,9 @@ public sealed class FileProcessor : IFileProcessor
         _logger = logger;
     }
 
-    public async Task ProcessAsync(string email, string account, IFormFile file)
+    public async Task ProcessAsync(User user, string account, IFormFile file)
     {
+        var email = user.Email;
         List<Transaction> transactions;
         try
         {
@@ -54,7 +55,7 @@ public sealed class FileProcessor : IFileProcessor
 
         _logger.LogInformation("Transaction upload request: email={Email} account={Account} count={Count}", email, account, transactions.Count);
 
-        await ApplyDescriptionMappingAsync(email, transactions);
+        await ApplyDescriptionMappingAsync(user, transactions);
 
         var skippedDuplicates = 0;
         var addedTransactions = new List<Transaction>();
@@ -76,10 +77,10 @@ public sealed class FileProcessor : IFileProcessor
 
         if (transactions.Count > 0)
         {
-            await UpdateMinTransactionDateAsync(email, transactions.Min(t => t.Date));
+            await UpdateMinTransactionDateAsync(user, transactions.Min(t => t.Date));
         }
 
-        await _internalTransferMatcher.MatchAsync(email, addedTransactions, buckets.Select(b => b.Month).ToList());
+        await _internalTransferMatcher.MatchAsync(user, addedTransactions, buckets.Select(b => b.Month).ToList());
 
         foreach (var (id, month, isNewMonth) in buckets)
         {
@@ -100,32 +101,24 @@ public sealed class FileProcessor : IFileProcessor
             email, transactions.Count, skippedDuplicates);
     }
 
-    private async Task UpdateMinTransactionDateAsync(string email, DateOnly candidateMinDate)
+    private async Task UpdateMinTransactionDateAsync(User user, DateOnly candidateMinDate)
     {
-        var user = await _users.GetAsync(email);
-        if (user is null)
-        {
-            return;
-        }
-
         if (user.MinTransactionDate is null || candidateMinDate < user.MinTransactionDate)
         {
             user.MinTransactionDate = candidateMinDate;
-            await _users.UpdateAsync(email, user);
+            await _users.UpdateAsync(user.Email, user);
         }
     }
 
     // Applies any rules the user has already saved to the newly-parsed rows before they're persisted,
     // so a re-categorised merchant stays categorised on every future import, not just past transactions.
-    private async Task ApplyDescriptionMappingAsync(string email, List<Transaction> transactions)
+    private async Task ApplyDescriptionMappingAsync(User user, List<Transaction> transactions)
     {
-        var mapping = await _descriptionMappings.GetAsync(email);
+        var mapping = await _descriptionMappings.GetAsync(user.Email);
         if (mapping is null || mapping.Mappings.Count == 0)
         {
             return;
         }
-
-        List<Category>? categories = null;
 
         foreach (var transaction in transactions)
         {
@@ -140,8 +133,7 @@ public sealed class FileProcessor : IFileProcessor
             if (match is not null)
             {
                 transaction.Category = match.Category;
-                categories ??= (await _users.GetAsync(email))?.Categories ?? [];
-                Category.StampTransaction(transaction, categories);
+                Category.StampTransaction(transaction, user.Categories);
             }
         }
     }

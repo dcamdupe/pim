@@ -188,7 +188,7 @@ public class TransactionUpdateServiceTests
         var mappings = new List<DescriptionMapping>();
         var sut = CreateService([], mappings, []);
 
-        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(User(), "COLES", "Groceries");
 
         var mapping = Assert.Single(mappings);
         var entry = Assert.Single(mapping.Mappings);
@@ -207,7 +207,7 @@ public class TransactionUpdateServiceTests
         var mappings = new List<DescriptionMapping> { mapping };
         var sut = CreateService([], mappings, []);
 
-        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(User(), "COLES", "Groceries");
 
         var entry = Assert.Single(Assert.Single(mappings).Mappings);
         Assert.Equal("Groceries", entry.Category);
@@ -238,7 +238,7 @@ public class TransactionUpdateServiceTests
         var allTransactions = june.Transactions.Concat(july.Transactions).ToList();
         var sut = CreateService(months, [], allTransactions);
 
-        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(User(), "COLES", "Groceries");
 
         Assert.Equal("Groceries", june.Transactions.Single(t => t.Description == "COLES 0717 TURRAMURRA AUS").Category);
         Assert.Equal("", june.Transactions.Single(t => t.Description == "Salary").Category);
@@ -259,7 +259,7 @@ public class TransactionUpdateServiceTests
         var categories = new List<Category> { new() { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense } };
         var sut = CreateService(months, [], june.Transactions, categories: categories);
 
-        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(User(categories), "COLES", "Groceries");
 
         var transaction = june.Transactions.Single();
         Assert.Equal(Category.CategoryType.Expense, transaction.Type);
@@ -297,7 +297,7 @@ public class TransactionUpdateServiceTests
         };
         var sut = CreateService(months, [], june.Transactions, descriptions);
 
-        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(User(), "COLES", "Groceries");
 
         var stats = Assert.Single(descriptions).Descriptions;
         Assert.Equal(0, stats.Single(s => s.Description == "COLES 0717 TURRAMURRA AUS").UnclassifiedCount);
@@ -322,7 +322,7 @@ public class TransactionUpdateServiceTests
         };
         var sut = CreateService(months, [], june.Transactions, descriptions);
 
-        await sut.ApplyDescriptionMappingAsync(Email, "COLES", "Groceries");
+        await sut.ApplyDescriptionMappingAsync(User(), "COLES", "Groceries");
 
         var stat = Assert.Single(Assert.Single(descriptions).Descriptions);
         Assert.Equal(0, stat.UnclassifiedCount);
@@ -353,7 +353,7 @@ public class TransactionUpdateServiceTests
         var allTransactions = june.Transactions.Concat(july.Transactions).ToList();
         var sut = CreateService(months, [], allTransactions);
 
-        await sut.DeleteTransactionsForAccountAsync(Email, "Rainy day");
+        await sut.DeleteTransactionsForAccountAsync(User(), "Rainy day");
 
         var remainingJune = Assert.Single(june.Transactions);
         Assert.Equal("Everyday", remainingJune.Account);
@@ -368,7 +368,7 @@ public class TransactionUpdateServiceTests
         var months = new List<TransactionMonth> { month };
         var sut = CreateService(months, [], [existing]);
 
-        await sut.DeleteTransactionsForAccountAsync(Email, "Rainy day");
+        await sut.DeleteTransactionsForAccountAsync(User(), "Rainy day");
 
         Assert.Same(existing, Assert.Single(months).Transactions.Single());
     }
@@ -379,7 +379,7 @@ public class TransactionUpdateServiceTests
         var months = new List<TransactionMonth>();
         var sut = CreateService(months, [], []);
 
-        await sut.DeleteTransactionsForAccountAsync(Email, "Rainy day");
+        await sut.DeleteTransactionsForAccountAsync(User(), "Rainy day");
 
         Assert.Empty(months);
     }
@@ -412,7 +412,7 @@ public class TransactionUpdateServiceTests
         var allTransactions = june.Transactions.Concat(july.Transactions).ToList();
         var sut = CreateService(months, [], allTransactions);
 
-        await sut.RemoveCategoryFromTransactionsAsync(Email, "Groceries");
+        await sut.RemoveCategoryFromTransactionsAsync(User(), "Groceries");
 
         var colesAfter = june.Transactions.Single(t => t.Description == "Coles");
         Assert.Equal("", colesAfter.Category);
@@ -430,7 +430,7 @@ public class TransactionUpdateServiceTests
         var months = new List<TransactionMonth> { month };
         var sut = CreateService(months, [], [existing]);
 
-        await sut.RemoveCategoryFromTransactionsAsync(Email, "Groceries");
+        await sut.RemoveCategoryFromTransactionsAsync(User(), "Groceries");
 
         Assert.Same(existing, Assert.Single(months).Transactions.Single());
         Assert.Equal("Dining", existing.Category);
@@ -442,10 +442,66 @@ public class TransactionUpdateServiceTests
         var months = new List<TransactionMonth>();
         var sut = CreateService(months, [], []);
 
-        await sut.RemoveCategoryFromTransactionsAsync(Email, "Groceries");
+        await sut.RemoveCategoryFromTransactionsAsync(User(), "Groceries");
 
         Assert.Empty(months);
     }
+
+    [Fact]
+    public async Task DeleteTransactionsForAccountAsync_SkipsTheQuery_WhenTheUserHasNoTransactionsYet()
+    {
+        var queryService = new Mock<ITransactionQueryService>();
+        var userRepository = RepositoryMockFactory.Create(new List<User>());
+        var sut = new TransactionUpdateService(
+            RepositoryMockFactory.Create(new List<TransactionMonth>()).Object,
+            RepositoryMockFactory.Create(new List<DescriptionMapping>()).Object,
+            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object,
+            userRepository.Object,
+            queryService.Object);
+
+        await sut.DeleteTransactionsForAccountAsync(new User { Email = Email, PasswordHash = "unused" }, "Rainy day");
+
+        queryService.Verify(s => s.GetTransactionsAsync(It.IsAny<string>(), It.IsAny<DateOnly?>(), It.IsAny<DateOnly>()), Times.Never);
+        userRepository.Verify(r => r.GetAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ApplyDescriptionMappingAsync_NeverReloadsTheUser_AndQueriesFromItsMinTransactionDate()
+    {
+        var june = new TransactionMonth
+        {
+            Email = Email,
+            Year = 2026,
+            Month = 6,
+            Transactions = [Transaction("COLES 0717", new DateOnly(2026, 6, 1), "")],
+        };
+        var queryService = new Mock<ITransactionQueryService>();
+        queryService
+            .Setup(s => s.GetTransactionsAsync(Email, It.IsAny<DateOnly?>(), It.IsAny<DateOnly>()))
+            .ReturnsAsync(june.Transactions);
+        var userRepository = RepositoryMockFactory.Create(new List<User>());
+        var sut = new TransactionUpdateService(
+            RepositoryMockFactory.Create(new List<TransactionMonth> { june }).Object,
+            RepositoryMockFactory.Create(new List<DescriptionMapping>()).Object,
+            RepositoryMockFactory.Create(new List<TransactionDescriptions>()).Object,
+            userRepository.Object,
+            queryService.Object);
+        var user = User([new Category { Name = "Groceries", Colour = "#eb6834", Type = Category.CategoryType.Expense }]);
+
+        await sut.ApplyDescriptionMappingAsync(user, "COLES", "Groceries");
+
+        queryService.Verify(s => s.GetTransactionsAsync(Email, user.MinTransactionDate, It.IsAny<DateOnly>()), Times.Once);
+        userRepository.Verify(r => r.GetAsync(It.IsAny<string>()), Times.Never);
+        Assert.Equal(Category.CategoryType.Expense, june.Transactions.Single().Type);
+    }
+
+    private static User User(List<Category>? categories = null) => new()
+    {
+        Email = Email,
+        PasswordHash = "unused",
+        Categories = categories ?? [],
+        MinTransactionDate = new DateOnly(2026, 1, 1),
+    };
 
     private static Transaction Transaction(string description, DateOnly date, string category, string? account = null) => new()
     {
@@ -470,7 +526,7 @@ public class TransactionUpdateServiceTests
         var userRepository = RepositoryMockFactory.Create(users);
         var queryService = new Mock<ITransactionQueryService>();
         queryService
-            .Setup(s => s.GetTransactionsAsync(Email, null, It.IsAny<DateOnly>()))
+            .Setup(s => s.GetTransactionsAsync(Email, It.IsAny<DateOnly?>(), It.IsAny<DateOnly>()))
             .ReturnsAsync(allTransactionsForQuery ?? []);
 
         return new TransactionUpdateService(transactionRepository.Object, mappingRepository.Object, transactionDescriptionsRepository.Object, userRepository.Object, queryService.Object);

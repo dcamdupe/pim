@@ -13,20 +13,18 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
 
     private readonly IRepository<TransactionMonth> _transactionMonths;
     private readonly IRepository<TransactionDescriptions> _transactionDescriptions;
-    private readonly IRepository<User> _users;
 
     public InternalTransferMatcher(
         IRepository<TransactionMonth> transactionMonths,
-        IRepository<TransactionDescriptions> transactionDescriptions,
-        IRepository<User> users)
+        IRepository<TransactionDescriptions> transactionDescriptions)
     {
         _transactionMonths = transactionMonths;
         _transactionDescriptions = transactionDescriptions;
-        _users = users;
     }
 
-    public async Task MatchAsync(string email, List<Transaction> addedTransactions, IReadOnlyCollection<TransactionMonth> loadedBuckets)
+    public async Task MatchAsync(User user, List<Transaction> addedTransactions, IReadOnlyCollection<TransactionMonth> loadedBuckets)
     {
+        var email = user.Email;
         if (addedTransactions.Count == 0)
         {
             return;
@@ -51,7 +49,6 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
         var matched = new HashSet<Transaction>();
         var dirtyExternalBuckets = new HashSet<TransactionMonth>();
         (TransactionDescriptions Descriptions, bool IsNew)? descriptionsContext = null;
-        List<Category>? categories = null;
 
         foreach (var added in addedTransactions)
         {
@@ -76,9 +73,8 @@ public sealed class InternalTransferMatcher : IInternalTransferMatcher
             var previousMatchCategory = match.Category;
             added.Category = CategoryName;
             match.Category = CategoryName;
-            categories ??= (await _users.GetAsync(email))?.Categories ?? [];
-            Category.StampTransaction(added, categories);
-            Category.StampTransaction(match, categories);
+            Category.StampTransaction(added, user.Categories);
+            Category.StampTransaction(match, user.Categories);
             matched.Add(added);
             matched.Add(match);
 

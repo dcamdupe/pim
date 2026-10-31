@@ -9,6 +9,7 @@ using Pim.Api.Auth;
 using Pim.Api.Controllers;
 using Pim.Api.Data;
 using Pim.Api.IntegrationTests.Helpers;
+using Pim.Api.Middleware;
 using Pim.Api.Repository;
 
 namespace Pim.Api.IntegrationTests;
@@ -103,6 +104,53 @@ public sealed class RequestResponseLoggingTests : IClassFixture<ApiWebApplicatio
 
         var responseLog = Assert.Single(messages, m => m.StartsWith("HTTP response:", StringComparison.Ordinal));
         Assert.Contains("200", responseLog, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Get_TruncatesLargeResponseBodies_AndLogsTheirSize()
+    {
+        // ~50 transactions with long descriptions comfortably exceed the logged-body cap.
+        var month = new TransactionMonth
+        {
+            Email = _email,
+            Year = 2026,
+            Month = 6,
+            Transactions = Enumerable.Range(1, 50)
+                .Select(i => new Transaction
+                {
+                    Account = "Everyday",
+                    Date = new DateOnly(2026, 6, 15),
+                    Description = $"Large response transaction {i} {new string('x', 100)}",
+                    Category = string.Empty,
+                    Amount = -1m,
+                })
+                .ToList(),
+        };
+        using (var scope = _factory.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>().AddAsync(month);
+        }
+
+        try
+        {
+            var messages = new List<string>();
+            var client = AuthenticatedClient(messages);
+
+            var response = await client.GetAsync("/transactions?startDate=2026-06-01&endDate=2026-06-30");
+            var fullBody = await response.Content.ReadAsStringAsync();
+
+            Assert.True(fullBody.Length > RequestResponseLoggingMiddleware.MaxLoggedBodyChars);
+            Assert.Contains("Large response transaction 50", fullBody, StringComparison.Ordinal);
+            var responseLog = Assert.Single(messages, m => m.StartsWith("HTTP response:", StringComparison.Ordinal));
+            Assert.Contains($"bytes={Encoding.UTF8.GetByteCount(fullBody)}", responseLog, StringComparison.Ordinal);
+            Assert.EndsWith("...[truncated]", responseLog, StringComparison.Ordinal);
+            Assert.True(responseLog.Length < fullBody.Length);
+        }
+        finally
+        {
+            using var scope = _factory.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>().DeleteAsync(month.Id);
+        }
     }
 
     private HttpClient CreateClient(List<string> logSink)

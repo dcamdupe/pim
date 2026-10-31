@@ -3,10 +3,12 @@ using System.Text.RegularExpressions;
 
 namespace Pim.Api.Middleware;
 
-// Logs every request's verb/URL(+querystring)/body and every response's status code/body, at
+// Logs every request's verb/URL(+querystring)/body and every response's status code/size/body (truncated), at
 // Information level. Redacts the /login password field and the /transactions/file upload's raw content.
 public sealed partial class RequestResponseLoggingMiddleware
 {
+    public const int MaxLoggedBodyChars = 2000;
+
     private readonly RequestDelegate _next;
 
     public RequestResponseLoggingMiddleware(RequestDelegate next)
@@ -38,11 +40,26 @@ public sealed partial class RequestResponseLoggingMiddleware
         }
 
         capturedResponseBody.Position = 0;
-        var responseBody = await new StreamReader(capturedResponseBody, Encoding.UTF8).ReadToEndAsync();
-        logger.LogInformation("HTTP response: {StatusCode} body={Body}", context.Response.StatusCode, responseBody);
+        var responseBody = await ReadTruncatedAsync(capturedResponseBody);
+        logger.LogInformation(
+            "HTTP response: {StatusCode} bytes={Bytes} body={Body}",
+            context.Response.StatusCode,
+            capturedResponseBody.Length,
+            responseBody);
 
         capturedResponseBody.Position = 0;
         await capturedResponseBody.CopyToAsync(originalResponseBody);
+    }
+
+    // Only the first MaxLoggedBodyChars are logged, so large responses (e.g. full transaction
+    // history) don't flood CloudWatch or cost a full string copy.
+    private static async Task<string> ReadTruncatedAsync(Stream body)
+    {
+        using var reader = new StreamReader(body, Encoding.UTF8, leaveOpen: true);
+        var buffer = new char[MaxLoggedBodyChars];
+        var read = await reader.ReadBlockAsync(buffer, 0, buffer.Length);
+        var text = new string(buffer, 0, read);
+        return reader.EndOfStream ? text : text + "...[truncated]";
     }
 
     // Multipart form bodies (the /transactions/file upload) are binary-boundary-delimited, not

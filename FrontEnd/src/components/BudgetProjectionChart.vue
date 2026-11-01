@@ -7,8 +7,7 @@ const props = defineProps<{
 }>()
 
 // Horizontal bar per budgeted category (UBE-124): solid = spent so far, light = projected rest of
-// the month, vertical marker = budget. Over-budget projections turn red.
-const OVER_COLOR = '#d33'
+// the month, vertical marker = budget.
 const FALLBACK_COLOR = '#9093a3'
 
 const scale = computed(() => Math.max(1, ...props.projection.rows.flatMap((r) => [r.budget, r.projected])))
@@ -33,7 +32,7 @@ function formatCurrency(amount: number): string {
     <div v-for="row in projection.rows" :key="row.category" class="row" :data-testid="`projection-${row.category}`">
       <div class="row-head">
         <span class="name">{{ row.category }}</span>
-        <span class="values" :class="{ over: row.overBudget }">
+        <span class="values">
           {{ formatCurrency(projection.isProjected ? row.projected : row.actual) }}
           <span class="of">of {{ formatCurrency(row.budget) }}</span>
         </span>
@@ -42,11 +41,11 @@ function formatCurrency(amount: number): string {
         <div
           v-if="projection.isProjected"
           class="bar projected"
-          :style="{ width: pct(row.projected), background: row.overBudget ? OVER_COLOR : row.color ?? FALLBACK_COLOR }"
+          :style="{ width: pct(row.projected), background: row.color ?? FALLBACK_COLOR }"
         ></div>
         <div
           class="bar actual"
-          :style="{ width: pct(row.actual), background: row.overBudget ? OVER_COLOR : row.color ?? FALLBACK_COLOR }"
+          :style="{ width: pct(row.actual), background: row.color ?? FALLBACK_COLOR }"
           :title="`${row.category} spent ${formatCurrency(row.actual)}`"
         ></div>
         <div class="budget-marker" :style="{ left: pct(row.budget) }" :title="`Budget ${formatCurrency(row.budget)}`"></div>
@@ -110,11 +109,6 @@ function formatCurrency(amount: number): string {
 .values {
   color: var(--text-h);
   font-variant-numeric: tabular-nums;
-}
-
-.values.over {
-  color: #d33;
-  font-weight: 600;
 }
 
 .of {

@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Port of FrontEnd's BudgetProjectionChart.vue (UBE-124): a horizontal bar per budgeted category -
-// solid = spent so far, light = projected rest of month, vertical marker = budget. Red when over.
+// solid = spent so far, light = projected rest of month, vertical marker = budget.
 struct BudgetProjectionChart: View {
     let projection: BudgetProjection
     let categoryColor: (String) -> String?
@@ -37,7 +37,7 @@ struct BudgetProjectionChart: View {
     }
 
     private func rowView(_ row: BudgetProjectionRow) -> some View {
-        let color = row.overBudget ? DashboardTheme.crit : Color(hex: categoryColor(row.category) ?? DashboardTheme.fallbackCategoryColor)
+        let color = Color(hex: categoryColor(row.category) ?? DashboardTheme.fallbackCategoryColor)
         let shown = projection.isProjected ? row.projected : row.actual
         return VStack(alignment: .leading, spacing: 3) {
             HStack {
@@ -45,9 +45,9 @@ struct BudgetProjectionChart: View {
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundColor(DashboardTheme.ink)
                 Spacer()
-                (Text(currency(shown)).foregroundColor(row.overBudget ? DashboardTheme.crit : DashboardTheme.ink)
+                (Text(currency(shown)).foregroundColor(DashboardTheme.ink)
                     + Text(" of \(currency(row.budget))").foregroundColor(DashboardTheme.ink3))
-                    .font(.system(size: 12, weight: row.overBudget ? .semibold : .regular, design: .rounded))
+                    .font(.system(size: 12, design: .rounded))
             }
             GeometryReader { geo in
                 let width = geo.size.width

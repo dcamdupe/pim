@@ -13,6 +13,8 @@ public sealed class User
 
     public List<Category> Categories { get; set; } = [];
 
+    public List<Budget> Budgets { get; set; } = [];
+
     public DateOnly? MinTransactionDate { get; set; }
 
     // The user's current API key (also stored as an ApiKey row, keyed by the value). Null until

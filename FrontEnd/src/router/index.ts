@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import AuthCallbackView from '../views/AuthCallbackView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import BudgetsView from '../views/BudgetsView.vue'
 import TransactionsView from '../views/TransactionsView.vue'
 import TransactionUploadView from '../views/TransactionUploadView.vue'
 import { useAuthStore } from '../stores/auth'
@@ -29,6 +30,11 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+    },
+    {
+      path: '/budgets',
+      name: 'budgets',
+      component: BudgetsView,
     },
     {
       path: '/settings',

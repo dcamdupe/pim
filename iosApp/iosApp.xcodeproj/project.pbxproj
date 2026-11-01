@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B000040000000000000001 /* Budget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000040000000000000001 /* Budget.swift */; };
+		A1B000040000000000000002 /* BudgetAmounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000040000000000000002 /* BudgetAmounts.swift */; };
+		A1B000040000000000000003 /* BudgetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000040000000000000003 /* BudgetsView.swift */; };
+		A1B000040000000000000004 /* BudgetsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000040000000000000004 /* BudgetsViewModel.swift */; };
 		02532D850EF85AF5BC5518F6 /* AuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115630066A71E310149E4900 /* AuthConfig.swift */; };
 		0FEFEE82B9672632CF9D3F0F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF6347D3C2FECB4387CD0FD1 /* Assets.xcassets */; };
 		6213554DA241C31A4BDB5332 /* iosAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7AC4653A80D8D7754BF4C23 /* iosAppApp.swift */; };
@@ -44,6 +48,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A1A000040000000000000001 /* Budget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Budget.swift; sourceTree = "<group>"; };
+		A1A000040000000000000002 /* BudgetAmounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmounts.swift; sourceTree = "<group>"; };
+		A1A000040000000000000003 /* BudgetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetsView.swift; sourceTree = "<group>"; };
+		A1A000040000000000000004 /* BudgetsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetsViewModel.swift; sourceTree = "<group>"; };
 		0BAF9CA6814FB8432197C462 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		115630066A71E310149E4900 /* AuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthConfig.swift; sourceTree = "<group>"; };
 		33EDC0D0601A9C604FD8C204 /* PKCE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PKCE.swift; sourceTree = "<group>"; };
@@ -93,6 +101,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A1C000040000000000000001 /* Budgets */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000040000000000000003 /* BudgetsView.swift */,
+				A1A000040000000000000004 /* BudgetsViewModel.swift */,
+			);
+			path = Budgets;
+			sourceTree = "<group>";
+		};
 		2BB3209B5DA47CBE1EBEE4AD /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
@@ -128,6 +145,7 @@
 		A1C000010000000000000001 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				A1A000040000000000000001 /* Budget.swift */,
 				A1A000010000000000000001 /* Transaction.swift */,
 				A1A000010000000000000002 /* Settings.swift */,
 				A1A000020000000000000001 /* TransactionDescriptionStat.swift */,
@@ -138,6 +156,7 @@
 		A1C000010000000000000002 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				A1A000040000000000000002 /* BudgetAmounts.swift */,
 				A1A000010000000000000004 /* DashboardMetrics.swift */,
 				A1A000020000000000000004 /* DescriptionMatching.swift */,
 				A1A000020000000000000005 /* TransactionFilters.swift */,
@@ -209,6 +228,7 @@
 				A1A000020000000000000006 /* AppTabView.swift */,
 				A1C000010000000000000003 /* Dashboard */,
 				A1C000020000000000000011 /* Transactions */,
+				A1C000040000000000000001 /* Budgets */,
 				DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */,
 				F47DE5664F145561A7A7EA8D /* SVGPath.swift */,
 			);
@@ -310,6 +330,10 @@
 				A1B000020000000000000006 /* AppTabView.swift in Sources */,
 				A1B000020000000000000007 /* TransactionsView.swift in Sources */,
 				A1B000020000000000000008 /* TransactionsViewModel.swift in Sources */,
+				A1B000040000000000000001 /* Budget.swift in Sources */,
+				A1B000040000000000000002 /* BudgetAmounts.swift in Sources */,
+				A1B000040000000000000003 /* BudgetsView.swift in Sources */,
+				A1B000040000000000000004 /* BudgetsViewModel.swift in Sources */,
 				A1B000020000000000000009 /* TransactionRow.swift in Sources */,
 				A1B00002000000000000000A /* CategoryPickerSheet.swift in Sources */,
 				A1B00002000000000000000B /* ApplyToSimilarSheet.swift in Sources */,

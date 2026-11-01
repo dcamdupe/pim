@@ -37,6 +37,7 @@ function onLogout() {
     <nav class="tabs">
       <RouterLink to="/dashboard" class="tab">Dashboard</RouterLink>
       <RouterLink to="/transactions" class="tab">Transactions</RouterLink>
+      <RouterLink to="/budgets" class="tab">Budgets</RouterLink>
     </nav>
 
     <div class="spacer"></div>

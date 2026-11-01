@@ -5,6 +5,7 @@ import DashboardView from '../views/DashboardView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import BudgetsView from '../views/BudgetsView.vue'
 import TransactionsView from '../views/TransactionsView.vue'
+import InsightsView from '../views/InsightsView.vue'
 import TransactionUploadView from '../views/TransactionUploadView.vue'
 import { useAuthStore } from '../stores/auth'
 import { resolveNavigation } from './guard'
@@ -30,6 +31,11 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+    },
+    {
+      path: '/insights',
+      name: 'insights',
+      component: InsightsView,
     },
     {
       path: '/budgets',

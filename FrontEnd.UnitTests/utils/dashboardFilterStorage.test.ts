@@ -53,6 +53,26 @@ describe('dashboardFilterStorage', () => {
     })
   })
 
+  describe('budgetCategory (UBE-124)', () => {
+    it('round-trips the budget category filter', () => {
+      saveDashboardFilters({ month: '2026-11', category: '', budgetCategory: 'Groceries' })
+
+      expect(loadStoredDashboardFilters()).toEqual({ month: '2026-11', category: '', budgetCategory: 'Groceries' })
+    })
+
+    it('still loads filters stored before budgetCategory existed', () => {
+      localStorage.setItem('pim.dashboardFilters', JSON.stringify({ month: '2026-11', category: 'Dining' }))
+
+      expect(loadStoredDashboardFilters()).toEqual({ month: '2026-11', category: 'Dining' })
+    })
+
+    it('returns null when budgetCategory is not a string', () => {
+      localStorage.setItem('pim.dashboardFilters', JSON.stringify({ month: '2026-11', category: '', budgetCategory: 5 }))
+
+      expect(loadStoredDashboardFilters()).toBeNull()
+    })
+  })
+
   describe('saveDashboardFilters', () => {
     it('persists the filters so they can be loaded back', () => {
       saveDashboardFilters(filters)

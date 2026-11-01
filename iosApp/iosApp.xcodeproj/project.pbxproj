@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B000050000000000000001 /* BudgetMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000050000000000000001 /* BudgetMetrics.swift */; };
+		A1B000050000000000000002 /* BudgetProjectionChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000050000000000000002 /* BudgetProjectionChart.swift */; };
+		A1B000050000000000000003 /* BudgetVsActualChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000050000000000000003 /* BudgetVsActualChart.swift */; };
 		A1B000040000000000000001 /* Budget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000040000000000000001 /* Budget.swift */; };
 		A1B000040000000000000002 /* BudgetAmounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000040000000000000002 /* BudgetAmounts.swift */; };
 		A1B000040000000000000003 /* BudgetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000040000000000000003 /* BudgetsView.swift */; };
@@ -48,6 +51,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A1A000050000000000000001 /* BudgetMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetMetrics.swift; sourceTree = "<group>"; };
+		A1A000050000000000000002 /* BudgetProjectionChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetProjectionChart.swift; sourceTree = "<group>"; };
+		A1A000050000000000000003 /* BudgetVsActualChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetVsActualChart.swift; sourceTree = "<group>"; };
 		A1A000040000000000000001 /* Budget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Budget.swift; sourceTree = "<group>"; };
 		A1A000040000000000000002 /* BudgetAmounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetAmounts.swift; sourceTree = "<group>"; };
 		A1A000040000000000000003 /* BudgetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetsView.swift; sourceTree = "<group>"; };
@@ -156,6 +162,7 @@
 		A1C000010000000000000002 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				A1A000050000000000000001 /* BudgetMetrics.swift */,
 				A1A000040000000000000002 /* BudgetAmounts.swift */,
 				A1A000010000000000000004 /* DashboardMetrics.swift */,
 				A1A000020000000000000004 /* DescriptionMatching.swift */,
@@ -167,6 +174,8 @@
 		A1C000010000000000000003 /* Dashboard */ = {
 			isa = PBXGroup;
 			children = (
+				A1A000050000000000000003 /* BudgetVsActualChart.swift */,
+				A1A000050000000000000002 /* BudgetProjectionChart.swift */,
 				E5200F22D41B0529B7CBC45D /* DashboardView.swift */,
 				A1A000010000000000000005 /* DashboardTheme.swift */,
 				A1A000010000000000000006 /* DashboardViewModel.swift */,
@@ -330,6 +339,9 @@
 				A1B000020000000000000006 /* AppTabView.swift in Sources */,
 				A1B000020000000000000007 /* TransactionsView.swift in Sources */,
 				A1B000020000000000000008 /* TransactionsViewModel.swift in Sources */,
+				A1B000050000000000000001 /* BudgetMetrics.swift in Sources */,
+				A1B000050000000000000002 /* BudgetProjectionChart.swift in Sources */,
+				A1B000050000000000000003 /* BudgetVsActualChart.swift in Sources */,
 				A1B000040000000000000001 /* Budget.swift in Sources */,
 				A1B000040000000000000002 /* BudgetAmounts.swift in Sources */,
 				A1B000040000000000000003 /* BudgetsView.swift in Sources */,

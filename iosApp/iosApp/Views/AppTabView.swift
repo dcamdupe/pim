@@ -22,6 +22,7 @@ struct AppTabView: View {
             DashboardView(
                 transactionsStore: transactionsStore,
                 settingsStore: settingsStore,
+                api: PimApiClient(idToken: session.idToken),
                 onSignOut: signOut
             )
             .tabItem { Label("Dashboard", systemImage: "house") }

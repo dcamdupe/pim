@@ -2,6 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 
 // UBE-119: recurring monthly budgets per Expense category, set from the Budgets tab.
 async function clearAllBudgets(page: Page) {
+  // Wait for the saved budgets to load first, or clearing races the page's own load.
+  await expect(page.locator('.budget-input').first()).toBeVisible();
   for (const input of await page.locator('.budget-input').all()) {
     await input.fill('');
   }
@@ -17,7 +19,7 @@ test.describe('Budgets', () => {
     await page.getByRole('button', { name: 'Log in' }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    await page.getByRole('link', { name: 'Budgets' }).click();
+    await page.getByRole('link', { name: 'Budgets', exact: true }).click();
     await expect(page).toHaveURL(/\/budgets$/);
     await expect(page.getByRole('heading', { name: 'Budgets' })).toBeVisible();
 
@@ -70,7 +72,7 @@ test.describe('Budgets', () => {
     await page.locator('#password').fill('TestPassword123!');
     await page.getByRole('button', { name: 'Log in' }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('link', { name: 'Budgets' }).click();
+    await page.getByRole('link', { name: 'Budgets', exact: true }).click();
     await clearAllBudgets(page);
 
     await expect(page.getByTestId('recommended-Groceries')).toContainText('$612.00');

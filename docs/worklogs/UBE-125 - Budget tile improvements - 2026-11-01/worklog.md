@@ -131,3 +131,24 @@ commit and raise PR
 ### Response
 Committed, pushed and opened a PR against main. The `dashboard.spec.ts` race fix wasn't
 included (no answer on whether to add it).
+
+### Prompt
+Add a fix for the flaky dashboard tiles test
+
+### Response
+`dashboard.spec.ts` `tileValue()` now waits for the KPI `.value` to lose its `loading` class
+before reading it. Verification:
+- `dashboard.spec.ts --repeat-each=5`, first run: "Dashboard tiles" 5/5 passed, but "Income vs.
+  expenses category filter" failed in all 5 repeats (a `toBeVisible` assertion).
+- That test then passed alone (×2), in a ×2 file run (10/10) and in a second ×5 file run
+  (25/25). The cause of that one-off was not found.
+- The related specs (`dashboardBudgets`, `budgets`, `insights`, `dashboard`) passed 10/10.
+
+Made on the `UBE-125/budget-tile-improvements` branch. Not committed.
+
+### Prompt
+commit and push to this branch
+
+### Response
+Committed the `tileValue()` loading wait and pushed it to `UBE-125/budget-tile-improvements`
+(PR #108).

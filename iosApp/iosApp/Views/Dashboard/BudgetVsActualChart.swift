@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Port of FrontEnd's BudgetVsActualChart.vue (UBE-124): budget vs actual grouped bars per month,
-// same geometry as IncomeVsExpensesChart.swift.
+// same geometry and colours (UBE-125) as IncomeVsExpensesChart.swift: budget blue, actual orange.
 struct BudgetVsActualChart: View {
     let data: [MonthlyBudgetVsActual]
 
@@ -22,8 +22,8 @@ struct BudgetVsActualChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 14) {
-                swatchLabel(color: DashboardTheme.ink3, text: "Budget")
-                swatchLabel(color: DashboardTheme.incomeColor, text: "Actual")
+                swatchLabel(color: DashboardTheme.incomeColor, text: "Budget")
+                swatchLabel(color: DashboardTheme.expenseColor, text: "Actual")
             }
             if hasData {
                 chart
@@ -67,10 +67,10 @@ struct BudgetVsActualChart: View {
                 }
                 ForEach(Array(data.enumerated()), id: \.element.id) { index, month in
                     let gx = Self.padL + CGFloat(index) * groupW + groupW / 2
-                    bar(month.budget, centerX: gx - Self.barGap / 2 - Self.barW / 2, color: DashboardTheme.ink3,
+                    bar(month.budget, centerX: gx - Self.barGap / 2 - Self.barW / 2, color: DashboardTheme.incomeColor,
                         tip: "\(month.month) budget  \(currency(month.budget))")
                     bar(month.actual, centerX: gx + Self.barGap / 2 + Self.barW / 2,
-                        color: DashboardTheme.incomeColor,
+                        color: DashboardTheme.expenseColor,
                         tip: "\(month.month) actual  \(currency(month.actual))")
                     Text(month.month)
                         .font(.system(size: 10, weight: .bold, design: .rounded))

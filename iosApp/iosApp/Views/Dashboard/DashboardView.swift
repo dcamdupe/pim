@@ -188,19 +188,52 @@ struct DashboardView: View {
     @ViewBuilder
     private var budgetProjectionCard: some View {
         let projection = viewModel.budgetProjection
+        let title = projection.isProjected ? "Month projection" : "Month Budget"
         card {
             if let status = budgetStatus {
-                cardHeader(projection.isProjected ? "Month projection" : "Month Budget", sub: status)
-            } else if projection.isProjected {
-                cardHeader("Month projection",
-                           sub: "Projected \(formatCurrency(projection.totalProjected)) of \(formatCurrency(projection.totalBudget)) · day \(projection.daysElapsed) of \(projection.daysInMonth)")
-                BudgetProjectionChart(projection: projection, categoryColor: viewModel.categoryColor)
+                cardHeader(title, sub: status)
             } else {
-                cardHeader("Month Budget",
-                           sub: "\(viewModel.selectedMonthLabel) · \(formatCurrency(projection.totalActual)) of \(formatCurrency(projection.totalBudget))")
-                BudgetProjectionChart(projection: projection, categoryColor: viewModel.categoryColor)
+                // Totals cover every budget; the filter (UBE-125) only picks which rows are shown.
+                HStack(alignment: .top) {
+                    cardHeader(title, sub: projection.isProjected
+                        ? "Projected \(formatCurrency(projection.totalProjected)) of \(formatCurrency(projection.totalBudget)) · day \(projection.daysElapsed) of \(projection.daysInMonth)"
+                        : "\(viewModel.selectedMonthLabel) · \(formatCurrency(projection.totalActual)) of \(formatCurrency(projection.totalBudget))")
+                    projectionFilterMenu
+                }
+                let filtered = viewModel.filteredBudgetProjection
+                if filtered.rows.isEmpty {
+                    Text("No categories \(viewModel.projectionFilter == .over ? "over" : "under") budget.")
+                        .font(.system(size: 13))
+                        .foregroundColor(DashboardTheme.ink2)
+                } else {
+                    BudgetProjectionChart(projection: filtered, categoryColor: viewModel.categoryColor)
+                }
             }
         }
+    }
+
+    private var projectionFilterMenu: some View {
+        Menu {
+            ForEach(ProjectionFilter.allCases) { filter in
+                Button(filter.label) { viewModel.projectionFilter = filter }
+            }
+        } label: {
+            filterMenuLabel(viewModel.projectionFilter.label)
+        }
+        .accessibilityLabel("Month budget filter")
+    }
+
+    private func filterMenuLabel(_ text: String) -> some View {
+        HStack(spacing: 4) {
+            Text(text).lineLimit(1)
+            Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+        }
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundColor(DashboardTheme.ink2)
+        .padding(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 8))
+        .background(DashboardTheme.surface2)
+        .overlay(Capsule().stroke(DashboardTheme.border, lineWidth: 1))
+        .clipShape(Capsule())
     }
 
     private var budgetPerformanceCard: some View {
@@ -217,22 +250,12 @@ struct DashboardView: View {
 
     private var budgetCategoryMenu: some View {
         Menu {
-            Button("All budgeted categories") { viewModel.selectedBudgetCategory = "" }
+            Button("All Categories") { viewModel.selectedBudgetCategory = "" }
             ForEach(viewModel.budgetCategories, id: \.self) { category in
                 Button(category) { viewModel.selectedBudgetCategory = category }
             }
         } label: {
-            HStack(spacing: 4) {
-                Text(viewModel.effectiveBudgetCategory.isEmpty ? "All" : viewModel.effectiveBudgetCategory)
-                    .lineLimit(1)
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
-            }
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(DashboardTheme.ink2)
-            .padding(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 8))
-            .background(DashboardTheme.surface2)
-            .overlay(Capsule().stroke(DashboardTheme.border, lineWidth: 1))
-            .clipShape(Capsule())
+            filterMenuLabel(viewModel.effectiveBudgetCategory.isEmpty ? "All" : viewModel.effectiveBudgetCategory)
         }
         .accessibilityLabel("Budget performance category")
     }

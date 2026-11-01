@@ -21,15 +21,27 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
+    // Budget cards (UBE-124) - loaded separately so a failure doesn't block the rest of the dashboard.
+    @Published private(set) var budgets: [Budget] = []
+    @Published private(set) var budgetsLoaded = false
+    @Published private(set) var budgetsFailed = false
+    @Published var selectedBudgetCategory: String {
+        didSet { UserDefaults.standard.set(selectedBudgetCategory, forKey: Self.budgetCategoryDefaultsKey) }
+    }
+
     private let transactionsStore: TransactionsStore
     private let settingsStore: SettingsStore
+    private let api: PimApiClient?
     private var cancellables: Set<AnyCancellable> = []
 
     private static let monthDefaultsKey = "pim.dashboard.month"
+    private static let budgetCategoryDefaultsKey = "pim.dashboard.budgetCategory"
 
-    init(transactionsStore: TransactionsStore, settingsStore: SettingsStore) {
+    init(transactionsStore: TransactionsStore, settingsStore: SettingsStore, api: PimApiClient? = nil) {
         self.transactionsStore = transactionsStore
         self.settingsStore = settingsStore
+        self.api = api
+        self.selectedBudgetCategory = UserDefaults.standard.string(forKey: Self.budgetCategoryDefaultsKey) ?? ""
         let today = DashboardMetrics.today()
         let stored = UserDefaults.standard.string(forKey: Self.monthDefaultsKey)
         self.selectedMonthKey = stored
@@ -86,6 +98,25 @@ final class DashboardViewModel: ObservableObject {
         Array(DashboardMetrics.computeRecentTransactions(transactions).prefix(5))
     }
 
+    var budgetProjection: BudgetProjection {
+        BudgetMetrics.computeBudgetProjection(
+            transactions, budgets: budgets, selectedMonth: referenceMonth, today: DashboardMetrics.today()
+        )
+    }
+
+    var budgetCategories: [String] { budgets.map(\.category).sorted() }
+
+    // A stored filter for a category that no longer has a budget falls back to "all".
+    var effectiveBudgetCategory: String {
+        budgetCategories.contains(selectedBudgetCategory) ? selectedBudgetCategory : ""
+    }
+
+    var monthlyBudgetVsActual: [MonthlyBudgetVsActual] {
+        BudgetMetrics.computeMonthlyBudgetVsActual(
+            transactions, budgets: budgets, selectedMonth: referenceMonth, category: effectiveBudgetCategory
+        )
+    }
+
     func categoryColor(_ name: String) -> String? {
         settingsStore.categoryColor(name)
     }
@@ -96,6 +127,7 @@ final class DashboardViewModel: ObservableObject {
         } else {
             state = .loading
         }
+        Task { await loadBudgets() }
         do {
             async let transactionsCall: Void = transactionsStore.load()
             async let settingsCall: Void = settingsStore.load()
@@ -107,6 +139,17 @@ final class DashboardViewModel: ObservableObject {
         } catch {
             state = transactions.isEmpty ? .failed : .loaded
         }
+    }
+
+    private func loadBudgets() async {
+        guard let api else { return }
+        do {
+            budgets = try await api.getBudgets()
+            budgetsFailed = false
+        } catch {
+            budgetsFailed = true
+        }
+        budgetsLoaded = true
     }
 
     // A stored month can fall outside the (freshly loaded) available range - snap back to the newest.

@@ -8,10 +8,15 @@ struct DashboardView: View {
 
     @StateObject private var viewModel: DashboardViewModel
 
-    init(transactionsStore: TransactionsStore, settingsStore: SettingsStore, onSignOut: (() -> Void)? = nil) {
+    init(
+        transactionsStore: TransactionsStore,
+        settingsStore: SettingsStore,
+        api: PimApiClient? = nil,
+        onSignOut: (() -> Void)? = nil
+    ) {
         self.onSignOut = onSignOut
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
-            transactionsStore: transactionsStore, settingsStore: settingsStore
+            transactionsStore: transactionsStore, settingsStore: settingsStore, api: api
         ))
     }
 
@@ -161,6 +166,8 @@ struct DashboardView: View {
                 cardHeader("Income vs. expenses", sub: viewModel.sixMonthRangeLabel)
                 IncomeVsExpensesChart(data: viewModel.monthlyIncomeExpenses)
             }
+            budgetProjectionCard
+            budgetPerformanceCard
             card {
                 Text("Recent transactions")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
@@ -174,6 +181,68 @@ struct DashboardView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 14)
+    }
+
+    // MARK: - Budget cards (UBE-124)
+
+    @ViewBuilder
+    private var budgetProjectionCard: some View {
+        let projection = viewModel.budgetProjection
+        card {
+            if let status = budgetStatus {
+                cardHeader(projection.isProjected ? "Month projection" : "Month Budget", sub: status)
+            } else if projection.isProjected {
+                cardHeader("Month projection",
+                           sub: "Projected \(formatCurrency(projection.totalProjected)) of \(formatCurrency(projection.totalBudget)) · day \(projection.daysElapsed) of \(projection.daysInMonth)")
+                BudgetProjectionChart(projection: projection, categoryColor: viewModel.categoryColor)
+            } else {
+                cardHeader("Month Budget",
+                           sub: "\(viewModel.selectedMonthLabel) · \(formatCurrency(projection.totalActual)) of \(formatCurrency(projection.totalBudget))")
+                BudgetProjectionChart(projection: projection, categoryColor: viewModel.categoryColor)
+            }
+        }
+    }
+
+    private var budgetPerformanceCard: some View {
+        card {
+            HStack(alignment: .top) {
+                cardHeader("Budget performance", sub: budgetStatus ?? "Last 6 months to \(viewModel.selectedMonthLabel)")
+                if budgetStatus == nil { budgetCategoryMenu }
+            }
+            if budgetStatus == nil {
+                BudgetVsActualChart(data: viewModel.monthlyBudgetVsActual)
+            }
+        }
+    }
+
+    private var budgetCategoryMenu: some View {
+        Menu {
+            Button("All budgeted categories") { viewModel.selectedBudgetCategory = "" }
+            ForEach(viewModel.budgetCategories, id: \.self) { category in
+                Button(category) { viewModel.selectedBudgetCategory = category }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(viewModel.effectiveBudgetCategory.isEmpty ? "All" : viewModel.effectiveBudgetCategory)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
+            }
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(DashboardTheme.ink2)
+            .padding(EdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 8))
+            .background(DashboardTheme.surface2)
+            .overlay(Capsule().stroke(DashboardTheme.border, lineWidth: 1))
+            .clipShape(Capsule())
+        }
+        .accessibilityLabel("Budget performance category")
+    }
+
+    // Loading / error / empty text shared by both budget cards; nil when there are budgets to chart.
+    private var budgetStatus: String? {
+        if !viewModel.budgetsLoaded { return "Loading…" }
+        if viewModel.budgetsFailed { return "Could not load your budgets." }
+        if viewModel.budgets.isEmpty { return "No budgets set. Add some in the Budgets tab." }
+        return nil
     }
 
     private var kpiGrid: some View {

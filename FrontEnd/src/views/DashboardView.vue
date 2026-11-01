@@ -16,10 +16,14 @@ import {
 } from '../utils/dashboardMetrics'
 import { loadStoredDashboardFilters, saveDashboardFilters } from '../utils/dashboardFilterStorage'
 import { categoryNames } from '../services/categoriesService'
+import { getBudgets, type Budget } from '../services/budgetsService'
+import { computeBudgetProjection, computeMonthlyBudgetVsActual } from '../utils/budgetMetrics'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
 import RecentTransactionsList from '../components/RecentTransactionsList.vue'
+import BudgetProjectionChart from '../components/BudgetProjectionChart.vue'
+import BudgetVsActualChart from '../components/BudgetVsActualChart.vue'
 
 // The real "today", used as the upper bound for the month filter - distinct from `selectedMonth`,
 // which the user can wind back via the filter.
@@ -40,6 +44,11 @@ const minTransactionDate = computed(() =>
 const storedFilters = loadStoredDashboardFilters()
 const selectedMonthKey = ref(storedFilters?.month ?? computeAvailableMonths(null, realToday)[0].value)
 const selectedCategory = ref(storedFilters?.category ?? '')
+const selectedBudgetCategory = ref(storedFilters?.budgetCategory ?? '')
+// Budget cards (UBE-124) - loaded separately so a failure doesn't block the rest of the dashboard.
+const budgets = ref<Budget[]>([])
+const budgetsLoading = ref(true)
+const budgetsError = ref('')
 // A computed, not a plain call - settingsStore.categories is still empty until settingsStore.load()
 // (below) resolves, so this needs to react to that rather than capture an empty list once at setup.
 const categories = computed(() => categoryNames())
@@ -47,8 +56,8 @@ const categories = computed(() => categoryNames())
 const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
 const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
 
-watch([selectedMonthKey, selectedCategory], ([month, category]) => {
-  saveDashboardFilters({ month, category })
+watch([selectedMonthKey, selectedCategory, selectedBudgetCategory], ([month, category, budgetCategory]) => {
+  saveDashboardFilters({ month, category, budgetCategory })
 })
 
 const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
@@ -56,6 +65,18 @@ const expensesByCategory = computed(() => computeExpensesByCategory(transactions
 const monthlyIncomeExpenses = computed(() =>
   computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value, selectedCategory.value),
 )
+const budgetProjection = computed(() =>
+  computeBudgetProjection(transactions.value, budgets.value, selectedMonth.value, realToday),
+)
+const budgetCategories = computed(() => budgets.value.map((b) => b.category).sort((a, b) => a.localeCompare(b)))
+// A stored filter for a category that no longer has a budget falls back to "all".
+const effectiveBudgetCategory = computed(() =>
+  budgetCategories.value.includes(selectedBudgetCategory.value) ? selectedBudgetCategory.value : '',
+)
+const monthlyBudgetVsActual = computed(() =>
+  computeMonthlyBudgetVsActual(transactions.value, budgets.value, selectedMonth.value, effectiveBudgetCategory.value),
+)
+const budgetCardsLoading = computed(() => initialLoading.value || budgetsLoading.value)
 const recentTransactions = computed(() => computeRecentTransactions(transactions.value))
 const selectedMonthLabel = computed(() => formatMonthYear(selectedMonth.value))
 const sixMonthRangeLabel = computed(() => formatSixMonthRangeLabel(selectedMonth.value))
@@ -72,6 +93,16 @@ function formatCurrency(amount: number): string {
 onMounted(async () => {
   // Non-fatal if this fails - the month filter just falls back to only the current month.
   void settingsStore.load().catch(() => {})
+  void getBudgets()
+    .then((result) => {
+      budgets.value = result
+    })
+    .catch(() => {
+      budgetsError.value = 'Could not load your budgets.'
+    })
+    .finally(() => {
+      budgetsLoading.value = false
+    })
 
   try {
     await transactionsStore.load()
@@ -155,6 +186,54 @@ onMounted(async () => {
         <template v-else>
           <p class="card-sub">{{ sixMonthRangeLabel }}</p>
           <IncomeVsExpensesChart :data="monthlyIncomeExpenses" />
+        </template>
+      </div>
+    </div>
+
+    <div class="charts-row budget-row">
+      <div class="card" data-testid="budget-projection-card">
+        <h2>{{ budgetProjection.isProjected ? 'Month projection' : 'Month Budget' }}</h2>
+        <p v-if="budgetCardsLoading" class="card-sub status">Loading…</p>
+        <p v-else-if="budgetsError" class="card-sub status">{{ budgetsError }}</p>
+        <p v-else-if="budgets.length === 0" class="card-sub status">
+          No budgets set. <RouterLink to="/budgets">Set budgets</RouterLink>
+        </p>
+        <template v-else>
+          <p class="card-sub">
+            <template v-if="budgetProjection.isProjected">
+              Projected {{ formatCurrency(budgetProjection.totalProjected) }} of
+              {{ formatCurrency(budgetProjection.totalBudget) }} · day {{ budgetProjection.daysElapsed }} of
+              {{ budgetProjection.daysInMonth }}
+            </template>
+            <template v-else>
+              {{ selectedMonthLabel }} · {{ formatCurrency(budgetProjection.totalActual) }} of
+              {{ formatCurrency(budgetProjection.totalBudget) }}
+            </template>
+          </p>
+          <BudgetProjectionChart :projection="budgetProjection" />
+        </template>
+      </div>
+
+      <div class="card" data-testid="budget-history-card">
+        <div class="card-head">
+          <h2>Budget performance</h2>
+          <select
+            v-model="selectedBudgetCategory"
+            aria-label="Budget performance category"
+            :disabled="budgetCardsLoading || budgets.length === 0"
+          >
+            <option value="">All budgeted categories</option>
+            <option v-for="c in budgetCategories" :key="c" :value="c">{{ c }}</option>
+          </select>
+        </div>
+        <p v-if="budgetCardsLoading" class="card-sub status">Loading…</p>
+        <p v-else-if="budgetsError" class="card-sub status">{{ budgetsError }}</p>
+        <p v-else-if="budgets.length === 0" class="card-sub status">
+          No budgets set. <RouterLink to="/budgets">Set budgets</RouterLink>
+        </p>
+        <template v-else>
+          <p class="card-sub">Last 6 months to {{ selectedMonthLabel }}</p>
+          <BudgetVsActualChart :data="monthlyBudgetVsActual" />
         </template>
       </div>
     </div>

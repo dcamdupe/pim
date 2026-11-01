@@ -161,6 +161,9 @@ public sealed class SettingsController : ControllerBase
             return NotFound();
         }
 
+        // A budget can't outlive its category (UBE-119).
+        user.Budgets.RemoveAll(b => string.Equals(b.Category, category.Name, StringComparison.OrdinalIgnoreCase));
+
         await _users.UpdateAsync(user.Email, user);
         await _transactionUpdateService.RemoveCategoryFromTransactionsAsync(user, category.Name);
 

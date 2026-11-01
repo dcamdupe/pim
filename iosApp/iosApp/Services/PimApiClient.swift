@@ -55,6 +55,16 @@ struct PimApiClient {
         )
     }
 
+    // GET /budgets - recurring monthly per-category budgets (UBE-119).
+    func getBudgets() async throws -> [Budget] {
+        try await send(URL(string: "\(baseURL)/budgets")!, method: "GET")
+    }
+
+    // PUT /budgets - replaces every budget; a category left out has no budget.
+    func saveBudgets(_ budgets: [Budget]) async throws {
+        try await sendNoContent(URL(string: "\(baseURL)/budgets")!, method: "PUT", body: budgets)
+    }
+
     // MARK: - Transport
 
     private func send<T: Decodable>(_ url: URL, method: String) async throws -> T {

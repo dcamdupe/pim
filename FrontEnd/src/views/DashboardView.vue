@@ -15,7 +15,6 @@ import {
   computeRecentTransactions,
 } from '../utils/dashboardMetrics'
 import { loadStoredDashboardFilters, saveDashboardFilters } from '../utils/dashboardFilterStorage'
-import { categoryNames } from '../services/categoriesService'
 import { getBudgets, type Budget } from '../services/budgetsService'
 import {
   PROJECTION_FILTERS,
@@ -50,7 +49,6 @@ const minTransactionDate = computed(() =>
 )
 const storedFilters = loadStoredDashboardFilters()
 const selectedMonthKey = ref(storedFilters?.month ?? computeAvailableMonths(null, realToday)[0].value)
-const selectedCategory = ref(storedFilters?.category ?? '')
 const selectedBudgetCategory = ref(storedFilters?.budgetCategory ?? '')
 const selectedProjectionFilter = ref<ProjectionFilter>(
   isProjectionFilter(storedFilters?.budgetProjectionFilter) ? storedFilters.budgetProjectionFilter : 'top5',
@@ -59,25 +57,20 @@ const selectedProjectionFilter = ref<ProjectionFilter>(
 const budgets = ref<Budget[]>([])
 const budgetsLoading = ref(true)
 const budgetsError = ref('')
-// A computed, not a plain call - settingsStore.categories is still empty until settingsStore.load()
-// (below) resolves, so this needs to react to that rather than capture an empty list once at setup.
-const categories = computed(() => categoryNames())
 
 const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
 const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
 
 watch(
-  [selectedMonthKey, selectedCategory, selectedBudgetCategory, selectedProjectionFilter],
-  ([month, category, budgetCategory, budgetProjectionFilter]) => {
-    saveDashboardFilters({ month, category, budgetCategory, budgetProjectionFilter })
+  [selectedMonthKey, selectedBudgetCategory, selectedProjectionFilter],
+  ([month, budgetCategory, budgetProjectionFilter]) => {
+    saveDashboardFilters({ month, budgetCategory, budgetProjectionFilter })
   },
 )
 
 const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
 const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, selectedMonth.value))
-const monthlyIncomeExpenses = computed(() =>
-  computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value, selectedCategory.value),
-)
+const monthlyIncomeExpenses = computed(() => computeMonthlyIncomeExpenses(transactions.value, selectedMonth.value))
 const budgetProjection = computed(() =>
   computeBudgetProjection(transactions.value, budgets.value, selectedMonth.value, realToday),
 )
@@ -195,10 +188,6 @@ onMounted(async () => {
       <div class="card">
         <div class="card-head">
           <h2>Income vs. expenses</h2>
-          <select v-model="selectedCategory" aria-label="Category filter" :disabled="initialLoading">
-            <option value="">All categories</option>
-            <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-          </select>
         </div>
         <p v-if="initialLoading" class="card-sub status">Loading…</p>
         <template v-else>

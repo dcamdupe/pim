@@ -46,10 +46,10 @@ describe('dashboardFilterStorage', () => {
       expect(loadStoredDashboardFilters()).toBeNull()
     })
 
-    it('returns null when the category field is missing', () => {
+    it('loads a stored filter without the removed category field', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ month: '2026-06' }))
 
-      expect(loadStoredDashboardFilters()).toBeNull()
+      expect(loadStoredDashboardFilters()).toEqual({ month: '2026-06' })
     })
   })
 

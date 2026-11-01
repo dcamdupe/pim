@@ -1,6 +1,6 @@
 import SwiftUI
 
-// The signed-in shell (UBE-103): a Dashboard + Transactions (+ Budgets, UBE-119) tab bar matching
+// The signed-in shell (UBE-103): a Dashboard + Transactions (+ Insights, UBE-118, and Budgets, UBE-119) tab bar matching
 // docs/design/dashboard-mockup-ios.html. Owns the shared TransactionsStore / SettingsStore so both
 // tabs read one cached copy of the data and edits on one show on the other.
 struct AppTabView: View {
@@ -33,6 +33,13 @@ struct AppTabView: View {
                 onSignOut: signOut
             )
             .tabItem { Label("Transactions", systemImage: "list.bullet") }
+
+            InsightsView(
+                transactionsStore: transactionsStore,
+                settingsStore: settingsStore,
+                onSignOut: signOut
+            )
+            .tabItem { Label("Insights", systemImage: "chart.line.uptrend.xyaxis") }
 
             BudgetsView(settingsStore: settingsStore, idToken: session.idToken, onSignOut: signOut)
                 .tabItem { Label("Budgets", systemImage: "chart.pie") }

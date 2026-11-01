@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B000060000000000000001 /* SpendingInsights.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000060000000000000001 /* SpendingInsights.swift */; };
+		A1B000060000000000000002 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000060000000000000002 /* InsightsView.swift */; };
+		A1B000060000000000000003 /* InsightsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000060000000000000003 /* InsightsViewModel.swift */; };
+		A1B000060000000000000004 /* InsightDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000060000000000000004 /* InsightDetailSheet.swift */; };
 		A1B000050000000000000001 /* BudgetMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000050000000000000001 /* BudgetMetrics.swift */; };
 		A1B000050000000000000002 /* BudgetProjectionChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000050000000000000002 /* BudgetProjectionChart.swift */; };
 		A1B000050000000000000003 /* BudgetVsActualChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000050000000000000003 /* BudgetVsActualChart.swift */; };
@@ -51,6 +55,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A1A000060000000000000001 /* SpendingInsights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingInsights.swift; sourceTree = "<group>"; };
+		A1A000060000000000000002 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		A1A000060000000000000003 /* InsightsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsViewModel.swift; sourceTree = "<group>"; };
+		A1A000060000000000000004 /* InsightDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightDetailSheet.swift; sourceTree = "<group>"; };
 		A1A000050000000000000001 /* BudgetMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetMetrics.swift; sourceTree = "<group>"; };
 		A1A000050000000000000002 /* BudgetProjectionChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetProjectionChart.swift; sourceTree = "<group>"; };
 		A1A000050000000000000003 /* BudgetVsActualChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetVsActualChart.swift; sourceTree = "<group>"; };
@@ -107,6 +115,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A1C000060000000000000001 /* Insights */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000060000000000000002 /* InsightsView.swift */,
+				A1A000060000000000000003 /* InsightsViewModel.swift */,
+				A1A000060000000000000004 /* InsightDetailSheet.swift */,
+			);
+			path = Insights;
+			sourceTree = "<group>";
+		};
 		A1C000040000000000000001 /* Budgets */ = {
 			isa = PBXGroup;
 			children = (
@@ -162,6 +180,7 @@
 		A1C000010000000000000002 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				A1A000060000000000000001 /* SpendingInsights.swift */,
 				A1A000050000000000000001 /* BudgetMetrics.swift */,
 				A1A000040000000000000002 /* BudgetAmounts.swift */,
 				A1A000010000000000000004 /* DashboardMetrics.swift */,
@@ -237,6 +256,7 @@
 				A1A000020000000000000006 /* AppTabView.swift */,
 				A1C000010000000000000003 /* Dashboard */,
 				A1C000020000000000000011 /* Transactions */,
+				A1C000060000000000000001 /* Insights */,
 				A1C000040000000000000001 /* Budgets */,
 				DD8BBD0F319FA12A23428842 /* GoogleLogoView.swift */,
 				F47DE5664F145561A7A7EA8D /* SVGPath.swift */,
@@ -339,6 +359,10 @@
 				A1B000020000000000000006 /* AppTabView.swift in Sources */,
 				A1B000020000000000000007 /* TransactionsView.swift in Sources */,
 				A1B000020000000000000008 /* TransactionsViewModel.swift in Sources */,
+				A1B000060000000000000001 /* SpendingInsights.swift in Sources */,
+				A1B000060000000000000002 /* InsightsView.swift in Sources */,
+				A1B000060000000000000003 /* InsightsViewModel.swift in Sources */,
+				A1B000060000000000000004 /* InsightDetailSheet.swift in Sources */,
 				A1B000050000000000000001 /* BudgetMetrics.swift in Sources */,
 				A1B000050000000000000002 /* BudgetProjectionChart.swift in Sources */,
 				A1B000050000000000000003 /* BudgetVsActualChart.swift in Sources */,

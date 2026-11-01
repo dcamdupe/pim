@@ -106,6 +106,7 @@ struct BudgetsView: View {
                         .foregroundColor(DashboardTheme.ink2)
                         .padding(.horizontal, 20)
                 } else {
+                    recommendationHeader
                     budgetList
                     totalRow
                     saveRow
@@ -148,7 +149,9 @@ struct BudgetsView: View {
                 Text(category.name)
                     .font(.system(size: 14.5, weight: .semibold))
                     .foregroundColor(DashboardTheme.ink)
-                Spacer()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Spacer(minLength: 4)
                 Text("$")
                     .font(.system(size: 14))
                     .foregroundColor(DashboardTheme.ink3)
@@ -157,7 +160,7 @@ struct BudgetsView: View {
                     .multilineTextAlignment(.trailing)
                     .font(.system(size: 14.5, design: .rounded))
                     .foregroundColor(DashboardTheme.ink)
-                    .frame(width: 110)
+                    .frame(width: 84)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(DashboardTheme.surface2)
@@ -169,6 +172,7 @@ struct BudgetsView: View {
                     .focused($focusedCategory, equals: category.name)
                     .disabled(viewModel.saving)
                     .accessibilityLabel("\(category.name) budget")
+                recommendationCell(category.name)
             }
             if let error {
                 Text(error)
@@ -178,6 +182,54 @@ struct BudgetsView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 5)
+    }
+
+    // "6-month average" column heading with the copy-all button (UBE-123).
+    private var recommendationHeader: some View {
+        HStack(spacing: 8) {
+            Spacer()
+            Text("6-month average")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(DashboardTheme.ink3)
+            Button("Use all") {
+                focusedCategory = nil
+                viewModel.useAllRecommendations()
+            }
+            .font(.system(size: 12.5, weight: .semibold))
+            .foregroundColor(DashboardTheme.accentDark)
+            .disabled(viewModel.saving || !viewModel.hasRecommendations)
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 4)
+    }
+
+    // Tapping the recommendation copies it into the row's field.
+    @ViewBuilder
+    private func recommendationCell(_ category: String) -> some View {
+        if let amount = viewModel.recommendations[category] {
+            Button {
+                viewModel.useRecommendation(for: category)
+            } label: {
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.left")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("$\(amount.formatted(.number.precision(.fractionLength(0))))")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .foregroundColor(DashboardTheme.accentDark)
+                .frame(width: 66, alignment: .trailing)
+                .padding(.vertical, 4)
+            }
+            .disabled(viewModel.saving)
+            .accessibilityLabel("Use recommended budget for \(category), $\(amount.formatted())")
+        } else {
+            Text("—")
+                .font(.system(size: 13))
+                .foregroundColor(DashboardTheme.ink3)
+                .frame(width: 66, alignment: .trailing)
+        }
     }
 
     private var totalRow: some View {

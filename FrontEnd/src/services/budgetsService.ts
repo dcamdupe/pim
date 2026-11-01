@@ -37,3 +37,15 @@ export async function saveBudgets(budgets: Budget[]): Promise<void> {
     throw new BudgetsRequestFailedError()
   }
 }
+
+// Average monthly spend per Expense category over the 6 full months before `month` (yyyy-MM),
+// rounded up to the dollar (UBE-123). Categories with no spend are omitted.
+export async function getBudgetRecommendations(month: string): Promise<Budget[]> {
+  const response = await fetch(`${API_BASE_URL}/budgets/recommendations?month=${encodeURIComponent(month)}`, {
+    headers: authHeaders(),
+  })
+  if (!response.ok) {
+    throw new BudgetsRequestFailedError()
+  }
+  return (await response.json()) as Budget[]
+}

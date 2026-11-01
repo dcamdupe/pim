@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { getBudgets, saveBudgets, BudgetsRequestFailedError } from '../../FrontEnd/src/services/budgetsService'
+import { getBudgetRecommendations, getBudgets, saveBudgets, BudgetsRequestFailedError } from '../../FrontEnd/src/services/budgetsService'
 import { useAuthStore } from '../../FrontEnd/src/stores/auth'
 
 describe('budgetsService', () => {
@@ -54,5 +54,25 @@ describe('budgetsService', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
 
     await expect(saveBudgets([])).rejects.toBeInstanceOf(BudgetsRequestFailedError)
+  })
+
+  it('getBudgetRecommendations fetches /budgets/recommendations for the given month', async () => {
+    const recommendations = [{ category: 'Groceries', amount: 612 }]
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(recommendations) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await getBudgetRecommendations('2026-11')
+
+    expect(result).toEqual(recommendations)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/budgets\/recommendations\?month=2026-11$/),
+      expect.objectContaining({ headers: { Authorization: 'Bearer a-jwt' } }),
+    )
+  })
+
+  it('getBudgetRecommendations throws BudgetsRequestFailedError on a non-OK response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+    await expect(getBudgetRecommendations('2026-11')).rejects.toBeInstanceOf(BudgetsRequestFailedError)
   })
 })

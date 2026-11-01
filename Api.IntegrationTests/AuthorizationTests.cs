@@ -26,6 +26,7 @@ public sealed class AuthorizationTests : IClassFixture<ApiWebApplicationFactory>
         yield return [HttpMethod.Post, "/mapping/description"];
         yield return [HttpMethod.Get, "/budgets"];
         yield return [HttpMethod.Put, "/budgets"];
+        yield return [HttpMethod.Get, "/budgets/recommendations?month=2026-11"];
         yield return [HttpMethod.Post, "/login/refresh"];
     }
 

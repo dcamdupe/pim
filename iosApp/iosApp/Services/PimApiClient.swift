@@ -65,6 +65,13 @@ struct PimApiClient {
         try await sendNoContent(URL(string: "\(baseURL)/budgets")!, method: "PUT", body: budgets)
     }
 
+    // GET /budgets/recommendations?month=yyyy-MM - 6-month average spend per Expense category (UBE-123).
+    func getBudgetRecommendations(month: Date = Date()) async throws -> [Budget] {
+        var components = URLComponents(string: "\(baseURL)/budgets/recommendations")!
+        components.queryItems = [URLQueryItem(name: "month", value: String(Self.apiDateFormatter.string(from: month).prefix(7)))]
+        return try await send(components.url!, method: "GET")
+    }
+
     // MARK: - Transport
 
     private func send<T: Decodable>(_ url: URL, method: String) async throws -> T {

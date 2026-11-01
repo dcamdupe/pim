@@ -12,6 +12,7 @@ public sealed class BudgetsEndpointTests : IClassFixture<ApiWebApplicationFactor
 {
     private readonly ApiWebApplicationFactory _factory;
     private readonly string _email = $"integration-test-{Guid.NewGuid():N}@example.com";
+    private readonly List<string> _seededMonthIds = [];
 
     public BudgetsEndpointTests(ApiWebApplicationFactory factory)
     {
@@ -26,6 +27,7 @@ public sealed class BudgetsEndpointTests : IClassFixture<ApiWebApplicationFactor
         {
             Email = _email,
             PasswordHash = "unused-in-these-tests",
+            MinTransactionDate = new DateOnly(2020, 1, 1),
             Categories =
             [
                 new Category { Name = "Groceries", Colour = "#00ff00", Type = Category.CategoryType.Expense },
@@ -38,6 +40,12 @@ public sealed class BudgetsEndpointTests : IClassFixture<ApiWebApplicationFactor
     public async Task DisposeAsync()
     {
         using var scope = _factory.Services.CreateScope();
+        var months = scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>();
+        foreach (var id in _seededMonthIds)
+        {
+            await months.DeleteAsync(id);
+        }
+
         await scope.ServiceProvider.GetRequiredService<IRepository<User>>().DeleteAsync(_email);
     }
 
@@ -136,6 +144,66 @@ public sealed class BudgetsEndpointTests : IClassFixture<ApiWebApplicationFactor
 
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         Assert.Equal("Groceries", Assert.Single(budgets!).Category);
+    }
+
+    [Fact]
+    public async Task GetRecommendations_AveragesTheSixFullMonthsBeforeTheGivenMonth()
+    {
+        await SeedMonth(2026, 5, ("Groceries", -600m), ("Dining", -61m));
+        await SeedMonth(2026, 10, ("Groceries", -600m), ("Salary", 5000m));
+        // The current month and anything before the window are excluded.
+        await SeedMonth(2026, 11, ("Groceries", -9999m));
+        await SeedMonth(2026, 4, ("Groceries", -9999m));
+
+        var response = await AuthenticatedClient().GetAsync("/budgets/recommendations?month=2026-11");
+        var recommendations = await response.Content.ReadFromJsonAsync<List<Budget>>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, recommendations!.Count);
+        Assert.Contains(recommendations, b => b.Category == "Groceries" && b.Amount == 200m);
+        Assert.Contains(recommendations, b => b.Category == "Dining" && b.Amount == 11m);
+    }
+
+    [Fact]
+    public async Task GetRecommendations_ReturnsEmpty_WithNoSpend()
+    {
+        var recommendations = await AuthenticatedClient().GetFromJsonAsync<List<Budget>>("/budgets/recommendations?month=2026-11");
+
+        Assert.Empty(recommendations!);
+    }
+
+    [Theory]
+    [InlineData("/budgets/recommendations")]
+    [InlineData("/budgets/recommendations?month=2026-13")]
+    [InlineData("/budgets/recommendations?month=Nov")]
+    public async Task GetRecommendations_ReturnsBadRequest_ForAMissingOrInvalidMonth(string url)
+    {
+        var response = await AuthenticatedClient().GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task SeedMonth(int year, int month, params (string Category, decimal Amount)[] transactions)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var bucket = new TransactionMonth
+        {
+            Email = _email,
+            Year = year,
+            Month = month,
+            Transactions = transactions
+                .Select((t, i) => new Transaction
+                {
+                    Account = "Everyday",
+                    Date = new DateOnly(year, month, 10),
+                    Description = $"Seeded {i}",
+                    Category = t.Category,
+                    Amount = t.Amount,
+                })
+                .ToList(),
+        };
+        await scope.ServiceProvider.GetRequiredService<IRepository<TransactionMonth>>().AddAsync(bucket);
+        _seededMonthIds.Add(bucket.Id);
     }
 
     private HttpClient AuthenticatedClient()

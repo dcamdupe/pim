@@ -73,6 +73,20 @@ describe('dashboardFilterStorage', () => {
     })
   })
 
+  describe('budgetProjectionFilter (UBE-125)', () => {
+    it('round-trips the Month Budget filter', () => {
+      saveDashboardFilters({ month: '2026-11', category: '', budgetProjectionFilter: 'over' })
+
+      expect(loadStoredDashboardFilters()).toEqual({ month: '2026-11', category: '', budgetProjectionFilter: 'over' })
+    })
+
+    it('returns null when budgetProjectionFilter is not a string', () => {
+      localStorage.setItem('pim.dashboardFilters', JSON.stringify({ month: '2026-11', category: '', budgetProjectionFilter: 1 }))
+
+      expect(loadStoredDashboardFilters()).toBeNull()
+    })
+  })
+
   describe('saveDashboardFilters', () => {
     it('persists the filters so they can be loaded back', () => {
       saveDashboardFilters(filters)

@@ -118,3 +118,31 @@ export function computeMonthlyBudgetVsActual(
   }
   return months
 }
+
+// Month Budget card filter (UBE-125).
+export type ProjectionFilter = 'top5' | 'over' | 'under'
+
+export const PROJECTION_FILTERS: { value: ProjectionFilter; label: string }[] = [
+  { value: 'top5', label: 'Top 5 Spend' },
+  { value: 'over', label: 'Over Budget' },
+  { value: 'under', label: 'Under Budget' },
+]
+
+export function isProjectionFilter(value: unknown): value is ProjectionFilter {
+  return PROJECTION_FILTERS.some((f) => f.value === value)
+}
+
+// Top 5 by actual spend; over budget (projected) by biggest overspend; under/at budget by spend.
+export function filterProjectionRows(rows: BudgetProjectionRow[], filter: ProjectionFilter): BudgetProjectionRow[] {
+  const bySpend = (a: BudgetProjectionRow, b: BudgetProjectionRow) => b.actual - a.actual || a.category.localeCompare(b.category)
+  switch (filter) {
+    case 'over':
+      return rows
+        .filter((r) => r.overBudget)
+        .sort((a, b) => b.projected - b.budget - (a.projected - a.budget) || a.category.localeCompare(b.category))
+    case 'under':
+      return rows.filter((r) => !r.overBudget).sort(bySpend)
+    default:
+      return [...rows].sort(bySpend).slice(0, 5)
+  }
+}

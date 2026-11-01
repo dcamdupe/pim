@@ -6,9 +6,10 @@ const props = defineProps<{
   data: MonthlyBudgetVsActual[]
 }>()
 
-// Budget vs actual per month (UBE-124), same grouped-bar geometry as IncomeVsExpensesChart.vue.
-const BUDGET_COLOR = '#9093a3'
-const ACTUAL_COLOR = '#2a78d6'
+// Budget vs actual per month (UBE-124), same grouped-bar geometry and colours (UBE-125) as
+// IncomeVsExpensesChart.vue: budget in its income blue, actual in its expenses orange.
+const BUDGET_COLOR = '#2a78d6'
+const ACTUAL_COLOR = '#eb6834'
 
 const W = 520
 const H = 200

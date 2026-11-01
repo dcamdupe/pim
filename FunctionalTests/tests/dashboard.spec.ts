@@ -62,6 +62,8 @@ function parseCurrency(text: string): number {
 // month-range label text, so they're no longer distinguishable by label.
 async function tileValue(page: import('@playwright/test').Page, index: number): Promise<number> {
   const kpi = page.locator('.kpi-row .kpi').nth(index);
+  // Wait for the tile to finish loading - its "···" placeholder would otherwise parse as $0.
+  await expect(kpi.locator('.value')).not.toHaveClass(/\bloading\b/);
   const text = await kpi.locator('.value').innerText();
   return parseCurrency(text);
 }

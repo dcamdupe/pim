@@ -36,12 +36,20 @@ final class DashboardViewModel: ObservableObject {
 
     private static let monthDefaultsKey = "pim.dashboard.month"
     private static let budgetCategoryDefaultsKey = "pim.dashboard.budgetCategory"
+    private static let projectionFilterDefaultsKey = "pim.dashboard.budgetProjectionFilter"
+
+    // Month Budget card filter (UBE-125), defaulting to Top 5 Spend.
+    @Published var projectionFilter: ProjectionFilter {
+        didSet { UserDefaults.standard.set(projectionFilter.rawValue, forKey: Self.projectionFilterDefaultsKey) }
+    }
 
     init(transactionsStore: TransactionsStore, settingsStore: SettingsStore, api: PimApiClient? = nil) {
         self.transactionsStore = transactionsStore
         self.settingsStore = settingsStore
         self.api = api
         self.selectedBudgetCategory = UserDefaults.standard.string(forKey: Self.budgetCategoryDefaultsKey) ?? ""
+        self.projectionFilter = UserDefaults.standard.string(forKey: Self.projectionFilterDefaultsKey)
+            .flatMap(ProjectionFilter.init(rawValue:)) ?? .top5
         let today = DashboardMetrics.today()
         let stored = UserDefaults.standard.string(forKey: Self.monthDefaultsKey)
         self.selectedMonthKey = stored
@@ -101,6 +109,17 @@ final class DashboardViewModel: ObservableObject {
     var budgetProjection: BudgetProjection {
         BudgetMetrics.computeBudgetProjection(
             transactions, budgets: budgets, selectedMonth: referenceMonth, today: DashboardMetrics.today()
+        )
+    }
+
+    // Only the rows shown are filtered; the card's totals still cover every budget.
+    var filteredBudgetProjection: BudgetProjection {
+        let projection = budgetProjection
+        return BudgetProjection(
+            isProjected: projection.isProjected,
+            daysElapsed: projection.daysElapsed,
+            daysInMonth: projection.daysInMonth,
+            rows: BudgetMetrics.filterProjectionRows(projection.rows, filter: projectionFilter)
         )
     }
 

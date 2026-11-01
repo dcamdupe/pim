@@ -104,6 +104,41 @@ enum BudgetMetrics {
     }
 }
 
+// Month Budget card filter (UBE-125), matching budgetMetrics.ts's ProjectionFilter.
+enum ProjectionFilter: String, CaseIterable, Identifiable {
+    case top5, over, under
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .top5: return "Top 5 Spend"
+        case .over: return "Over Budget"
+        case .under: return "Under Budget"
+        }
+    }
+}
+
+extension BudgetMetrics {
+    // Top 5 by actual spend; over budget (projected) by biggest overspend; under/at budget by spend.
+    static func filterProjectionRows(_ rows: [BudgetProjectionRow], filter: ProjectionFilter) -> [BudgetProjectionRow] {
+        let bySpend: (BudgetProjectionRow, BudgetProjectionRow) -> Bool = {
+            $0.actual != $1.actual ? $0.actual > $1.actual : $0.category < $1.category
+        }
+        switch filter {
+        case .top5:
+            return Array(rows.sorted(by: bySpend).prefix(5))
+        case .over:
+            return rows.filter(\.overBudget).sorted {
+                let a = $0.projected - $0.budget, b = $1.projected - $1.budget
+                return a != b ? a > b : $0.category < $1.category
+            }
+        case .under:
+            return rows.filter { !$0.overBudget }.sorted(by: bySpend)
+        }
+    }
+}
+
 extension Budget {
     var amountValue: Double { NSDecimalNumber(decimal: amount).doubleValue }
 }

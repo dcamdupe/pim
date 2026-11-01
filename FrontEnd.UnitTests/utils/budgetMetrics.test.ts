@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { computeBudgetProjection, computeMonthlyBudgetVsActual } from '../../FrontEnd/src/utils/budgetMetrics'
+import {
+  computeBudgetProjection,
+  computeMonthlyBudgetVsActual,
+  filterProjectionRows,
+  isProjectionFilter,
+  type BudgetProjectionRow,
+} from '../../FrontEnd/src/utils/budgetMetrics'
 import type { Transaction } from '../../FrontEnd/src/services/transactionsService'
 
 const budgets = [
@@ -126,5 +132,57 @@ describe('computeMonthlyBudgetVsActual', () => {
       'Jan 2027',
       'Feb 2027',
     ])
+  })
+})
+
+describe('filterProjectionRows (UBE-125)', () => {
+  function row(category: string, budget: number, actual: number, projected = actual): BudgetProjectionRow {
+    return { category, color: undefined, budget, actual, projected, overBudget: projected > budget }
+  }
+
+  const rows = [
+    row('Housing', 2000, 2000),
+    row('Groceries', 600, 300, 900),
+    row('Dining', 200, 150, 450),
+    row('Transport', 300, 100),
+    row('Shopping', 400, 50),
+    row('Utilities', 250, 250),
+    row('Medical', 100, 20),
+  ]
+
+  it('top5 keeps the five highest actual spends, highest first', () => {
+    expect(filterProjectionRows(rows, 'top5').map((r) => r.category)).toEqual([
+      'Housing',
+      'Groceries',
+      'Utilities',
+      'Dining',
+      'Transport',
+    ])
+  })
+
+  it('over keeps projected-over-budget rows, biggest overspend first', () => {
+    expect(filterProjectionRows(rows, 'over').map((r) => r.category)).toEqual(['Groceries', 'Dining'])
+  })
+
+  it('under keeps rows at or under budget, highest spend first', () => {
+    expect(filterProjectionRows(rows, 'under').map((r) => r.category)).toEqual([
+      'Housing',
+      'Utilities',
+      'Transport',
+      'Shopping',
+      'Medical',
+    ])
+  })
+
+  it('does not reorder the input array', () => {
+    filterProjectionRows(rows, 'top5')
+    expect(rows[0].category).toBe('Housing')
+    expect(rows[1].category).toBe('Groceries')
+  })
+
+  it('recognises valid filter values only', () => {
+    expect(isProjectionFilter('over')).toBe(true)
+    expect(isProjectionFilter('bogus')).toBe(false)
+    expect(isProjectionFilter(undefined)).toBe(false)
   })
 })

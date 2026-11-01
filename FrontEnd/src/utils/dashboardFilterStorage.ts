@@ -7,6 +7,8 @@ export interface DashboardFiltersState {
   category: string
   // Budget vs actual card's category filter (UBE-124); optional so older stored filters still load.
   budgetCategory?: string
+  // Month Budget card filter (UBE-125); optional, validated by the dashboard.
+  budgetProjectionFilter?: string
 }
 
 function isDashboardFiltersState(value: unknown): value is DashboardFiltersState {
@@ -18,7 +20,8 @@ function isDashboardFiltersState(value: unknown): value is DashboardFiltersState
     typeof v.month === 'string' &&
     MONTH_KEY.test(v.month) &&
     typeof v.category === 'string' &&
-    (v.budgetCategory === undefined || typeof v.budgetCategory === 'string')
+    (v.budgetCategory === undefined || typeof v.budgetCategory === 'string') &&
+    (v.budgetProjectionFilter === undefined || typeof v.budgetProjectionFilter === 'string')
   )
 }
 

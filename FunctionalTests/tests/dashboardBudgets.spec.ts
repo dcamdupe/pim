@@ -49,7 +49,7 @@ test.describe('Dashboard budget cards', () => {
     const history = page.getByTestId('budget-history-card');
     await expect(history.getByRole('heading', { name: 'Budget performance' })).toBeVisible();
     const filter = history.getByRole('combobox', { name: 'Budget performance category' });
-    await expect(filter.locator('option')).toHaveText(['All budgeted categories', 'Dining', 'Groceries']);
+    await expect(filter.locator('option')).toHaveText(['All Categories', 'Dining', 'Groceries']);
     await filter.selectOption('Dining');
     await page.reload();
     await expect(history.getByRole('combobox', { name: 'Budget performance category' })).toHaveValue('Dining');
@@ -62,5 +62,37 @@ test.describe('Dashboard budget cards', () => {
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(projection.getByText('No budgets set.')).toBeVisible();
     await expect(history.getByText('No budgets set.')).toBeVisible();
+  });
+
+  test('filters the Month Budget card by top 5 spend, over budget and under budget (UBE-125)', async ({ page }) => {
+    await login(page);
+    // Groceries can't realistically be over a $100,000 budget, so it's always "under" - the shared
+    // test user's actual spend varies, so assertions only rely on that.
+    await setBudgets(page, { Groceries: '100000', Dining: '1' });
+
+    await page.getByRole('link', { name: 'Dashboard' }).click();
+    await page.getByRole('combobox', { name: 'Month filter' }).selectOption(currentMonthKey());
+
+    const projection = page.getByTestId('budget-projection-card');
+    const filter = projection.getByRole('combobox', { name: 'Month budget filter' });
+    await expect(filter.locator('option')).toHaveText(['Top 5 Spend', 'Over Budget', 'Under Budget']);
+    await expect(filter).toHaveValue('top5');
+    await expect(projection.getByTestId('projection-Groceries')).toBeVisible();
+    // Totals still cover every budget, whatever the filter.
+    await expect(projection).toContainText(/of \$100,001/);
+
+    await filter.selectOption('over');
+    await expect(projection.getByTestId('projection-Groceries')).toHaveCount(0);
+    await expect(projection).toContainText(/of \$100,001/);
+
+    await filter.selectOption('under');
+    await expect(projection.getByTestId('projection-Groceries')).toBeVisible();
+
+    // The choice is remembered like the other dashboard filters.
+    await page.reload();
+    await expect(projection.getByRole('combobox', { name: 'Month budget filter' })).toHaveValue('under');
+    await projection.getByRole('combobox', { name: 'Month budget filter' }).selectOption('top5');
+
+    await setBudgets(page, {});
   });
 });

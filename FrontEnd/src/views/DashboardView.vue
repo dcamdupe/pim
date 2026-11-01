@@ -17,7 +17,14 @@ import {
 import { loadStoredDashboardFilters, saveDashboardFilters } from '../utils/dashboardFilterStorage'
 import { categoryNames } from '../services/categoriesService'
 import { getBudgets, type Budget } from '../services/budgetsService'
-import { computeBudgetProjection, computeMonthlyBudgetVsActual } from '../utils/budgetMetrics'
+import {
+  PROJECTION_FILTERS,
+  computeBudgetProjection,
+  computeMonthlyBudgetVsActual,
+  filterProjectionRows,
+  isProjectionFilter,
+  type ProjectionFilter,
+} from '../utils/budgetMetrics'
 import DashboardTile from '../components/DashboardTile.vue'
 import SpendingByCategoryChart from '../components/SpendingByCategoryChart.vue'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart.vue'
@@ -45,6 +52,9 @@ const storedFilters = loadStoredDashboardFilters()
 const selectedMonthKey = ref(storedFilters?.month ?? computeAvailableMonths(null, realToday)[0].value)
 const selectedCategory = ref(storedFilters?.category ?? '')
 const selectedBudgetCategory = ref(storedFilters?.budgetCategory ?? '')
+const selectedProjectionFilter = ref<ProjectionFilter>(
+  isProjectionFilter(storedFilters?.budgetProjectionFilter) ? storedFilters.budgetProjectionFilter : 'top5',
+)
 // Budget cards (UBE-124) - loaded separately so a failure doesn't block the rest of the dashboard.
 const budgets = ref<Budget[]>([])
 const budgetsLoading = ref(true)
@@ -56,9 +66,12 @@ const categories = computed(() => categoryNames())
 const availableMonths = computed(() => computeAvailableMonths(minTransactionDate.value, realToday))
 const selectedMonth = computed(() => parseMonthKey(selectedMonthKey.value))
 
-watch([selectedMonthKey, selectedCategory, selectedBudgetCategory], ([month, category, budgetCategory]) => {
-  saveDashboardFilters({ month, category, budgetCategory })
-})
+watch(
+  [selectedMonthKey, selectedCategory, selectedBudgetCategory, selectedProjectionFilter],
+  ([month, category, budgetCategory, budgetProjectionFilter]) => {
+    saveDashboardFilters({ month, category, budgetCategory, budgetProjectionFilter })
+  },
+)
 
 const tiles = computed(() => computeDashboardTiles(transactions.value, selectedMonth.value))
 const expensesByCategory = computed(() => computeExpensesByCategory(transactions.value, selectedMonth.value))
@@ -68,6 +81,11 @@ const monthlyIncomeExpenses = computed(() =>
 const budgetProjection = computed(() =>
   computeBudgetProjection(transactions.value, budgets.value, selectedMonth.value, realToday),
 )
+// The card's totals still cover every budget; only the rows shown are filtered.
+const filteredProjection = computed(() => ({
+  ...budgetProjection.value,
+  rows: filterProjectionRows(budgetProjection.value.rows, selectedProjectionFilter.value),
+}))
 const budgetCategories = computed(() => budgets.value.map((b) => b.category).sort((a, b) => a.localeCompare(b)))
 // A stored filter for a category that no longer has a budget falls back to "all".
 const effectiveBudgetCategory = computed(() =>
@@ -192,7 +210,16 @@ onMounted(async () => {
 
     <div class="charts-row budget-row">
       <div class="card" data-testid="budget-projection-card">
-        <h2>{{ budgetProjection.isProjected ? 'Month projection' : 'Month Budget' }}</h2>
+        <div class="card-head">
+          <h2>{{ budgetProjection.isProjected ? 'Month projection' : 'Month Budget' }}</h2>
+          <select
+            v-model="selectedProjectionFilter"
+            aria-label="Month budget filter"
+            :disabled="budgetCardsLoading || budgets.length === 0"
+          >
+            <option v-for="f in PROJECTION_FILTERS" :key="f.value" :value="f.value">{{ f.label }}</option>
+          </select>
+        </div>
         <p v-if="budgetCardsLoading" class="card-sub status">Loading…</p>
         <p v-else-if="budgetsError" class="card-sub status">{{ budgetsError }}</p>
         <p v-else-if="budgets.length === 0" class="card-sub status">
@@ -210,7 +237,10 @@ onMounted(async () => {
               {{ formatCurrency(budgetProjection.totalBudget) }}
             </template>
           </p>
-          <BudgetProjectionChart :projection="budgetProjection" />
+          <BudgetProjectionChart v-if="filteredProjection.rows.length" :projection="filteredProjection" />
+          <p v-else class="card-sub status">
+            No categories {{ selectedProjectionFilter === 'over' ? 'over' : 'under' }} budget.
+          </p>
         </template>
       </div>
 
@@ -222,7 +252,7 @@ onMounted(async () => {
             aria-label="Budget performance category"
             :disabled="budgetCardsLoading || budgets.length === 0"
           >
-            <option value="">All budgeted categories</option>
+            <option value="">All Categories</option>
             <option v-for="c in budgetCategories" :key="c" :value="c">{{ c }}</option>
           </select>
         </div>

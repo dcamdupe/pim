@@ -18,9 +18,22 @@ const saveError = ref('')
 const inputs = ref<Record<string, string>>({})
 // Recommended amount per category; a missing entry means no recommendation.
 const recommendations = ref<Record<string, number>>({})
+// Saved budget per category, set on load and save - drives the row order so rows don't move while typing.
+const savedAmounts = ref<Record<string, number>>({})
 
+// Budgeted categories first, highest budget at the top; the rest by 6-month average, then name.
 const expenseCategories = computed(() =>
-  settingsStore.categories.filter((c) => c.type === 'Expense').sort((a, b) => a.name.localeCompare(b.name)),
+  settingsStore.categories
+    .filter((c) => c.type === 'Expense')
+    .sort((a, b) => {
+      const sa = savedAmounts.value[a.name]
+      const sb = savedAmounts.value[b.name]
+      if ((sa === undefined) !== (sb === undefined)) return sa === undefined ? 1 : -1
+      const diff = sa !== undefined && sb !== undefined
+        ? sb - sa
+        : (recommendations.value[b.name] ?? 0) - (recommendations.value[a.name] ?? 0)
+      return diff || a.name.localeCompare(b.name)
+    }),
 )
 
 const errors = computed(() => {
@@ -78,6 +91,7 @@ onMounted(async () => {
   try {
     const [budgets] = await Promise.all([getBudgets(), settingsStore.load(), loadRecommendations()])
     inputs.value = Object.fromEntries(budgets.map((b) => [b.category, formatBudgetInput(b.amount)]))
+    savedAmounts.value = Object.fromEntries(budgets.map((b) => [b.category, b.amount]))
   } catch {
     loadError.value = 'Could not load your budgets. Please try again later.'
   } finally {
@@ -102,6 +116,7 @@ async function onSave() {
   saveError.value = ''
   try {
     await saveBudgets(budgets)
+    savedAmounts.value = Object.fromEntries(budgets.map((b) => [b.category, b.amount]))
     saved.value = true
   } catch {
     saveError.value = 'Could not save your budgets. Please try again.'

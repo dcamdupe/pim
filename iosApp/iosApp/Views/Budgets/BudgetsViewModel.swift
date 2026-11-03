@@ -20,6 +20,8 @@ final class BudgetsViewModel: ObservableObject {
     }
     // Recommended amount per category (UBE-123); a missing entry means no recommendation.
     @Published private(set) var recommendations: [String: Decimal] = [:]
+    // Saved budget per category, set on load and save - drives the row order so rows don't move while typing.
+    @Published private(set) var savedAmounts: [String: Decimal] = [:]
     @Published private(set) var saving = false
     @Published private(set) var saved = false
     @Published private(set) var saveError: String?
@@ -37,10 +39,18 @@ final class BudgetsViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    // Budgeted categories first, highest budget at the top; the rest by 6-month average, then name.
     var expenseCategories: [CategoryDefinition] {
         settingsStore.categories
             .filter { $0.type == "Expense" }
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            .sorted { a, b in
+                let sa = savedAmounts[a.name], sb = savedAmounts[b.name]
+                if (sa == nil) != (sb == nil) { return sa != nil }
+                let ka = sa ?? recommendations[a.name] ?? 0
+                let kb = sb ?? recommendations[b.name] ?? 0
+                if ka != kb { return ka > kb }
+                return a.name.localizedCompare(b.name) == .orderedAscending
+            }
     }
 
     func error(for category: String) -> String? {
@@ -59,10 +69,12 @@ final class BudgetsViewModel: ObservableObject {
             async let recommended = loadRecommendations()
             try await settingsStore.load()
             recommendations = await recommended
+            let loaded = try await budgets
             inputs = Dictionary(
-                try await budgets.map { ($0.category, BudgetAmounts.formatInput($0.amount)) },
+                loaded.map { ($0.category, BudgetAmounts.formatInput($0.amount)) },
                 uniquingKeysWith: { first, _ in first }
             )
+            savedAmounts = Dictionary(loaded.map { ($0.category, $0.amount) }, uniquingKeysWith: { first, _ in first })
             saved = false
             state = .loaded
         } catch PimApiError.unauthorized {
@@ -103,6 +115,7 @@ final class BudgetsViewModel: ObservableObject {
         defer { saving = false }
         do {
             try await api.saveBudgets(budgets)
+            savedAmounts = Dictionary(budgets.map { ($0.category, $0.amount) }, uniquingKeysWith: { first, _ in first })
             saved = true
         } catch PimApiError.unauthorized {
             state = .sessionExpired

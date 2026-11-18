@@ -51,7 +51,7 @@ jobs:
       - name: Publish Api for Lambda
         working-directory: ${{ github.workspace }}
         run: dotnet publish Api -c Release -r linux-x64 --self-contained false -o Terraform/modules/api/build
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - uses: aws-actions/configure-aws-credentials@v6
@@ -89,7 +89,7 @@ jobs:
         working-directory: Terraform
     steps:
       - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - uses: aws-actions/configure-aws-credentials@v6

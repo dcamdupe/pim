@@ -9,6 +9,10 @@ updates:
       - /FileDownloader
     schedule:
       interval: weekly
+    ignore:
+      # typescript-eslint does not support TypeScript 7 yet.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
@@ -20,6 +24,10 @@ updates:
       - /Api.IntegrationTests
     schedule:
       interval: weekly
+    ignore:
+      # Microsoft.OpenApi 3.x needs Microsoft.AspNetCore.OpenApi 11 (.NET 11).
+      - dependency-name: Microsoft.OpenApi
+        update-types: ["version-update:semver-major"]
     groups:
       nuget-minor-and-patch:
         update-types: [minor, patch]

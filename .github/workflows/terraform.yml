@@ -51,7 +51,7 @@ jobs:
       - name: Publish Api for Lambda
         working-directory: ${{ github.workspace }}
         run: dotnet publish Api -c Release -r linux-x64 --self-contained false -o Terraform/modules/api/build
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - uses: aws-actions/configure-aws-credentials@v6
@@ -68,12 +68,12 @@ jobs:
           # artifact, which already has these resolved, so the apply job below doesn't need them.
           TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
           TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: Terraform/tfplan
           retention-days: 1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: api-lambda-build
           path: Terraform/modules/api/build.zip
@@ -89,20 +89,20 @@ jobs:
         working-directory: Terraform
     steps:
       - uses: actions/checkout@v7
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
       - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: api-lambda-build
           path: Terraform/modules/api
       - run: terraform init
       - run: terraform workspace select ${{ inputs.environment }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: tfplan
           path: Terraform

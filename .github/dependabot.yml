@@ -1,0 +1,43 @@
+# Routine version updates. Security updates are raised separately, as advisories appear.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /FrontEnd
+      - /FrontEnd.UnitTests
+      - /FunctionalTests
+      - /FileDownloader
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: nuget
+    directories:
+      - /Api
+      - /Api.UnitTests
+      - /Api.IntegrationTests
+    schedule:
+      interval: weekly
+    groups:
+      nuget-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: terraform
+    directories:
+      - /Terraform
+      - /Terraform/bootstrap
+    schedule:
+      interval: weekly
+    groups:
+      terraform-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-and-patch:
+        update-types: [minor, patch]

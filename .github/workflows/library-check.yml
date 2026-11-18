@@ -37,5 +37,5 @@ jobs:
           cache-dependency-path: ${{ matrix.directory }}/package-lock.json
       - run: npm ci
         working-directory: ${{ matrix.directory }}
-      - run: npm audit --audit-level=high
+      - run: ../scripts/npm_audit.sh high
         working-directory: ${{ matrix.directory }}

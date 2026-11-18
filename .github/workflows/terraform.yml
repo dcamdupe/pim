@@ -68,12 +68,12 @@ jobs:
           # artifact, which already has these resolved, so the apply job below doesn't need them.
           TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
           TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tfplan
           path: Terraform/tfplan
           retention-days: 1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: api-lambda-build
           path: Terraform/modules/api/build.zip
